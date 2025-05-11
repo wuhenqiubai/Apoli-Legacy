@@ -1,16 +1,19 @@
 {
   "schemaVersion": 1,
-  "id": "apoli",
+  "id": "apoli-legacy",
   "version": "${version}",
-
-  "name": "Apoli",
-  "description": "A library mod which allows entities to be imbued with data-driven powers.",
+  "provides": [
+    "apoli"
+  ],
+  "name": "Apoli: Legacy",
+  "description": "A library mod which allows entities to be imbued with data-driven powers. Unofficial forward port beginning from 1.20.1.",
   "authors": [
-    "Apace"
+    "Apace",
+    "BluSpring"
   ],
   "contact": {
-    "homepage": "https://apace100.github.io/apoli",
-    "sources": "https://github.com/apace100/apoli"
+    "homepage": "",
+    "sources": "https://git.devos.one/BluSpring/apoli-legacy"
   },
 
   "license": "MIT",
@@ -57,8 +60,8 @@
   "depends": {
     "java": ">=17",
     "fabricloader": ">=0.13.3",
-    "fabric": ">=0.83.0",
+    "fabric-api": ">=0.83.0",
     "minecraft": ">=1.20",
-    "calio": ">=1.11.0"
+    "calio-legacy": ">=1.11.0"
   }
 }
