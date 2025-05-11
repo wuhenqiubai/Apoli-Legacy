@@ -1,11 +1,11 @@
 package io.github.apace100.apoli.power.factory;
 
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 public interface Factory {
 
-    Identifier getSerializerId();
+    ResourceLocation getSerializerId();
 
     SerializableData getSerializableData();
 

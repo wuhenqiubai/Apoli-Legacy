@@ -30,12 +30,12 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.resource.ResourceType;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Identifier;
-import net.minecraft.registry.Registry;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.world.entity.LivingEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,13 +82,13 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 			ResourceCommand.register(dispatcher);
 		});
 
-		Registry.register(Registries.RECIPE_SERIALIZER, Apoli.identifier("power_restricted"), PowerRestrictedCraftingRecipe.SERIALIZER);
-		Registry.register(Registries.RECIPE_SERIALIZER, Apoli.identifier("modified"), ModifiedCraftingRecipe.SERIALIZER);
+		Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Apoli.identifier("power_restricted"), PowerRestrictedCraftingRecipe.SERIALIZER);
+		Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Apoli.identifier("modified"), ModifiedCraftingRecipe.SERIALIZER);
 
-		Registry.register(Registries.LOOT_FUNCTION_TYPE, Apoli.identifier("add_power"), AddPowerLootFunction.TYPE);
-		Registry.register(Registries.LOOT_FUNCTION_TYPE, Apoli.identifier("remove_power"), RemovePowerLootFunction.TYPE);
+		Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Apoli.identifier("add_power"), AddPowerLootFunction.TYPE);
+		Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Apoli.identifier("remove_power"), RemovePowerLootFunction.TYPE);
 
-		Registry.register(Registries.LOOT_CONDITION_TYPE, Apoli.identifier("power"), PowerLootCondition.TYPE);
+		Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, Apoli.identifier("power"), PowerLootCondition.TYPE);
 
 		ApoliClassData.registerAll();
 
@@ -107,7 +107,7 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		BlockActions.register();
 		BiEntityActions.register();
 
-		ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new GlobalPowerSetLoader());
+		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new GlobalPowerSetLoader());
 		ResourceConditions.register(ApoliResourceConditions.ANY_NAMESPACE_LOADED, jsonObject -> ApoliResourceConditions.namespacesLoaded(jsonObject, PowerTypes.LOADED_NAMESPACES, false));
 		ResourceConditions.register(ApoliResourceConditions.ALL_NAMESPACES_LOADED, jsonObject -> ApoliResourceConditions.namespacesLoaded(jsonObject, PowerTypes.LOADED_NAMESPACES, true));
 
@@ -116,8 +116,8 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		LOGGER.info("Apoli " + VERSION + " has initialized. Ready to power up your game!");
 	}
 
-	public static Identifier identifier(String path) {
-		return new Identifier(MODID, path);
+	public static ResourceLocation identifier(String path) {
+		return new ResourceLocation(MODID, path);
 	}
 
 	@Override
@@ -130,6 +130,6 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 
 	@Override
 	public void registerResourceListeners(OrderedResourceListenerManager manager) {
-		manager.register(ResourceType.SERVER_DATA, new PowerTypes()).complete();
+		manager.register(PackType.SERVER_DATA, new PowerTypes()).complete();
 	}
 }

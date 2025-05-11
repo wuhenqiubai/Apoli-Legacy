@@ -5,13 +5,13 @@ import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.SmeltingRecipe;
-import net.minecraft.registry.Registry;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.Registry;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
+import net.minecraft.world.level.Level;
 
 import java.util.Optional;
 
@@ -22,14 +22,14 @@ public class ItemConditionsClient {
     public static void register() {
         register(new ConditionFactory<>(Apoli.identifier("smeltable"), new SerializableData(),
             (data, stack) -> {
-                World world = MinecraftClient.getInstance().world;
+                Level world = Minecraft.getInstance().level;
                 if(world == null) {
                     return false;
                 }
                 Optional<SmeltingRecipe> optional = world.getRecipeManager()
-                    .getFirstMatch(
+                    .getRecipeFor(
                         RecipeType.SMELTING,
-                        new SimpleInventory(stack),
+                        new SimpleContainer(stack),
                         world
                     );
                 return optional.isPresent();

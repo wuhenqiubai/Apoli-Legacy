@@ -5,13 +5,13 @@ import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.fabric.api.entity.event.v1.EntityElytraEvents;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.ElytraItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ElytraItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class ElytraFlightPossibleCondition {
 
@@ -21,8 +21,8 @@ public class ElytraFlightPossibleCondition {
         }
         boolean ability = true;
         if(data.getBoolean("check_ability")) {
-            ItemStack equippedChestItem = livingEntity.getEquippedStack(EquipmentSlot.CHEST);
-            ability = equippedChestItem.isOf(Items.ELYTRA) && ElytraItem.isUsable(equippedChestItem);
+            ItemStack equippedChestItem = livingEntity.getItemBySlot(EquipmentSlot.CHEST);
+            ability = equippedChestItem.is(Items.ELYTRA) && ElytraItem.isFlyEnabled(equippedChestItem);
             if (!ability && EntityElytraEvents.CUSTOM.invoker().useCustomElytra(livingEntity, false)) {
                 ability = true;
             }
@@ -32,7 +32,7 @@ public class ElytraFlightPossibleCondition {
         }
         boolean state = true;
         if(data.getBoolean("check_state")) {
-            state = !livingEntity.isOnGround() && !livingEntity.isFallFlying() && !livingEntity.isTouchingWater() && !livingEntity.hasStatusEffect(StatusEffects.LEVITATION);
+            state = !livingEntity.onGround() && !livingEntity.isFallFlying() && !livingEntity.isInWater() && !livingEntity.hasEffect(MobEffects.LEVITATION);
         }
         return ability && state;
     }

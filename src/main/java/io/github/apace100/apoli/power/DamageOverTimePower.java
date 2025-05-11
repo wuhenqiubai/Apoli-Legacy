@@ -7,33 +7,32 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageSources;
-import net.minecraft.entity.damage.DamageType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageSources;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
 import java.util.Map;
 
 public class DamageOverTimePower extends Power {
 
-    public static final RegistryKey<DamageType> GENERIC_DAMAGE = RegistryKey.of(RegistryKeys.DAMAGE_TYPE, Apoli.identifier("damage_over_time"));
+    public static final ResourceKey<DamageType> GENERIC_DAMAGE = ResourceKey.create(Registries.DAMAGE_TYPE, Apoli.identifier("damage_over_time"));
 
     private final int damageTickInterval;
     private final int beginDamageIn;
     private final float damageAmountEasy;
     private final float damageAmount;
     private final DamageSourceDescription damageSourceDescription;
-    private final RegistryKey<DamageType> damageType;
+    private final ResourceKey<DamageType> damageType;
     private final Enchantment protectingEnchantment;
     private final float protectionEffectiveness;
 
@@ -42,7 +41,7 @@ public class DamageOverTimePower extends Power {
 
     private DamageSource damageSource;
 
-    public DamageOverTimePower(PowerType<?> type, LivingEntity entity, int beginDamageIn, int damageInterval, float damageAmountEasy, float damageAmount, DamageSourceDescription damageSourceDescription, RegistryKey<DamageType> damageType, Enchantment protectingEnchantment, float protectionEffectiveness) {
+    public DamageOverTimePower(PowerType<?> type, LivingEntity entity, int beginDamageIn, int damageInterval, float damageAmountEasy, float damageAmount, DamageSourceDescription damageSourceDescription, ResourceKey<DamageType> damageType, Enchantment protectingEnchantment, float protectionEffectiveness) {
         super(type, entity);
         this.damageSourceDescription = damageSourceDescription;
         this.damageType = damageType;
@@ -74,8 +73,8 @@ public class DamageOverTimePower extends Power {
         outOfDamageTicks = 0;
         if(inDamageTicks - getDamageBegin() >= 0) {
             if((inDamageTicks - getDamageBegin()) % damageTickInterval == 0) {
-                DamageSource source = getDamageSource(entity.getDamageSources());
-                entity.damage(source, entity.getWorld().getDifficulty() == Difficulty.EASY ? damageAmountEasy : damageAmount);
+                DamageSource source = getDamageSource(entity.damageSources());
+                entity.hurt(source, entity.level().getDifficulty() == Difficulty.EASY ? damageAmountEasy : damageAmount);
             }
         }
         inDamageTicks++;
@@ -106,12 +105,12 @@ public class DamageOverTimePower extends Power {
         if(protectingEnchantment == null) {
             return 0;
         } else {
-            Map<EquipmentSlot, ItemStack> enchantedItems = protectingEnchantment.getEquipment(entity);
+            Map<EquipmentSlot, ItemStack> enchantedItems = protectingEnchantment.getSlotItems(entity);
             Iterable<ItemStack> iterable = enchantedItems.values();
             int i = 0;
             int items = 0;
             for (ItemStack itemStack : iterable) {
-                int enchLevel = EnchantmentHelper.getLevel(protectingEnchantment, itemStack);
+                int enchLevel = EnchantmentHelper.getItemEnchantmentLevel(protectingEnchantment, itemStack);
                 i += enchLevel;
                 if(enchLevel > 0)
                     items++;
@@ -121,16 +120,16 @@ public class DamageOverTimePower extends Power {
     }
 
     @Override
-    public NbtElement toTag() {
-        NbtCompound nbt = new NbtCompound();
+    public Tag toTag() {
+        CompoundTag nbt = new CompoundTag();
         nbt.putInt("InDamage", inDamageTicks);
         nbt.putInt("OutDamage", outOfDamageTicks);
         return nbt;
     }
 
     @Override
-    public void fromTag(NbtElement tag) {
-        if(tag instanceof NbtCompound nbt) {
+    public void fromTag(Tag tag) {
+        if(tag instanceof CompoundTag nbt) {
             inDamageTicks = nbt.getInt("InDamage");
             outOfDamageTicks = nbt.getInt("OutDamage");
         }

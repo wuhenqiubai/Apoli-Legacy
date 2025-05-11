@@ -6,16 +6,16 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 
 import java.util.function.Predicate;
 
 public class PhasingPower extends Power {
 
-    private final Predicate<CachedBlockPosition> blocks;
+    private final Predicate<BlockInWorld> blocks;
     private final boolean isBlacklist;
 
     private final Predicate<Entity> phaseDownCondition;
@@ -23,7 +23,7 @@ public class PhasingPower extends Power {
     private final RenderType renderType;
     private final float viewDistance;
 
-    public PhasingPower(PowerType<?> type, LivingEntity entity, Predicate<CachedBlockPosition> blocks, boolean isBlacklist,
+    public PhasingPower(PowerType<?> type, LivingEntity entity, Predicate<BlockInWorld> blocks, boolean isBlacklist,
                         RenderType renderType, float viewDistance, Predicate<Entity> phaseDownCondition) {
         super(type, entity);
         this.blocks = blocks;
@@ -34,11 +34,11 @@ public class PhasingPower extends Power {
     }
 
     public boolean doesApply(BlockPos pos) {
-        return isBlacklist != blocks.test(new CachedBlockPosition(entity.getWorld(), pos, true));
+        return isBlacklist != blocks.test(new BlockInWorld(entity.level(), pos, true));
     }
 
     public boolean shouldPhaseDown(Entity entity) {
-        return phaseDownCondition == null ? entity.isSneaking() : phaseDownCondition.test(entity);
+        return phaseDownCondition == null ? entity.isShiftKeyDown() : phaseDownCondition.test(entity);
     }
 
     public RenderType getRenderType() {

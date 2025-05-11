@@ -3,13 +3,12 @@ package io.github.apace100.apoli.power;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
-import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtByte;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.ByteTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.function.Consumer;
 
@@ -36,9 +35,9 @@ public class ActionOverTimePower extends Power {
 
     public void tick() {
         if (initialTicks == null) {
-            initialTicks = entity.age % interval;
+            initialTicks = entity.tickCount % interval;
         }
-        else if (entity.age % interval == initialTicks) {
+        else if (entity.tickCount % interval == initialTicks) {
             if (isActive()) {
                 if (!wasActive && risingAction != null) {
                     risingAction.accept(entity);
@@ -58,13 +57,13 @@ public class ActionOverTimePower extends Power {
     }
 
     @Override
-    public NbtElement toTag() {
-        return NbtByte.of(wasActive);
+    public Tag toTag() {
+        return ByteTag.valueOf(wasActive);
     }
 
     @Override
-    public void fromTag(NbtElement tag) {
-        wasActive = tag.equals(NbtByte.ONE);
+    public void fromTag(Tag tag) {
+        wasActive = tag.equals(ByteTag.ONE);
     }
 
     public static PowerFactory createFactory() {

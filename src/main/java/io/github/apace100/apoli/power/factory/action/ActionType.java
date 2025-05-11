@@ -4,10 +4,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.github.apace100.apoli.util.NamespaceAlias;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.registry.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 
 import java.util.Optional;
 
@@ -21,12 +21,12 @@ public class ActionType<T> {
         this.actionFactoryRegistry = actionFactoryRegistry;
     }
 
-    public void write(PacketByteBuf buf, ActionFactory.Instance actionInstance) {
+    public void write(FriendlyByteBuf buf, ActionFactory.Instance actionInstance) {
         actionInstance.write(buf);
     }
 
-    public ActionFactory<T>.Instance read(PacketByteBuf buf) {
-        Identifier type = buf.readIdentifier();
+    public ActionFactory<T>.Instance read(FriendlyByteBuf buf) {
+        ResourceLocation type = buf.readResourceLocation();
         ActionFactory<T> actionFactory = actionFactoryRegistry.get(type);
         if(actionFactory == null) {
             throw new JsonSyntaxException(actionTypeName + " \"" + type + "\" was not registered.");
@@ -40,12 +40,12 @@ public class ActionType<T> {
             if(!obj.has("type")) {
                 throw new JsonSyntaxException(actionTypeName + " json requires \"type\" identifier.");
             }
-            String typeIdentifier = JsonHelper.getString(obj, "type");
-            Identifier type = Identifier.tryParse(typeIdentifier);
-            Optional<ActionFactory<T>> optionalAction = actionFactoryRegistry.getOrEmpty(type);
+            String typeIdentifier = GsonHelper.getAsString(obj, "type");
+            ResourceLocation type = ResourceLocation.tryParse(typeIdentifier);
+            Optional<ActionFactory<T>> optionalAction = actionFactoryRegistry.getOptional(type);
             if(!optionalAction.isPresent()) {
                 if(NamespaceAlias.hasAlias(type)) {
-                    optionalAction = actionFactoryRegistry.getOrEmpty(NamespaceAlias.resolveAlias(type));
+                    optionalAction = actionFactoryRegistry.getOptional(NamespaceAlias.resolveAlias(type));
                 }
                 if(!optionalAction.isPresent()) {
                     throw new JsonSyntaxException(actionTypeName + " json type \"" + type.toString() + "\" is not defined.");

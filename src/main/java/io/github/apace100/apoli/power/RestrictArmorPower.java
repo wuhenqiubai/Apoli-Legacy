@@ -5,12 +5,11 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-
 import java.util.HashMap;
 import java.util.function.Predicate;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 public class RestrictArmorPower extends Power {
     private final HashMap<EquipmentSlot, Predicate<ItemStack>> armorConditions;
@@ -24,12 +23,12 @@ public class RestrictArmorPower extends Power {
     public void onGained() {
         super.onGained();
         for(EquipmentSlot slot : armorConditions.keySet()) {
-            ItemStack equippedItem = entity.getEquippedStack(slot);
+            ItemStack equippedItem = entity.getItemBySlot(slot);
             if(!equippedItem.isEmpty()) {
                 if(!canEquip(equippedItem, slot)) {
                     // TODO: Prefer putting armor in inv instead of dropping when inv exists
-                    entity.dropStack(equippedItem, entity.getEyeHeight(entity.getPose()));
-                    entity.equipStack(slot, ItemStack.EMPTY);
+                    entity.spawnAtLocation(equippedItem, entity.getEyeHeight(entity.getPose()));
+                    entity.setItemSlot(slot, ItemStack.EMPTY);
                 }
             }
         }

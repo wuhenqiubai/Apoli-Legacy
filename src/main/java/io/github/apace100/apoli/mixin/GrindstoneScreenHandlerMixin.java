@@ -3,15 +3,15 @@ package io.github.apace100.apoli.mixin;
 import io.github.apace100.apoli.access.PowerModifiedGrindstone;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ModifyGrindstonePower;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.GrindstoneScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerContext;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.GrindstoneMenu;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,17 +24,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.List;
 import java.util.Optional;
 
-@Mixin(GrindstoneScreenHandler.class)
-public abstract class GrindstoneScreenHandlerMixin extends ScreenHandler implements PowerModifiedGrindstone {
+@Mixin(GrindstoneMenu.class)
+public abstract class GrindstoneScreenHandlerMixin extends AbstractContainerMenu implements PowerModifiedGrindstone {
 
     @Shadow
     @Final
-    private Inventory input;
+    private Container repairSlots;
 
-    @Shadow @Final private Inventory result;
+    @Shadow @Final private Container resultSlots;
 
     @Unique
-    private PlayerEntity apoli$cachedPlayer;
+    private Player apoli$cachedPlayer;
 
     @Unique
     private Optional<BlockPos> apoli$cachedPosition;
@@ -42,21 +42,21 @@ public abstract class GrindstoneScreenHandlerMixin extends ScreenHandler impleme
     @Unique
     private List<ModifyGrindstonePower> apoli$appliedPowers;
 
-    protected GrindstoneScreenHandlerMixin(@Nullable ScreenHandlerType<?> type, int syncId) {
+    protected GrindstoneScreenHandlerMixin(@Nullable MenuType<?> type, int syncId) {
         super(type, syncId);
     }
 
-    @Inject(method = "<init>(ILnet/minecraft/entity/player/PlayerInventory;Lnet/minecraft/screen/ScreenHandlerContext;)V", at = @At("RETURN"))
-    private void cachePlayer(int syncId, PlayerInventory playerInventory, ScreenHandlerContext context, CallbackInfo ci) {
+    @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V", at = @At("RETURN"))
+    private void cachePlayer(int syncId, Inventory playerInventory, ContainerLevelAccess context, CallbackInfo ci) {
         apoli$cachedPlayer = playerInventory.player;
-        apoli$cachedPosition = context.get((w, bp) -> bp);
+        apoli$cachedPosition = context.evaluate((w, bp) -> bp);
     }
 
-    @Inject(method = "updateResult", at = @At("RETURN"))
+    @Inject(method = "createResult", at = @At("RETURN"))
     private void modifyResult(CallbackInfo ci) {
-        ItemStack top = input.getStack(0);
-        ItemStack bottom = input.getStack(1);
-        ItemStack output = result.getStack(0);
+        ItemStack top = repairSlots.getItem(0);
+        ItemStack bottom = repairSlots.getItem(1);
+        ItemStack output = resultSlots.getItem(0);
         List<ModifyGrindstonePower> applyingPowers = PowerHolderComponent.getPowers(apoli$cachedPlayer, ModifyGrindstonePower.class);
         applyingPowers = applyingPowers.stream().filter(mgp -> mgp.doesApply(top, bottom, output, apoli$cachedPosition)).toList();
         ItemStack newOutput = output;
@@ -64,8 +64,8 @@ public abstract class GrindstoneScreenHandlerMixin extends ScreenHandler impleme
             newOutput = mgp.getOutput(top, bottom, newOutput);
         }
         apoli$appliedPowers = applyingPowers;
-        result.setStack(0, newOutput);
-        this.sendContentUpdates();
+        resultSlots.setItem(0, newOutput);
+        this.broadcastChanges();
     }
 
     @Override
@@ -74,7 +74,7 @@ public abstract class GrindstoneScreenHandlerMixin extends ScreenHandler impleme
     }
 
     @Override
-    public PlayerEntity getPlayer() {
+    public Player getPlayer() {
         return apoli$cachedPlayer;
     }
 

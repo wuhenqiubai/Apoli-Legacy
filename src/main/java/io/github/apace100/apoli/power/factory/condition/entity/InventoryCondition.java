@@ -11,7 +11,7 @@ import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.apoli.util.InventoryUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 import java.util.EnumSet;
 import java.util.Optional;

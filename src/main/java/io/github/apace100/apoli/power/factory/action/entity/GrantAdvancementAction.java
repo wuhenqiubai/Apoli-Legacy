@@ -4,19 +4,19 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.advancement.AdvancementProgress;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
 public class GrantAdvancementAction {
 
     public static void action(SerializableData.Instance data, Entity entity) {
-        if (entity instanceof ServerPlayerEntity player) {
-            Identifier id = data.getId("advancement");
+        if (entity instanceof ServerPlayer player) {
+            ResourceLocation id = data.getId("advancement");
             if (player.getServer() != null) {
-                Advancement adv = player.getServer().getAdvancementLoader().get(id);
+                Advancement adv = player.getServer().getAdvancements().getAdvancement(id);
                 grant(player, adv);
             }
         }
@@ -30,11 +30,11 @@ public class GrantAdvancementAction {
         );
     }
 
-    private static void grant(ServerPlayerEntity player, Advancement advancement) {
-        AdvancementProgress advancementProgress = player.getAdvancementTracker().getProgress(advancement);
+    private static void grant(ServerPlayer player, Advancement advancement) {
+        AdvancementProgress advancementProgress = player.getAdvancements().getOrStartProgress(advancement);
         if (!advancementProgress.isDone()) {
-            for (String criterion : advancementProgress.getUnobtainedCriteria()) {
-                player.getAdvancementTracker().grantCriterion(advancement, criterion);
+            for (String criterion : advancementProgress.getRemainingCriteria()) {
+                player.getAdvancements().award(advancement, criterion);
             }
         }
     }

@@ -3,24 +3,24 @@ package io.github.apace100.apoli.power.factory.action.entity;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.ScreenHandlerContext;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
-import net.minecraft.stat.Stats;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.CraftingMenu;
 
 public class CraftingTableAction {
-    private static final Text TITLE = Text.translatable("container.crafting");
+    private static final Component TITLE = Component.translatable("container.crafting");
 
     public static void action(SerializableData.Instance data, Entity entity) {
-        if (!(entity instanceof PlayerEntity player)) return;
+        if (!(entity instanceof Player player)) return;
 
-        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, inventory, _player) ->
-            new CraftingScreenHandler(syncId, inventory, ScreenHandlerContext.create(_player.getWorld(), _player.getBlockPos())), TITLE));
+        player.openMenu(new SimpleMenuProvider((syncId, inventory, _player) ->
+            new CraftingMenu(syncId, inventory, ContainerLevelAccess.create(_player.level(), _player.blockPosition())), TITLE));
 
-        player.incrementStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
+        player.awardStat(Stats.INTERACT_WITH_CRAFTING_TABLE);
     }
 
     public static ActionFactory<Entity> getFactory() {

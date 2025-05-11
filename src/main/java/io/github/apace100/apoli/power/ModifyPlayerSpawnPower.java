@@ -5,31 +5,27 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Dismounting;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.entry.RegistryEntryList;
-import net.minecraft.registry.tag.TagKey;
+import net.minecraft.core.*;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ChunkTicketType;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.structure.StructureStart;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.Tuple;
 import net.minecraft.util.Unit;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.gen.structure.Structure;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.DismountHelper;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.function.TriFunction;
 
 import java.util.Optional;
@@ -37,11 +33,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ModifyPlayerSpawnPower extends Power {
 
-    public final RegistryKey<World> dimension;
+    public final ResourceKey<Level> dimension;
     public final float dimensionDistanceMultiplier;
-    public final Identifier biomeId;
+    public final ResourceLocation biomeId;
     public final SpawnStrategy spawnStrategy;
-    public final RegistryKey<Structure> structure;
+    public final ResourceKey<Structure> structure;
     public final SoundEvent spawnSound;
 
     private enum SpawnStrategy {
@@ -50,7 +46,7 @@ public class ModifyPlayerSpawnPower extends Power {
         DEFAULT(
                 (blockPos, center, multiplier) -> {
 
-                    BlockPos.Mutable mut = new BlockPos.Mutable();
+                    BlockPos.MutableBlockPos mut = new BlockPos.MutableBlockPos();
 
                     if (multiplier != 0) mut.set(blockPos.getX() * multiplier, blockPos.getY(), blockPos.getZ() * multiplier);
                     else mut.set(blockPos);
@@ -71,7 +67,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
     }
 
-    public ModifyPlayerSpawnPower(PowerType<?> type, LivingEntity entity, RegistryKey<World> dimension, float dimensionDistanceMultiplier, Identifier biomeId, SpawnStrategy spawnStrategy, RegistryKey<Structure> structure, SoundEvent spawnSound) {
+    public ModifyPlayerSpawnPower(PowerType<?> type, LivingEntity entity, ResourceKey<Level> dimension, float dimensionDistanceMultiplier, ResourceLocation biomeId, SpawnStrategy spawnStrategy, ResourceKey<Structure> structure, SoundEvent spawnSound) {
         super(type, entity);
         this.dimension = dimension;
         this.dimensionDistanceMultiplier = dimensionDistanceMultiplier;
@@ -84,86 +80,86 @@ public class ModifyPlayerSpawnPower extends Power {
     @Override
     public void onRemoved() {
 
-        if (entity.getWorld().isClient || !(entity instanceof PlayerEntity playerEntity)) return;
+        if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return;
 
-        ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) playerEntity;
-        if (serverPlayerEntity.isDisconnected() || serverPlayerEntity.getSpawnPointPosition() == null || !serverPlayerEntity.isSpawnForced()) return;
+        ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
+        if (serverPlayerEntity.hasDisconnected() || serverPlayerEntity.getRespawnPosition() == null || !serverPlayerEntity.isRespawnForced()) return;
 
-        serverPlayerEntity.setSpawnPoint(World.OVERWORLD, null, 0F, false, false);
+        serverPlayerEntity.setRespawnPosition(Level.OVERWORLD, null, 0F, false, false);
 
     }
 
     public void teleportToModifiedSpawn() {
 
-        if (entity.getWorld().isClient || !(entity instanceof PlayerEntity playerEntity)) return;
+        if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return;
 
-        ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) playerEntity;
-        Pair<ServerWorld, BlockPos> newSpawn = getSpawn(false);
+        ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
+        Tuple<ServerLevel, BlockPos> newSpawn = getSpawn(false);
 
         if (newSpawn == null) return;
-        ServerWorld newSpawnDimension = newSpawn.getLeft();
-        BlockPos newSpawnPos = newSpawn.getRight();
+        ServerLevel newSpawnDimension = newSpawn.getA();
+        BlockPos newSpawnPos = newSpawn.getB();
 
-        Vec3d tpPos = Dismounting.findRespawnPos(playerEntity.getType(), newSpawn.getLeft(), newSpawn.getRight(), true);
+        Vec3 tpPos = DismountHelper.findSafeDismountLocation(playerEntity.getType(), newSpawn.getA(), newSpawn.getB(), true);
         if (tpPos == null) {
-            serverPlayerEntity.teleport(newSpawnDimension, newSpawnPos.getX(), newSpawnPos.getY(), newSpawnPos.getZ(), entity.getPitch(), entity.getYaw());
-            Apoli.LOGGER.warn("Power {} could not find a suitable spawnpoint for {}! Teleporting to the desired location directly...", this.getType().getIdentifier(), entity.getEntityName());
+            serverPlayerEntity.teleportTo(newSpawnDimension, newSpawnPos.getX(), newSpawnPos.getY(), newSpawnPos.getZ(), entity.getXRot(), entity.getYRot());
+            Apoli.LOGGER.warn("Power {} could not find a suitable spawnpoint for {}! Teleporting to the desired location directly...", this.getType().getIdentifier(), entity.getScoreboardName());
         }
 
-        else serverPlayerEntity.teleport(newSpawnDimension, tpPos.x, tpPos.y, tpPos.z, entity.getPitch(), entity.getYaw());
+        else serverPlayerEntity.teleportTo(newSpawnDimension, tpPos.x, tpPos.y, tpPos.z, entity.getXRot(), entity.getYRot());
 
     }
 
-    public Pair<ServerWorld, BlockPos> getSpawn(boolean isSpawnObstructed) {
+    public Tuple<ServerLevel, BlockPos> getSpawn(boolean isSpawnObstructed) {
 
-        if (entity.getWorld().isClient || !(entity instanceof PlayerEntity playerEntity)) return null;
+        if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return null;
 
-        ServerPlayerEntity serverPlayerEntity = (ServerPlayerEntity) playerEntity;
+        ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
         MinecraftServer server = serverPlayerEntity.getServer();
         if (server == null) return null;
 
-        ServerWorld overworldDimension = server.getWorld(World.OVERWORLD);
+        ServerLevel overworldDimension = server.getLevel(Level.OVERWORLD);
         if (overworldDimension == null) return null;
 
-        ServerWorld targetDimension = server.getWorld(dimension);
+        ServerLevel targetDimension = server.getLevel(dimension);
         if (targetDimension == null) {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at dimension \"{}\" as it's not registered! Falling back to default spawnpoint...", this.getType().getIdentifier(), entity.getEntityName(), dimension.getValue());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at dimension \"{}\" as it's not registered! Falling back to default spawnpoint...", this.getType().getIdentifier(), entity.getScoreboardName(), dimension.location());
             return null;
         }
 
         int center = targetDimension.getLogicalHeight() / 2;
         int range = 64;
 
-        AtomicReference<Vec3d> modifiedSpawnPos = new AtomicReference<>();
+        AtomicReference<Vec3> modifiedSpawnPos = new AtomicReference<>();
 
-        BlockPos regularSpawnBlockPos = overworldDimension.getSpawnPos();
-        BlockPos.Mutable modifiedSpawnBlockPos = new BlockPos.Mutable();
-        BlockPos.Mutable dimensionSpawnPos = spawnStrategy.apply(regularSpawnBlockPos, center, dimensionDistanceMultiplier).mutableCopy();
+        BlockPos regularSpawnBlockPos = overworldDimension.getSharedSpawnPos();
+        BlockPos.MutableBlockPos modifiedSpawnBlockPos = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos dimensionSpawnPos = spawnStrategy.apply(regularSpawnBlockPos, center, dimensionDistanceMultiplier).mutable();
 
         getBiomePos(targetDimension, dimensionSpawnPos).ifPresent(dimensionSpawnPos::set);
         getSpawnPos(targetDimension, dimensionSpawnPos, range).ifPresent(modifiedSpawnPos::set);
 
         if (modifiedSpawnPos.get() == null) return null;
 
-        Vec3d msp = modifiedSpawnPos.get();
+        Vec3 msp = modifiedSpawnPos.get();
         modifiedSpawnBlockPos.set(msp.x, msp.y, msp.z);
-        targetDimension.getChunkManager().addTicket(ChunkTicketType.START, new ChunkPos(modifiedSpawnBlockPos), 11, Unit.INSTANCE);
+        targetDimension.getChunkSource().addRegionTicket(TicketType.START, new ChunkPos(modifiedSpawnBlockPos), 11, Unit.INSTANCE);
 
-        return new Pair<>(targetDimension, modifiedSpawnBlockPos);
+        return new Tuple<>(targetDimension, modifiedSpawnBlockPos);
 
     }
 
-    private Optional<BlockPos> getBiomePos(ServerWorld targetDimension, BlockPos originPos) {
+    private Optional<BlockPos> getBiomePos(ServerLevel targetDimension, BlockPos originPos) {
 
         if (biomeId == null) return Optional.empty();
 
-        Optional<Biome> targetBiome = targetDimension.getRegistryManager().get(RegistryKeys.BIOME).getOrEmpty(biomeId);
+        Optional<Biome> targetBiome = targetDimension.registryAccess().registryOrThrow(Registries.BIOME).getOptional(biomeId);
         if (targetBiome.isEmpty()) {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it's not registered in dimension \"{}\".", this.getType().getIdentifier(), entity.getEntityName(), biomeId, dimension.getValue());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it's not registered in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.location());
             return Optional.empty();
         }
 
-        com.mojang.datafixers.util.Pair<BlockPos, RegistryEntry<Biome>> targetBiomePos = targetDimension.locateBiome(
+        com.mojang.datafixers.util.Pair<BlockPos, Holder<Biome>> targetBiomePos = targetDimension.findClosestBiome3d(
                 biome -> biome.value() == targetBiome.get(),
                 originPos,
                 6400,
@@ -173,47 +169,47 @@ public class ModifyPlayerSpawnPower extends Power {
 
         if (targetBiomePos != null) return Optional.of(targetBiomePos.getFirst());
         else {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getEntityName(), biomeId, dimension.getValue());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.location());
             return Optional.empty();
         }
 
     }
 
-    private Optional<Pair<BlockPos, Structure>> getStructurePos(World world, RegistryKey<Structure> structure, TagKey<Structure> structureTag, RegistryKey<World> dimension) {
+    private Optional<Tuple<BlockPos, Structure>> getStructurePos(Level world, ResourceKey<Structure> structure, TagKey<Structure> structureTag, ResourceKey<Level> dimension) {
 
-        Registry<Structure> structureRegistry = world.getRegistryManager().get(RegistryKeys.STRUCTURE);
-        RegistryEntryList<Structure> structureRegistryEntryList = null;
+        Registry<Structure> structureRegistry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        HolderSet<Structure> structureRegistryEntryList = null;
         String structureTagOrName = "";
 
         if (structure != null) {
 
-            var entry = structureRegistry.getEntry(structure);
-            if (entry.isPresent()) structureRegistryEntryList = RegistryEntryList.of(entry.get());
+            var entry = structureRegistry.getHolder(structure);
+            if (entry.isPresent()) structureRegistryEntryList = HolderSet.direct(entry.get());
 
-            structureTagOrName = structure.getValue().toString();
+            structureTagOrName = structure.location().toString();
 
         }
 
         if (structureRegistryEntryList == null) {
 
-            var entryList = structureRegistry.getEntryList(structureTag);
+            var entryList = structureRegistry.getTag(structureTag);
             if (entryList.isPresent()) structureRegistryEntryList = entryList.get();
 
-            structureTagOrName = "#" + structureTag.id().toString();
+            structureTagOrName = "#" + structureTag.location().toString();
 
         }
 
         MinecraftServer server = entity.getServer();
         if (server == null) return Optional.empty();
 
-        ServerWorld serverWorld = server.getWorld(dimension);
+        ServerLevel serverWorld = server.getLevel(dimension);
         if (serverWorld == null) return Optional.empty();
 
         BlockPos center = new BlockPos(0, 70, 0);
-        com.mojang.datafixers.util.Pair<BlockPos, RegistryEntry<Structure>> structurePos = serverWorld
-                .getChunkManager()
-                .getChunkGenerator()
-                .locateStructure(
+        com.mojang.datafixers.util.Pair<BlockPos, Holder<Structure>> structurePos = serverWorld
+                .getChunkSource()
+                .getGenerator()
+                .findNearestMapStructure(
                         serverWorld,
                         structureRegistryEntryList,
                         center,
@@ -222,25 +218,25 @@ public class ModifyPlayerSpawnPower extends Power {
                 );
 
         if (structurePos == null) {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at structure \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getEntityName(), structureTagOrName, dimension.getValue());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at structure \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), structureTagOrName, dimension.location());
             return Optional.empty();
         }
 
-        else return Optional.of(new Pair<>(structurePos.getFirst(), structurePos.getSecond().value()));
+        else return Optional.of(new Tuple<>(structurePos.getFirst(), structurePos.getSecond().value()));
 
     }
 
-    private Optional<Vec3d> getSpawnPos(ServerWorld targetDimension, BlockPos originPos, int range) {
+    private Optional<Vec3> getSpawnPos(ServerLevel targetDimension, BlockPos originPos, int range) {
 
         if (structure == null) return getValidSpawn(targetDimension, originPos, range);
 
-        Optional<Pair<BlockPos, Structure>> targetStructure = getStructurePos(targetDimension, structure, null, dimension);
+        Optional<Tuple<BlockPos, Structure>> targetStructure = getStructurePos(targetDimension, structure, null, dimension);
         if (targetStructure.isEmpty()) return Optional.empty();
 
-        BlockPos targetStructurePos = targetStructure.get().getLeft();
+        BlockPos targetStructurePos = targetStructure.get().getA();
         ChunkPos targetStructureChunkPos = new ChunkPos(targetStructurePos.getX() >> 4, targetStructurePos.getZ() >> 4);
 
-        StructureStart targetStructureStart = targetDimension.getStructureAccessor().getStructureStart(ChunkSectionPos.from(targetStructureChunkPos, 0), targetStructure.get().getRight(), targetDimension.getChunk(targetStructurePos));
+        StructureStart targetStructureStart = targetDimension.structureManager().getStartForStructure(SectionPos.of(targetStructureChunkPos, 0), targetStructure.get().getB(), targetDimension.getChunk(targetStructurePos));
         if (targetStructureStart == null) return Optional.empty();
 
         BlockPos targetStructureCenter = new BlockPos(targetStructureStart.getBoundingBox().getCenter());
@@ -248,7 +244,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
     }
 
-    private Optional<Vec3d> getValidSpawn(ServerWorld targetDimension, BlockPos startPos, int range) {
+    private Optional<Vec3> getValidSpawn(ServerLevel targetDimension, BlockPos startPos, int range) {
 
         //  The 'direction' vector that determines the direction of the iteration
         int dx = 1;
@@ -261,8 +257,8 @@ public class ModifyPlayerSpawnPower extends Power {
         int center = startPos.getY();
 
         //  The valid spawn position and (mutable) starting position
-        Vec3d spawnPos;
-        BlockPos.Mutable mutableStartPos = startPos.mutableCopy();
+        Vec3 spawnPos;
+        BlockPos.MutableBlockPos mutableStartPos = startPos.mutable();
 
         //  The current position
         int x = startPos.getX();
@@ -277,7 +273,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         //  The min and max Y values of the target dimension
         int maxY = targetDimension.getLogicalHeight();
-        int minY = targetDimension.getDimensionEntry().value().minY();
+        int minY = targetDimension.dimensionTypeRegistration().value().minY();
 
         while (upOffset < maxY || downOffset > minY) {
 
@@ -294,11 +290,11 @@ public class ModifyPlayerSpawnPower extends Power {
 
                 //  Offset the Y axis (up and down) of the current position to check for valid spawn positions
                 mutableStartPos.setY(center + upOffset);
-                spawnPos = Dismounting.findRespawnPos(entity.getType(), targetDimension, mutableStartPos, true);
+                spawnPos = DismountHelper.findSafeDismountLocation(entity.getType(), targetDimension, mutableStartPos, true);
                 if (spawnPos != null) return Optional.of(spawnPos);
 
                 mutableStartPos.setY(center + downOffset);
-                spawnPos = Dismounting.findRespawnPos(entity.getType(), targetDimension, mutableStartPos, true);
+                spawnPos = DismountHelper.findSafeDismountLocation(entity.getType(), targetDimension, mutableStartPos, true);
                 if (spawnPos != null) return Optional.of(spawnPos);
 
                 //  If the current segment has not been passed, continue the loop
@@ -335,7 +331,7 @@ public class ModifyPlayerSpawnPower extends Power {
                         .add("dimension_distance_multiplier", SerializableDataTypes.FLOAT, 0F)
                         .add("biome", SerializableDataTypes.IDENTIFIER, null)
                         .add("spawn_strategy", SerializableDataType.enumValue(SpawnStrategy.class), SpawnStrategy.DEFAULT)
-                        .add("structure", SerializableDataType.registryKey(RegistryKeys.STRUCTURE), null)
+                        .add("structure", SerializableDataType.registryKey(Registries.STRUCTURE), null)
                         .add("respawn_sound", SerializableDataTypes.SOUND_EVENT, null),
                 data -> (powerType, livingEntity) -> new ModifyPlayerSpawnPower(
                         powerType,

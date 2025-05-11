@@ -3,29 +3,28 @@ package io.github.apace100.apoli.power;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
-import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 
 import java.util.function.Predicate;
 
 public class PreventBlockUsePower extends Power {
 
-    private final Predicate<CachedBlockPosition> predicate;
+    private final Predicate<BlockInWorld> predicate;
 
-    public PreventBlockUsePower(PowerType<?> type, LivingEntity entity, Predicate<CachedBlockPosition> predicate) {
+    public PreventBlockUsePower(PowerType<?> type, LivingEntity entity, Predicate<BlockInWorld> predicate) {
         super(type, entity);
         this.predicate = predicate;
     }
 
-    public boolean doesPrevent(WorldView world, BlockPos pos) {
+    public boolean doesPrevent(LevelReader world, BlockPos pos) {
         if(predicate == null) {
             return true;
         }
-        CachedBlockPosition cbp = new CachedBlockPosition(world, pos, true);
+        BlockInWorld cbp = new BlockInWorld(world, pos, true);
         return predicate.test(cbp);
     }
 

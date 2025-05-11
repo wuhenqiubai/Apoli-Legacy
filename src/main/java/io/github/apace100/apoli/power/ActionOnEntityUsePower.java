@@ -3,17 +3,16 @@ package io.github.apace100.apoli.power;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
-import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
-import net.minecraft.world.World;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.EnumSet;
 import java.util.function.Consumer;
@@ -21,27 +20,27 @@ import java.util.function.Predicate;
 
 public class ActionOnEntityUsePower extends ActiveInteractionPower {
 
-    private final Consumer<Pair<Entity, Entity>> biEntityAction;
-    private final Predicate<Pair<Entity, Entity>> bientityCondition;
+    private final Consumer<Tuple<Entity, Entity>> biEntityAction;
+    private final Predicate<Tuple<Entity, Entity>> bientityCondition;
 
-    public ActionOnEntityUsePower(PowerType<?> type, LivingEntity entity, EnumSet<Hand> hands, ActionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Pair<World, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Pair<World, ItemStack>> itemAction, Consumer<Pair<Entity, Entity>> biEntityAction, Predicate<Pair<Entity, Entity>> bientityCondition, int priority) {
+    public ActionOnEntityUsePower(PowerType<?> type, LivingEntity entity, EnumSet<InteractionHand> hands, InteractionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Tuple<Level, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Tuple<Level, ItemStack>> itemAction, Consumer<Tuple<Entity, Entity>> biEntityAction, Predicate<Tuple<Entity, Entity>> bientityCondition, int priority) {
         super(type, entity, hands, actionResult, itemCondition, heldItemAction, itemResult, itemAction, priority);
         this.biEntityAction = biEntityAction;
         this.bientityCondition = bientityCondition;
     }
 
-    public boolean shouldExecute(Entity other, Hand hand, ItemStack heldStack) {
+    public boolean shouldExecute(Entity other, InteractionHand hand, ItemStack heldStack) {
         if(!super.shouldExecute(hand, heldStack)) {
             return false;
         }
-        return bientityCondition == null || bientityCondition.test(new Pair<>(entity, other));
+        return bientityCondition == null || bientityCondition.test(new Tuple<>(entity, other));
     }
 
-    public ActionResult executeAction(Entity other, Hand hand) {
+    public InteractionResult executeAction(Entity other, InteractionHand hand) {
         if(biEntityAction != null) {
-            biEntityAction.accept(new Pair<>(entity, other));
+            biEntityAction.accept(new Tuple<>(entity, other));
         }
-        performActorItemStuff(this, (PlayerEntity) entity, hand);
+        performActorItemStuff(this, (Player) entity, hand);
         return getActionResult();
     }
 
@@ -51,11 +50,11 @@ public class ActionOnEntityUsePower extends ActiveInteractionPower {
                 .add("bientity_action", ApoliDataTypes.BIENTITY_ACTION, null)
                 .add("bientity_condition", ApoliDataTypes.BIENTITY_CONDITION, null)
                 .add("item_condition", ApoliDataTypes.ITEM_CONDITION, null)
-                .add("hands", SerializableDataTypes.HAND_SET, EnumSet.allOf(Hand.class))
+                .add("hands", SerializableDataTypes.HAND_SET, EnumSet.allOf(InteractionHand.class))
                 .add("result_stack", SerializableDataTypes.ITEM_STACK, null)
                 .add("held_item_action", ApoliDataTypes.ITEM_ACTION, null)
                 .add("result_item_action", ApoliDataTypes.ITEM_ACTION, null)
-                .add("action_result", SerializableDataTypes.ACTION_RESULT, ActionResult.SUCCESS)
+                .add("action_result", SerializableDataTypes.ACTION_RESULT, InteractionResult.SUCCESS)
                 .add("priority", SerializableDataTypes.INT, 0),
             data ->
                 (type, player) -> new ActionOnEntityUsePower(type, player,

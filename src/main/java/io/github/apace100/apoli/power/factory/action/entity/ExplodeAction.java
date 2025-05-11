@@ -6,66 +6,65 @@ import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.BlockView;
-import net.minecraft.world.World;
-import net.minecraft.world.explosion.Explosion;
-import net.minecraft.world.explosion.ExplosionBehavior;
-
 import java.util.Optional;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.ExplosionDamageCalculator;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.level.material.FluidState;
 
 public class ExplodeAction {
 
     public static void action(SerializableData.Instance data, Entity entity) {
-        if(entity.getWorld().isClient) {
+        if(entity.level().isClientSide) {
             return;
         }
 
-        Predicate<CachedBlockPosition> indestructible = null;
+        Predicate<BlockInWorld> indestructible = null;
         if(data.isPresent("indestructible")) {
             indestructible = MiscUtil.combineOr(indestructible, data.get("indestructible"));
         }
         if(data.isPresent("destructible")) {
-            Predicate<CachedBlockPosition> destructibleCondition = data.get("destructible");
+            Predicate<BlockInWorld> destructibleCondition = data.get("destructible");
             indestructible = MiscUtil.combineOr(indestructible, destructibleCondition.negate());
         }
 
         if(indestructible != null) {
-            ExplosionBehavior eb = getExplosionBehaviour(entity.getWorld(), indestructible);
-            entity.getWorld().createExplosion(data.getBoolean("damage_self") ? null : entity,
+            ExplosionDamageCalculator eb = getExplosionBehaviour(entity.level(), indestructible);
+            entity.level().explode(data.getBoolean("damage_self") ? null : entity,
                 null,
                 eb, entity.getX(), entity.getY(), entity.getZ(),
                 data.getFloat("power"), data.getBoolean("create_fire"),
                 data.get("destruction_type"));
         } else {
-            explode(entity.getWorld(), data.getBoolean("damage_self") ? null : entity, null, null,
+            explode(entity.level(), data.getBoolean("damage_self") ? null : entity, null, null,
                 entity.getX(), entity.getY(), entity.getZ(),
                 data.getFloat("power"), data.getBoolean("create_fire"),
                 data.get("destruction_type"));
         }
     }
 
-    private static void explode(World world, Entity entity, DamageSource damageSource, ExplosionBehavior behavior, double x, double y, double z, float power, boolean createFire, Explosion.DestructionType destructionType) {
+    private static void explode(Level world, Entity entity, DamageSource damageSource, ExplosionDamageCalculator behavior, double x, double y, double z, float power, boolean createFire, Explosion.BlockInteraction destructionType) {
         Explosion explosion = new Explosion(world, entity, damageSource, behavior, x, y, z, power, createFire, destructionType);
-        explosion.collectBlocksAndDamageEntities();
-        explosion.affectWorld(true);
+        explosion.explode();
+        explosion.finalizeExplosion(true);
     }
 
-    private static ExplosionBehavior getExplosionBehaviour(World world, Predicate<CachedBlockPosition> indestructiblePredicate) {
-        return new ExplosionBehavior() {
+    private static ExplosionDamageCalculator getExplosionBehaviour(Level world, Predicate<BlockInWorld> indestructiblePredicate) {
+        return new ExplosionDamageCalculator() {
             @Override
-            public Optional<Float> getBlastResistance(Explosion explosion, BlockView blockView, BlockPos pos, BlockState blockState, FluidState fluidState) {
-                CachedBlockPosition cbp = new CachedBlockPosition(world, pos, true);
-                Optional<Float> def = super.getBlastResistance(explosion, world, pos, blockState, fluidState);
+            public Optional<Float> getBlockExplosionResistance(Explosion explosion, BlockGetter blockView, BlockPos pos, BlockState blockState, FluidState fluidState) {
+                BlockInWorld cbp = new BlockInWorld(world, pos, true);
+                Optional<Float> def = super.getBlockExplosionResistance(explosion, world, pos, blockState, fluidState);
                 Optional<Float> ovr = indestructiblePredicate.test(cbp) ?
-                    Optional.of(Blocks.WATER.getBlastResistance()) : Optional.empty();
+                    Optional.of(Blocks.WATER.getExplosionResistance()) : Optional.empty();
                 return ovr.isPresent() ? def.isPresent() ? def.get() > ovr.get() ? def : ovr : ovr : def;
             }
         };
@@ -75,7 +74,7 @@ public class ExplodeAction {
         return new ActionFactory<>(Apoli.identifier("explode"),
             new SerializableData()
                 .add("power", SerializableDataTypes.FLOAT)
-                .add("destruction_type", ApoliDataTypes.BACKWARDS_COMPATIBLE_DESTRUCTION_TYPE, Explosion.DestructionType.DESTROY)
+                .add("destruction_type", ApoliDataTypes.BACKWARDS_COMPATIBLE_DESTRUCTION_TYPE, Explosion.BlockInteraction.DESTROY)
                 .add("damage_self", SerializableDataTypes.BOOLEAN, true)
                 .add("indestructible", ApoliDataTypes.BLOCK_CONDITION, null)
                 .add("destructible", ApoliDataTypes.BLOCK_CONDITION, null)

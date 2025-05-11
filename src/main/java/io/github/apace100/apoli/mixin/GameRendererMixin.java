@@ -1,35 +1,35 @@
 package io.github.apace100.apoli.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.FluidBlock;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.PostEffectProcessor;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.CameraSubmersionType;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.BlockView;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FogType;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -41,29 +41,29 @@ public abstract class GameRendererMixin {
 
     @Shadow
     @Final
-    private Camera camera;
+    private Camera mainCamera;
 
     @Shadow
     @Final
-    private MinecraftClient client;
+    private Minecraft minecraft;
 
     @Shadow
-    protected abstract void loadPostProcessor(Identifier identifier);
+    protected abstract void loadEffect(ResourceLocation identifier);
 
     @Shadow
-    private PostEffectProcessor postProcessor;
+    private PostChain postEffect;
     @Shadow
-    private boolean postProcessorEnabled;
+    private boolean effectActive;
     @Shadow @Final private ResourceManager resourceManager;
     @Unique
-    private Identifier currentlyLoadedShader;
+    private ResourceLocation currentlyLoadedShader;
 
-    @Inject(at = @At("TAIL"), method = "onCameraEntitySet")
+    @Inject(at = @At("TAIL"), method = "checkEntityPostEffect")
     private void loadShaderFromPowerOnCameraEntity(Entity entity, CallbackInfo ci) {
-        PowerHolderComponent.withPower(client.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
-            Identifier shaderLoc = shaderPower.getShaderLocation();
+        PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
+            ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(this.resourceManager.getResource(shaderLoc).isPresent()) {
-                loadPostProcessor(shaderLoc);
+                loadEffect(shaderLoc);
                 currentlyLoadedShader = shaderLoc;
             }
         });
@@ -71,30 +71,30 @@ public abstract class GameRendererMixin {
 
     @Inject(at = @At("HEAD"), method = "render")
     private void loadShaderFromPower(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
-        PowerHolderComponent.withPower(client.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
-            Identifier shaderLoc = shaderPower.getShaderLocation();
+        PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
+            ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(currentlyLoadedShader != shaderLoc) {
                 if(this.resourceManager.getResource(shaderLoc).isPresent()) {
-                    loadPostProcessor(shaderLoc);
+                    loadEffect(shaderLoc);
                     currentlyLoadedShader = shaderLoc;
                 }
             }
         });
-        if(!PowerHolderComponent.hasPower(client.getCameraEntity(), ShaderPower.class) && currentlyLoadedShader != null) {
-            if(this.postProcessor != null) {
-                this.postProcessor.close();
-                this.postProcessor = null;
+        if(!PowerHolderComponent.hasPower(minecraft.getCameraEntity(), ShaderPower.class) && currentlyLoadedShader != null) {
+            if(this.postEffect != null) {
+                this.postEffect.close();
+                this.postEffect = null;
             }
-            this.postProcessorEnabled = false;
+            this.effectActive = false;
             currentlyLoadedShader = null;
         }
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V"))
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V"))
     private void renderOverlayPowers(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
-        boolean hudHidden = this.client.options.hudHidden;
-        boolean thirdPerson = !client.options.getPerspective().isFirstPerson();
-        PowerHolderComponent.withPower(client.getCameraEntity(), OverlayPower.class, p -> {
+        boolean hudHidden = this.minecraft.options.hideGui;
+        boolean thirdPerson = !minecraft.options.getCameraType().isFirstPerson();
+        PowerHolderComponent.withPower(minecraft.getCameraEntity(), OverlayPower.class, p -> {
             if(p.getDrawPhase() != OverlayPower.DrawPhase.ABOVE_HUD) {
                 return false;
             }
@@ -108,10 +108,10 @@ public abstract class GameRendererMixin {
         }, OverlayPower::render);
     }
 
-    @Inject(at = @At("HEAD"), method = "togglePostProcessorEnabled", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "togglePostEffect", cancellable = true)
     private void disableShaderToggle(CallbackInfo ci) {
-        PowerHolderComponent.withPower(client.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
-            Identifier shaderLoc = shaderPower.getShaderLocation();
+        PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
+            ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(!shaderPower.isToggleable() && currentlyLoadedShader == shaderLoc) {
                 ci.cancel();
             }
@@ -119,26 +119,26 @@ public abstract class GameRendererMixin {
     }
 
     // NightVisionPower
-    @Inject(at = @At("HEAD"), method = "getNightVisionStrength", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "getNightVisionScale", cancellable = true)
     private static void getNightVisionStrength(LivingEntity livingEntity, float f, CallbackInfoReturnable<Float> info) {
-        if (livingEntity instanceof PlayerEntity && !livingEntity.hasStatusEffect(StatusEffects.NIGHT_VISION)) {
+        if (livingEntity instanceof Player && !livingEntity.hasEffect(MobEffects.NIGHT_VISION)) {
             List<NightVisionPower> nvs = PowerHolderComponent.KEY.get(livingEntity).getPowers(NightVisionPower.class);
             Optional<Float> strength = nvs.stream().filter(NightVisionPower::isActive).map(NightVisionPower::getStrength).max(Float::compareTo);
             strength.ifPresent(info::setReturnValue);
         }
     }
 
-    @Redirect(method = "getFov", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;getSubmersionType()Lnet/minecraft/client/render/CameraSubmersionType;"))
-    private CameraSubmersionType modifySubmersionType(Camera camera) {
-        CameraSubmersionType original = camera.getSubmersionType();
-        if(camera.getFocusedEntity() instanceof LivingEntity) {
-            for(ModifyCameraSubmersionTypePower p : PowerHolderComponent.getPowers(camera.getFocusedEntity(), ModifyCameraSubmersionTypePower.class)) {
-                if(p.doesModify(original)) {
+    @WrapOperation(method = "getFov", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;getFluidInCamera()Lnet/minecraft/world/level/material/FogType;"))
+    private FogType modifySubmersionType(Camera camera, Operation<FogType> original) {
+        FogType fogType = original.call(camera);
+        if(camera.getEntity() instanceof LivingEntity) {
+            for(ModifyCameraSubmersionTypePower p : PowerHolderComponent.getPowers(camera.getEntity(), ModifyCameraSubmersionTypePower.class)) {
+                if(p.doesModify(fogType)) {
                     return p.getNewType();
                 }
             }
         }
-        return original;
+        return fogType;
     }
 
     private HashMap<BlockPos, BlockState> savedStates = new HashMap<>();
@@ -146,7 +146,7 @@ public abstract class GameRendererMixin {
     // PHASING: remove_blocks
     @Inject(at = @At(value = "HEAD"), method = "render")
     private void beforeRender(float tickDelta, long startTime, boolean tick, CallbackInfo info) {
-        List<PhasingPower> phasings = PowerHolderComponent.getPowers(camera.getFocusedEntity(), PhasingPower.class);
+        List<PhasingPower> phasings = PowerHolderComponent.getPowers(mainCamera.getEntity(), PhasingPower.class);
         if (phasings.stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
             float view = phasings.stream().filter(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS).map(PhasingPower::getViewDistance).min(Float::compareTo).get();
             Set<BlockPos> eyePositions = getEyePos(0.25F, 0.05F, 0.25F);
@@ -158,42 +158,42 @@ public abstract class GameRendererMixin {
             }
             for (BlockPos eyePosition : noLongerEyePositions) {
                 BlockState state = savedStates.get(eyePosition);
-                client.world.setBlockState(eyePosition, state);
+                minecraft.level.setBlockAndUpdate(eyePosition, state);
                 savedStates.remove(eyePosition);
             }
             for (BlockPos p : eyePositions) {
-                BlockState stateAtP = client.world.getBlockState(p);
-                if (!savedStates.containsKey(p) && !client.world.isAir(p) && !(stateAtP.getBlock() instanceof FluidBlock)) {
+                BlockState stateAtP = minecraft.level.getBlockState(p);
+                if (!savedStates.containsKey(p) && !minecraft.level.isEmptyBlock(p) && !(stateAtP.getBlock() instanceof LiquidBlock)) {
                     savedStates.put(p, stateAtP);
-                    client.world.setBlockState(p, Blocks.AIR.getDefaultState());
+                    minecraft.level.setBlockAndUpdate(p, Blocks.AIR.defaultBlockState());
                 }
             }
         } else if (savedStates.size() > 0) {
             Set<BlockPos> noLongerEyePositions = new HashSet<>(savedStates.keySet());
             for (BlockPos eyePosition : noLongerEyePositions) {
                 BlockState state = savedStates.get(eyePosition);
-                client.world.setBlockState(eyePosition, state);
+                minecraft.level.setBlockAndUpdate(eyePosition, state);
                 savedStates.remove(eyePosition);
             }
         }
     }
 
     // PHASING
-    @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;update(Lnet/minecraft/world/BlockView;Lnet/minecraft/entity/Entity;ZZF)V"), method = "renderWorld")
-    private void preventThirdPerson(Camera camera, BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta) {
-        if (PowerHolderComponent.getPowers(camera.getFocusedEntity(), PhasingPower.class).stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
-            camera.update(area, focusedEntity, false, false, tickDelta);
+    @WrapOperation(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setup(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;ZZF)V"), method = "renderLevel")
+    private void preventThirdPerson(Camera camera, BlockGetter area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, Operation<Float> original) {
+        if (PowerHolderComponent.getPowers(camera.getEntity(), PhasingPower.class).stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
+            camera.setup(area, focusedEntity, false, false, tickDelta);
         } else {
-            camera.update(area, focusedEntity, thirdPerson, inverseView, tickDelta);
+            original.call(camera, area, focusedEntity, thirdPerson, inverseView, tickDelta);
         }
     }
 
     private Set<BlockPos> getEyePos(float rangeX, float rangeY, float rangeZ) {
-        Vec3d pos = camera.getFocusedEntity().getPos().add(0, camera.getFocusedEntity().getEyeHeight(camera.getFocusedEntity().getPose()), 0);
-        Box cameraBox = new Box(pos, pos);
-        cameraBox = cameraBox.expand(rangeX, rangeY, rangeZ);
+        Vec3 pos = mainCamera.getEntity().position().add(0, mainCamera.getEntity().getEyeHeight(mainCamera.getEntity().getPose()), 0);
+        AABB cameraBox = new AABB(pos, pos);
+        cameraBox = cameraBox.inflate(rangeX, rangeY, rangeZ);
         HashSet<BlockPos> set = new HashSet<>();
-        BlockPos.stream(cameraBox).forEach(p -> set.add(p.toImmutable()));
+        BlockPos.betweenClosedStream(cameraBox).forEach(p -> set.add(p.immutable()));
         return set;
     }
 }

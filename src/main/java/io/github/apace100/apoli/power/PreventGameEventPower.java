@@ -5,14 +5,13 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.world.event.GameEvent;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.gameevent.GameEvent;
 
 public class PreventGameEventPower extends Power {
 
@@ -34,7 +33,7 @@ public class PreventGameEventPower extends Power {
     }
 
     public boolean doesPrevent(GameEvent event) {
-        if(tag != null && event.isIn(tag)) {
+        if(tag != null && event.is(tag)) {
             return true;
         }
         if(list != null && list.contains(event)) {

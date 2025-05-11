@@ -5,17 +5,17 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.EnumSet;
@@ -25,11 +25,11 @@ import java.util.function.Predicate;
 public class ActionOnBlockUsePower extends ActiveInteractionPower {
 
     private final Consumer<Entity> entityAction;
-    private final Predicate<CachedBlockPosition> blockCondition;
+    private final Predicate<BlockInWorld> blockCondition;
     private final EnumSet<Direction> directions;
-    private final Consumer<Triple<World, BlockPos, Direction>> blockAction;
+    private final Consumer<Triple<Level, BlockPos, Direction>> blockAction;
 
-    public ActionOnBlockUsePower(PowerType<?> type, LivingEntity entity, EnumSet<Hand> hands, ActionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Pair<World, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Pair<World, ItemStack>> resultItemAction, Consumer<Entity> entityAction, Predicate<CachedBlockPosition> blockCondition, EnumSet<Direction> directions, Consumer<Triple<World, BlockPos, Direction>> blockAction, int priority) {
+    public ActionOnBlockUsePower(PowerType<?> type, LivingEntity entity, EnumSet<InteractionHand> hands, InteractionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Tuple<Level, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Tuple<Level, ItemStack>> resultItemAction, Consumer<Entity> entityAction, Predicate<BlockInWorld> blockCondition, EnumSet<Direction> directions, Consumer<Triple<Level, BlockPos, Direction>> blockAction, int priority) {
         super(type, entity, hands, actionResult, itemCondition, heldItemAction, itemResult, resultItemAction, priority);
         this.entityAction = entityAction;
         this.blockCondition = blockCondition;
@@ -38,24 +38,24 @@ public class ActionOnBlockUsePower extends ActiveInteractionPower {
     }
 
 
-    public boolean shouldExecute(BlockPos blockPos, Direction direction, Hand hand, ItemStack heldStack) {
+    public boolean shouldExecute(BlockPos blockPos, Direction direction, InteractionHand hand, ItemStack heldStack) {
         if(!super.shouldExecute(hand, heldStack)) {
             return false;
         }
         if(!directions.contains(direction)) {
             return false;
         }
-        return blockCondition == null || blockCondition.test(new CachedBlockPosition(entity.getWorld(), blockPos, true));
+        return blockCondition == null || blockCondition.test(new BlockInWorld(entity.level(), blockPos, true));
     }
 
-    public ActionResult executeAction(BlockPos blockPos, Direction direction, Hand hand) {
+    public InteractionResult executeAction(BlockPos blockPos, Direction direction, InteractionHand hand) {
         if(blockAction != null) {
-            blockAction.accept(Triple.of(entity.getWorld(), blockPos, direction));
+            blockAction.accept(Triple.of(entity.level(), blockPos, direction));
         }
         if(entityAction != null) {
             entityAction.accept(entity);
         }
-        performActorItemStuff(this, (PlayerEntity) entity, hand);
+        performActorItemStuff(this, (Player) entity, hand);
         return getActionResult();
     }
 
@@ -67,11 +67,11 @@ public class ActionOnBlockUsePower extends ActiveInteractionPower {
                 .add("block_action", ApoliDataTypes.BLOCK_ACTION, null)
                 .add("directions", SerializableDataTypes.DIRECTION_SET, EnumSet.allOf(Direction.class))
                 .add("item_condition", ApoliDataTypes.ITEM_CONDITION, null)
-                .add("hands", SerializableDataTypes.HAND_SET, EnumSet.allOf(Hand.class))
+                .add("hands", SerializableDataTypes.HAND_SET, EnumSet.allOf(InteractionHand.class))
                 .add("result_stack", SerializableDataTypes.ITEM_STACK, null)
                 .add("held_item_action", ApoliDataTypes.ITEM_ACTION, null)
                 .add("result_item_action", ApoliDataTypes.ITEM_ACTION, null)
-                .add("action_result", SerializableDataTypes.ACTION_RESULT, ActionResult.SUCCESS)
+                .add("action_result", SerializableDataTypes.ACTION_RESULT, InteractionResult.SUCCESS)
                 .add("priority", SerializableDataTypes.INT, 0),
             data ->
                 (type, player) -> new ActionOnBlockUsePower(type, player,

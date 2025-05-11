@@ -6,14 +6,13 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.util.ArgumentWrapper;
-import net.minecraft.command.EntitySelector;
-import net.minecraft.entity.Entity;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Pair;
-
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.Entity;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -21,30 +20,30 @@ public class SelectorAction {
 
     public static void action(SerializableData.Instance data, Entity entity) {
 
-        MinecraftServer server = entity.getWorld().getServer();
+        MinecraftServer server = entity.level().getServer();
         if (server == null) return;
 
         EntitySelector selector = data.<ArgumentWrapper<EntitySelector>>get("selector").get();
-        Predicate<Pair<Entity, Entity>> biEntityCondition = data.get("bientity_condition");
-        Consumer<Pair<Entity, Entity>> biEntityAction = data.get("bientity_action");
+        Predicate<Tuple<Entity, Entity>> biEntityCondition = data.get("bientity_condition");
+        Consumer<Tuple<Entity, Entity>> biEntityAction = data.get("bientity_action");
 
-        ServerCommandSource source = new ServerCommandSource(
-            CommandOutput.DUMMY,
-            entity.getPos(),
-            entity.getRotationClient(),
-            (ServerWorld) entity.getWorld(),
+        CommandSourceStack source = new CommandSourceStack(
+            CommandSource.NULL,
+            entity.position(),
+            entity.getRotationVector(),
+            (ServerLevel) entity.level(),
             2,
-            entity.getEntityName(),
+            entity.getScoreboardName(),
             entity.getName(),
             server,
             entity
         );
 
         try {
-            selector.getEntities(source)
+            selector.findEntities(source)
                 .stream()
-                .filter(e -> biEntityCondition == null || biEntityCondition.test(new Pair<>(entity, e)))
-                .forEach(e -> biEntityAction.accept(new Pair<>(entity, e)));
+                .filter(e -> biEntityCondition == null || biEntityCondition.test(new Tuple<>(entity, e)))
+                .forEach(e -> biEntityAction.accept(new Tuple<>(entity, e)));
         }
 
         catch (CommandSyntaxException ignored) {}

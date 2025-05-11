@@ -6,10 +6,10 @@ import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.Scoreboard;
 
 public class ScoreboardCondition {
 
@@ -17,14 +17,14 @@ public class ScoreboardCondition {
 
         String name = data.getString("name");
         if (name == null) {
-            if (entity instanceof PlayerEntity playerEntity) name = playerEntity.getName().getString();
-            else name = entity.getUuidAsString();
+            if (entity instanceof Player playerEntity) name = playerEntity.getName().getString();
+            else name = entity.getStringUUID();
         }
 
-        Scoreboard scoreboard = entity.getWorld().getScoreboard();
-        ScoreboardObjective scoreboardObjective = scoreboard.getObjective(data.getString("objective"));
-        if (scoreboard.playerHasObjective(name, scoreboardObjective)) {
-            int score = scoreboard.getPlayerScore(name, scoreboardObjective).getScore();
+        Scoreboard scoreboard = entity.level().getScoreboard();
+        Objective scoreboardObjective = scoreboard.getOrCreateObjective(data.getString("objective"));
+        if (scoreboard.hasPlayerScore(name, scoreboardObjective)) {
+            int score = scoreboard.getOrCreatePlayerScore(name, scoreboardObjective).getScore();
             return ((Comparison) data.get("comparison")).compare(score, data.getInt("compare_to"));
         }
 

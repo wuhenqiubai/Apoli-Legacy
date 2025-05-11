@@ -8,28 +8,28 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
-import net.minecraft.command.CommandSource;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.util.Identifier;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.concurrent.CompletableFuture;
 
-public class PowerTypeArgumentType implements ArgumentType<Identifier> {
+public class PowerTypeArgumentType implements ArgumentType<ResourceLocation> {
 
     public static PowerTypeArgumentType power() {
         return new PowerTypeArgumentType();
     }
     
-    public Identifier parse(StringReader reader) throws CommandSyntaxException {
-        return Identifier.fromCommandInput(reader);
+    public ResourceLocation parse(StringReader reader) throws CommandSyntaxException {
+        return ResourceLocation.read(reader);
     }
 
-    public static PowerType<?> getPower(CommandContext<ServerCommandSource> context, String argumentName) {
-        return PowerTypeRegistry.get(context.getArgument(argumentName, Identifier.class));
+    public static PowerType<?> getPower(CommandContext<CommandSourceStack> context, String argumentName) {
+        return PowerTypeRegistry.get(context.getArgument(argumentName, ResourceLocation.class));
     }
 
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-        return CommandSource.suggestIdentifiers(PowerTypeRegistry.identifiers(), builder);
+        return SharedSuggestionProvider.suggestResource(PowerTypeRegistry.identifiers(), builder);
     }
 }

@@ -1,17 +1,17 @@
 package io.github.apace100.apoli.data;
 
 import io.github.apace100.apoli.Apoli;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.tag.TagKey;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class LegacyMaterial {
     private final TagKey<Block> materialTagKey;
     private final String material;
 
     public LegacyMaterial(String material) {
-        materialTagKey = TagKey.of(RegistryKeys.BLOCK, Apoli.identifier("material/" + material));
+        materialTagKey = TagKey.create(Registries.BLOCK, Apoli.identifier("material/" + material));
         this.material = material;
     }
     public String getMaterial() {
@@ -19,6 +19,6 @@ public class LegacyMaterial {
     }
 
     public boolean blockStateIsOfMaterial(BlockState blockState) {
-        return blockState.isIn(materialTagKey);
+        return blockState.is(materialTagKey);
     }
 }

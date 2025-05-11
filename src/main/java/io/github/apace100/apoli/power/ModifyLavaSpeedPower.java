@@ -6,8 +6,8 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.AttributedEntityAttributeModifier;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 import java.util.List;
 
@@ -24,10 +24,10 @@ public class ModifyLavaSpeedPower extends ConditionedAttributePower {
             data ->
                 (type, player) -> {
                     ModifyLavaSpeedPower power = new ModifyLavaSpeedPower(type, player);
-                    data.<EntityAttributeModifier>ifPresent
+                    data.<AttributeModifier>ifPresent
                         ("modifier", mod -> power.addModifier(
                             new AttributedEntityAttributeModifier(AdditionalEntityAttributes.LAVA_SPEED, mod)));
-                    data.<List<EntityAttributeModifier>>ifPresent("modifiers",
+                    data.<List<AttributeModifier>>ifPresent("modifiers",
                         mods -> mods.forEach(mod -> power.addModifier(
                             new AttributedEntityAttributeModifier(AdditionalEntityAttributes.LAVA_SPEED, mod)))
                     );

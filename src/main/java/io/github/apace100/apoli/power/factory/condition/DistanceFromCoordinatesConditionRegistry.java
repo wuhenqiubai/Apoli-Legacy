@@ -7,15 +7,15 @@ import io.github.apace100.apoli.util.Shape;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.phys.Vec3;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -61,8 +61,8 @@ public class DistanceFromCoordinatesConditionRegistry {
         return new SerializableData()
             .add("reference", SerializableDataTypes.STRING, alias.equals("distance_from_coordinates") ? "world_origin" : "world_spawn") // the reference point
 //          .add("check_modified_spawn", SerializableDataTypes.BOOLEAN, true) // whether to check for modified spawns
-            .add("offset", SerializableDataTypes.VECTOR, new Vec3d(0, 0, 0)) // offset to the reference point
-            .add("coordinates", SerializableDataTypes.VECTOR, new Vec3d(0, 0, 0)) // adds up (instead of replacing, for simplicity) to the prior for aliasing
+            .add("offset", SerializableDataTypes.VECTOR, new Vec3(0, 0, 0)) // offset to the reference point
+            .add("coordinates", SerializableDataTypes.VECTOR, new Vec3(0, 0, 0)) // adds up (instead of replacing, for simplicity) to the prior for aliasing
             .add("ignore_x", SerializableDataTypes.BOOLEAN, false) // ignore the axis in the distance calculation
             .add("ignore_y", SerializableDataTypes.BOOLEAN, false) // idem
             .add("ignore_z", SerializableDataTypes.BOOLEAN, false) // idem
@@ -92,27 +92,27 @@ public class DistanceFromCoordinatesConditionRegistry {
      * @param entity the entity to check the condition for
      * @return the result of the distance comparison
      * */
-    private static boolean testCondition(SerializableData.Instance data, CachedBlockPosition block, Entity entity){
+    private static boolean testCondition(SerializableData.Instance data, BlockInWorld block, Entity entity){
         boolean scaleReferenceToDimension = data.getBoolean("scale_reference_to_dimension"),
             setResultOnWrongDimension = data.isPresent("result_on_wrong_dimension"),
             resultOnWrongDimension = setResultOnWrongDimension && data.getBoolean("result_on_wrong_dimension");
         double x = 0, y = 0, z = 0;
-        Vec3d pos;
-        World world;
+        Vec3 pos;
+        Level world;
         // Get the world and its scale from the block/entity
         if (block != null){
-            BlockPos blockPos = block.getBlockPos();
-            pos = new Vec3d(blockPos.getX(), blockPos.getY(), blockPos.getZ());
-            WorldView worldView = block.getWorld();
-            if (!(worldView instanceof World))
+            BlockPos blockPos = block.getPos();
+            pos = new Vec3(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+            LevelReader worldView = block.getLevel();
+            if (!(worldView instanceof Level))
                 return warnCouldNotGetObject("world", "block", compareOutOfBounds(data.get("comparison")));
             else
-                world = (World)worldView;
+                world = (Level)worldView;
         } else {
-            pos = entity.getPos();
-            world = entity.getEntityWorld();
+            pos = entity.position();
+            world = entity.getCommandSenderWorld();
         }
-        double currentDimensionCoordinateScale = world.getDimension().coordinateScale();
+        double currentDimensionCoordinateScale = world.dimensionType().coordinateScale();
 
         // Get the reference's scaled coordinates
         switch (data.getString("reference")){
@@ -122,20 +122,20 @@ public class DistanceFromCoordinatesConditionRegistry {
 //                 }
 //                 // No break on purpose (defaulting to natural spawn)
             case "player_natural_spawn": // spawn not set through commands or beds/anchors
-                if (entity instanceof PlayerEntity) { // && data.getBoolean("check_modified_spawn")){
+                if (entity instanceof Player) { // && data.getBoolean("check_modified_spawn")){
                     warnOnce("Used reference '" + data.getString("reference") + "' which is not implemented yet, defaulting to world spawn.");
                 }
                 // No break on purpose (defaulting to world spawn)
                 if (entity == null)
                     warnOnce("Used entity-condition-only reference point in block condition, defaulting to world spawn.");
             case "world_spawn":
-                if (setResultOnWrongDimension && world.getRegistryKey() != World.OVERWORLD)
+                if (setResultOnWrongDimension && world.dimension() != Level.OVERWORLD)
                     return resultOnWrongDimension;
                 BlockPos spawnPos;
-                if (world instanceof ClientWorld)
-                    spawnPos = ((ClientWorld)world).getSpawnPos();
-                else if (world instanceof ServerWorld)
-                    spawnPos = ((ServerWorld)world).getSpawnPos();
+                if (world instanceof ClientLevel)
+                    spawnPos = ((ClientLevel)world).getSharedSpawnPos();
+                else if (world instanceof ServerLevel)
+                    spawnPos = ((ServerLevel)world).getSharedSpawnPos();
                 else
                     return warnCouldNotGetObject("world with spawn position", block != null ? "block" : "entity", compareOutOfBounds(data.get("comparison")));
                 x = spawnPos.getX();
@@ -145,8 +145,8 @@ public class DistanceFromCoordinatesConditionRegistry {
             case "world_origin":
                 break;
         }
-        Vec3d coords = data.get("coordinates");
-        Vec3d offset = data.get("offset");
+        Vec3 coords = data.get("coordinates");
+        Vec3 offset = data.get("offset");
         x += coords.x + offset.x;
         y += coords.y + offset.y;
         z += coords.z + offset.z;
@@ -161,9 +161,9 @@ public class DistanceFromCoordinatesConditionRegistry {
 
         // Get the distance to these coordinates
         double distance,
-                xDistance = data.getBoolean("ignore_x") ? 0 : Math.abs(pos.getX() - x),
-                yDistance = data.getBoolean("ignore_y") ? 0 : Math.abs(pos.getY() - y),
-                zDistance = data.getBoolean("ignore_z") ? 0 : Math.abs(pos.getZ() - z);
+                xDistance = data.getBoolean("ignore_x") ? 0 : Math.abs(pos.x() - x),
+                yDistance = data.getBoolean("ignore_y") ? 0 : Math.abs(pos.y() - y),
+                zDistance = data.getBoolean("ignore_z") ? 0 : Math.abs(pos.z() - z);
         if (data.getBoolean("scale_distance_to_dimension")){
             xDistance *= currentDimensionCoordinateScale;
             zDistance *= currentDimensionCoordinateScale;
@@ -179,7 +179,7 @@ public class DistanceFromCoordinatesConditionRegistry {
 
     // Watch Java generic type erasure destroy DRY
 
-    public static void registerBlockCondition(Consumer<ConditionFactory<CachedBlockPosition>> registryFunction){
+    public static void registerBlockCondition(Consumer<ConditionFactory<BlockInWorld>> registryFunction){
         for (String alias : getAliases())
             registryFunction.accept(new ConditionFactory<>(Apoli.identifier(alias),
                 getSerializableData(alias),

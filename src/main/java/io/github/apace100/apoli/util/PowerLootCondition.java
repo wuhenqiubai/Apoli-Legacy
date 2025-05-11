@@ -6,42 +6,40 @@ import com.google.gson.JsonSerializationContext;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
-import net.minecraft.entity.Entity;
-import net.minecraft.loot.condition.LootCondition;
-import net.minecraft.loot.condition.LootConditionType;
-import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.util.JsonSerializer;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
+import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
 
 import java.util.Optional;
 
-public class PowerLootCondition implements LootCondition {
+public class PowerLootCondition implements LootItemCondition {
 
-    public static final LootConditionType TYPE = new LootConditionType(new PowerLootCondition.Serializer());
+    public static final LootItemConditionType TYPE = new LootItemConditionType(new PowerLootCondition.Serializer());
 
-    private final Identifier powerId;
-    private final Identifier powerSourceId;
+    private final ResourceLocation powerId;
+    private final ResourceLocation powerSourceId;
 
-    private PowerLootCondition(Identifier powerId) {
+    private PowerLootCondition(ResourceLocation powerId) {
         this.powerId = powerId;
         this.powerSourceId = null;
     }
 
-    private PowerLootCondition(Identifier powerId, Identifier powerSourceId) {
+    private PowerLootCondition(ResourceLocation powerId, ResourceLocation powerSourceId) {
         this.powerId = powerId;
         this.powerSourceId = powerSourceId;
     }
 
-    public LootConditionType getType() {
+    public LootItemConditionType getType() {
         return TYPE;
     }
 
     public boolean test(LootContext lootContext) {
 
         Optional<PowerHolderComponent> optionalPowerHolderComponent = PowerHolderComponent.KEY.maybeGet(
-            lootContext.get(LootContextParameters.THIS_ENTITY)
+            lootContext.getParamOrNull(LootContextParams.THIS_ENTITY)
         );
 
         if (optionalPowerHolderComponent.isPresent()) {
@@ -58,17 +56,18 @@ public class PowerLootCondition implements LootCondition {
 
     }
 
-    public static class Serializer implements JsonSerializer<PowerLootCondition> {
-
-        public void toJson(JsonObject jsonObject, PowerLootCondition powerLootCondition, JsonSerializationContext jsonSerializationContext) {
+    public static class Serializer implements net.minecraft.world.level.storage.loot.Serializer<PowerLootCondition> {
+        @Override
+        public void serialize(JsonObject jsonObject, PowerLootCondition powerLootCondition, JsonSerializationContext jsonSerializationContext) {
             jsonObject.addProperty("power", powerLootCondition.powerId.toString());
             if (powerLootCondition.powerSourceId != null) jsonObject.addProperty("source", powerLootCondition.powerSourceId.toString());
         }
 
-        public PowerLootCondition fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
-            Identifier power = new Identifier(JsonHelper.getString(jsonObject, "power"));
+        @Override
+        public PowerLootCondition deserialize(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext) {
+            ResourceLocation power = new ResourceLocation(GsonHelper.getAsString(jsonObject, "power"));
             if (jsonObject.has("source")) {
-                Identifier source = new Identifier(JsonHelper.getString(jsonObject, "source"));
+                ResourceLocation source = new ResourceLocation(GsonHelper.getAsString(jsonObject, "source"));
                 return new PowerLootCondition(power, source);
             }
             return new PowerLootCondition(power);

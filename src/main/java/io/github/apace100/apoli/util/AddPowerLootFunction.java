@@ -4,25 +4,25 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.condition.LootCondition;
-import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.function.ConditionalLootFunction;
-import net.minecraft.loot.function.LootFunctionType;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.functions.LootItemConditionalFunction;
+import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
+import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 
-public class AddPowerLootFunction extends ConditionalLootFunction {
+public class AddPowerLootFunction extends LootItemConditionalFunction {
 
-    public static final LootFunctionType TYPE = new LootFunctionType(new AddPowerLootFunction.Serializer());
+    public static final LootItemFunctionType TYPE = new LootItemFunctionType(new AddPowerLootFunction.Serializer());
 
     private final EquipmentSlot slot;
-    private final Identifier powerId;
+    private final ResourceLocation powerId;
     private final boolean hidden;
     private final boolean negative;
 
-    private AddPowerLootFunction(LootCondition[] conditions, EquipmentSlot slot, Identifier powerId, boolean hidden, boolean negative) {
+    private AddPowerLootFunction(LootItemCondition[] conditions, EquipmentSlot slot, ResourceLocation powerId, boolean hidden, boolean negative) {
         super(conditions);
         this.slot = slot;
         this.powerId = powerId;
@@ -30,31 +30,31 @@ public class AddPowerLootFunction extends ConditionalLootFunction {
         this.negative = negative;
     }
 
-    public LootFunctionType getType() {
+    public LootItemFunctionType getType() {
         return TYPE;
     }
 
-    public ItemStack process(ItemStack stack, LootContext context) {
+    public ItemStack run(ItemStack stack, LootContext context) {
         StackPowerUtil.addPower(stack, slot, powerId, hidden, negative);
         return stack;
     }
 
-    public static ConditionalLootFunction.Builder<?> builder(EquipmentSlot slot, Identifier powerId, boolean hidden, boolean negative) {
-        return builder((conditions) -> new AddPowerLootFunction(conditions, slot, powerId, hidden, negative));
+    public static LootItemConditionalFunction.Builder<?> builder(EquipmentSlot slot, ResourceLocation powerId, boolean hidden, boolean negative) {
+        return simpleBuilder((conditions) -> new AddPowerLootFunction(conditions, slot, powerId, hidden, negative));
     }
 
-    public static class Serializer extends ConditionalLootFunction.Serializer<AddPowerLootFunction> {
+    public static class Serializer extends LootItemConditionalFunction.Serializer<AddPowerLootFunction> {
         public void toJson(JsonObject jsonObject, AddPowerLootFunction addPowerLootFunction, JsonSerializationContext jsonSerializationContext) {
-            super.toJson(jsonObject, addPowerLootFunction, jsonSerializationContext);
+            super.serialize(jsonObject, addPowerLootFunction, jsonSerializationContext);
             jsonObject.addProperty("slot", addPowerLootFunction.slot.getName());
             jsonObject.addProperty("power", addPowerLootFunction.powerId.toString());
         }
 
-        public AddPowerLootFunction fromJson(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootCondition[] lootConditions) {
+        public AddPowerLootFunction deserialize(JsonObject jsonObject, JsonDeserializationContext jsonDeserializationContext, LootItemCondition[] lootConditions) {
             EquipmentSlot slot = SerializableDataTypes.EQUIPMENT_SLOT.read(jsonObject.get("slot"));
-            Identifier powerId = SerializableDataTypes.IDENTIFIER.read(jsonObject.get("power"));
-            boolean hidden = JsonHelper.getBoolean(jsonObject, "hidden", false);
-            boolean negative = JsonHelper.getBoolean(jsonObject, "negative", false);
+            ResourceLocation powerId = SerializableDataTypes.IDENTIFIER.read(jsonObject.get("power"));
+            boolean hidden = GsonHelper.getAsBoolean(jsonObject, "hidden", false);
+            boolean negative = GsonHelper.getAsBoolean(jsonObject, "negative", false);
             return new AddPowerLootFunction(lootConditions, slot, powerId, hidden, negative);
         }
     }

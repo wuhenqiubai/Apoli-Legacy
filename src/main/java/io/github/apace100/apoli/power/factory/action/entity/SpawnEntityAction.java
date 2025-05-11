@@ -6,37 +6,36 @@ import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
-
 import java.util.Optional;
 import java.util.function.Consumer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 
 public class SpawnEntityAction {
 
     public static void action(SerializableData.Instance data, Entity entity) {
 
-        if (entity.getWorld().isClient) return;
+        if (entity.level().isClientSide) return;
 
-        ServerWorld serverWorld = (ServerWorld) entity.getWorld();
+        ServerLevel serverWorld = (ServerLevel) entity.level();
         EntityType<?> entityType = data.get("entity_type");
-        NbtCompound entityNbt = data.get("tag");
+        CompoundTag entityNbt = data.get("tag");
 
         Optional<Entity> opt$entityToSpawn = MiscUtil.getEntityWithPassengers(
             serverWorld,
             entityType,
             entityNbt,
-            entity.getPos(),
-            entity.getYaw(),
-            entity.getPitch()
+            entity.position(),
+            entity.getYRot(),
+            entity.getXRot()
         );
 
         if (opt$entityToSpawn.isEmpty()) return;
         Entity entityToSpawn = opt$entityToSpawn.get();
 
-        serverWorld.spawnNewEntityAndPassengers(entityToSpawn);
+        serverWorld.tryAddFreshEntityWithPassengers(entityToSpawn);
         data.<Consumer<Entity>>ifPresent("entity_action", entityAction -> entityAction.accept(entityToSpawn));
 
     }

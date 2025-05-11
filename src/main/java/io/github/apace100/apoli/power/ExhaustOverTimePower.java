@@ -4,8 +4,8 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 public class ExhaustOverTimePower extends Power {
 
@@ -21,8 +21,8 @@ public class ExhaustOverTimePower extends Power {
     }
 
     public void tick() {
-        if(entity instanceof PlayerEntity && entity.age % exhaustInterval == 0) {
-            ((PlayerEntity)entity).addExhaustion(exhaustion);
+        if(entity instanceof Player && entity.tickCount % exhaustInterval == 0) {
+            ((Player)entity).causeFoodExhaustion(exhaustion);
         }
     }
 

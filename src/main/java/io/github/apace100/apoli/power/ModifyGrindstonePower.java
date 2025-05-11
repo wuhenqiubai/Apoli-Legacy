@@ -7,14 +7,14 @@ import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.Optional;
@@ -26,19 +26,19 @@ public class ModifyGrindstonePower extends Power {
     private final Predicate<ItemStack> topItemCondition;
     private final Predicate<ItemStack> bottomItemCondition;
     private final Predicate<ItemStack> outputItemCondition;
-    private final Predicate<CachedBlockPosition> blockCondition;
+    private final Predicate<BlockInWorld> blockCondition;
 
     private final ItemStack newResultStack;
-    private final Consumer<Pair<World, ItemStack>> resultItemAction;
-    private final Consumer<Pair<World, ItemStack>> lateItemAction;
+    private final Consumer<Tuple<Level, ItemStack>> resultItemAction;
+    private final Consumer<Tuple<Level, ItemStack>> lateItemAction;
     private final Consumer<Entity> entityAction;
-    private final Consumer<Triple<World, BlockPos, Direction>> blockAction;
+    private final Consumer<Triple<Level, BlockPos, Direction>> blockAction;
 
     private final ResultType resultType;
 
     private final Modifier experienceModifier;
 
-    public ModifyGrindstonePower(PowerType<?> type, LivingEntity entity, Predicate<ItemStack> topItemCondition, Predicate<ItemStack> bottomItemCondition, Predicate<ItemStack> outputItemCondition, Predicate<CachedBlockPosition> blockCondition, ItemStack newResultStack, Consumer<Pair<World, ItemStack>> resultItemAction, Consumer<Pair<World, ItemStack>> lateItemAction, Consumer<Entity> entityAction, Consumer<Triple<World, BlockPos, Direction>> blockAction, ResultType resultType, Modifier experienceModifier) {
+    public ModifyGrindstonePower(PowerType<?> type, LivingEntity entity, Predicate<ItemStack> topItemCondition, Predicate<ItemStack> bottomItemCondition, Predicate<ItemStack> outputItemCondition, Predicate<BlockInWorld> blockCondition, ItemStack newResultStack, Consumer<Tuple<Level, ItemStack>> resultItemAction, Consumer<Tuple<Level, ItemStack>> lateItemAction, Consumer<Entity> entityAction, Consumer<Triple<Level, BlockPos, Direction>> blockAction, ResultType resultType, Modifier experienceModifier) {
         super(type, entity);
         this.topItemCondition = topItemCondition;
         this.bottomItemCondition = bottomItemCondition;
@@ -65,7 +65,7 @@ public class ModifyGrindstonePower extends Power {
         if(lateItemAction == null) {
             return;
         }
-        lateItemAction.accept(new Pair<>(entity.getWorld(), output));
+        lateItemAction.accept(new Tuple<>(entity.level(), output));
     }
 
     public boolean doesApply(ItemStack inputTop, ItemStack inputBottom, ItemStack originalOutput, Optional<BlockPos> grindstonePos) {
@@ -78,7 +78,7 @@ public class ModifyGrindstonePower extends Power {
         if(outputItemCondition != null && !outputItemCondition.test(originalOutput)) {
             return false;
         }
-        if(blockCondition != null && grindstonePos.isPresent() && !blockCondition.test(new CachedBlockPosition(entity.getWorld(), grindstonePos.get(), true))) {
+        if(blockCondition != null && grindstonePos.isPresent() && !blockCondition.test(new BlockInWorld(entity.level(), grindstonePos.get(), true))) {
             return false;
         }
         return true;
@@ -96,7 +96,7 @@ public class ModifyGrindstonePower extends Power {
             case FROM_TOP -> output = inputTop.copy();
         }
         if(resultItemAction != null) {
-            resultItemAction.accept(new Pair<>(entity.getWorld(), output));
+            resultItemAction.accept(new Tuple<>(entity.level(), output));
         }
         return output;
     }
@@ -106,7 +106,7 @@ public class ModifyGrindstonePower extends Power {
             entityAction.accept(entity);
         }
         if(blockAction != null && pos.isPresent()) {
-            blockAction.accept(Triple.of(entity.getWorld(), pos.get(), Direction.UP));
+            blockAction.accept(Triple.of(entity.level(), pos.get(), Direction.UP));
         }
     }
 

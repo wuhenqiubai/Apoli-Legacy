@@ -7,35 +7,30 @@ import io.github.apace100.apoli.mixin.CraftingInventoryAccessor;
 import io.github.apace100.apoli.mixin.CraftingScreenHandlerAccessor;
 import io.github.apace100.apoli.mixin.PlayerScreenHandlerAccessor;
 import io.github.apace100.apoli.power.ModifyCraftingPower;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.RecipeInputInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.*;
-import net.minecraft.recipe.book.CraftingRecipeCategory;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.*;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.level.Level;
 
 import java.util.List;
 import java.util.Optional;
 
-public class ModifiedCraftingRecipe extends SpecialCraftingRecipe {
+public class ModifiedCraftingRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<?> SERIALIZER = new SpecialRecipeSerializer<ModifiedCraftingRecipe>(ModifiedCraftingRecipe::new);
+    public static final RecipeSerializer<?> SERIALIZER = new SimpleCraftingRecipeSerializer<>(ModifiedCraftingRecipe::new);
 
-    public ModifiedCraftingRecipe(Identifier id, CraftingRecipeCategory category) {
+    public ModifiedCraftingRecipe(ResourceLocation id, CraftingBookCategory category) {
         super(id, category);
     }
 
     @Override
-    public boolean matches(RecipeInputInventory inventory, World world)
+    public boolean matches(CraftingContainer inventory, Level world)
     {
-        if (inventory instanceof CraftingInventory craftingInventory)
+        if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
             Optional<CraftingRecipe> original = getOriginalMatch(craftingInventory);
             if (original.isEmpty())
@@ -49,11 +44,11 @@ public class ModifiedCraftingRecipe extends SpecialCraftingRecipe {
     }
 
     @Override
-    public ItemStack craft(RecipeInputInventory inventory, DynamicRegistryManager registryManager)
+    public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryManager)
     {
-        if (inventory instanceof CraftingInventory craftingInventory)
+        if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
-            PlayerEntity player = getPlayerFromInventory(craftingInventory);
+            Player player = getPlayerFromInventory(craftingInventory);
             if (player != null)
             {
                 Optional<CraftingRecipe> original = getOriginalMatch(craftingInventory);
@@ -74,7 +69,7 @@ public class ModifiedCraftingRecipe extends SpecialCraftingRecipe {
     }
 
     @Override
-    public boolean fits(int width, int height) {
+    public boolean canCraftInDimensions(int width, int height) {
         return true;
     }
 
@@ -83,46 +78,46 @@ public class ModifiedCraftingRecipe extends SpecialCraftingRecipe {
         return SERIALIZER;
     }
 
-    public static PlayerEntity getPlayerFromInventory(CraftingInventory inv) {
-        ScreenHandler handler = ((CraftingInventoryAccessor)inv).getHandler();
+    public static Player getPlayerFromInventory(TransientCraftingContainer inv) {
+        AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
         return getPlayerFromHandler(handler);
     }
 
-    public static Optional<BlockPos> getBlockFromInventory(CraftingInventory inv) {
-        ScreenHandler handler = ((CraftingInventoryAccessor)inv).getHandler();
-        if(handler instanceof CraftingScreenHandler) {
-            return ((CraftingScreenHandlerAccessor)handler).getContext().get((world, blockPos) -> blockPos);
+    public static Optional<BlockPos> getBlockFromInventory(TransientCraftingContainer inv) {
+        AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
+        if(handler instanceof CraftingMenu) {
+            return ((CraftingScreenHandlerAccessor)handler).getAccess().evaluate((world, blockPos) -> blockPos);
         }
         return Optional.empty();
     }
 
-    private List<ModifyCraftingPower> getRecipes(CraftingInventory inv) {
-        ScreenHandler handler = ((CraftingInventoryAccessor)inv).getHandler();
-        PlayerEntity player = getPlayerFromHandler(handler);
+    private List<ModifyCraftingPower> getRecipes(TransientCraftingContainer inv) {
+        AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
+        Player player = getPlayerFromHandler(handler);
         if(player != null) {
             return PowerHolderComponent.getPowers(player, ModifyCraftingPower.class);
         }
         return Lists.newArrayList();
     }
 
-    private Optional<CraftingRecipe> getOriginalMatch(CraftingInventory inv) {
-        ScreenHandler handler = ((CraftingInventoryAccessor)inv).getHandler();
-        PlayerEntity player = getPlayerFromHandler(handler);
+    private Optional<CraftingRecipe> getOriginalMatch(TransientCraftingContainer inv) {
+        AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
+        Player player = getPlayerFromHandler(handler);
         if(player != null && player.getServer() != null) {
-            List<CraftingRecipe> recipes = player.getServer().getRecipeManager().listAllOfType(RecipeType.CRAFTING);
+            List<CraftingRecipe> recipes = player.getServer().getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING);
             return recipes.stream()
                 .filter(cr -> !(cr instanceof ModifiedCraftingRecipe)
-                    && cr.matches(inv, player.getWorld()))
+                    && cr.matches(inv, player.level()))
                 .findFirst();
         }
         return Optional.empty();
     }
 
-    private static PlayerEntity getPlayerFromHandler(ScreenHandler screenHandler) {
-        if(screenHandler instanceof CraftingScreenHandler) {
+    private static Player getPlayerFromHandler(AbstractContainerMenu screenHandler) {
+        if(screenHandler instanceof CraftingMenu) {
             return ((CraftingScreenHandlerAccessor)screenHandler).getPlayer();
         }
-        if(screenHandler instanceof PlayerScreenHandler) {
+        if(screenHandler instanceof InventoryMenu) {
             return ((PlayerScreenHandlerAccessor)screenHandler).getOwner();
         }
         return null;

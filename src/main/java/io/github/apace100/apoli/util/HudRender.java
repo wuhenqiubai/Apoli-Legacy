@@ -2,9 +2,9 @@ package io.github.apace100.apoli.util;
 
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 public class HudRender {
 
@@ -12,11 +12,11 @@ public class HudRender {
 
     private final boolean shouldRender;
     private final int barIndex;
-    private final Identifier spriteLocation;
+    private final ResourceLocation spriteLocation;
     private final ConditionFactory<LivingEntity>.Instance playerCondition;
     private final boolean inverted;
 
-    public HudRender(boolean shouldRender, int barIndex, Identifier spriteLocation, ConditionFactory<LivingEntity>.Instance condition, boolean inverted) {
+    public HudRender(boolean shouldRender, int barIndex, ResourceLocation spriteLocation, ConditionFactory<LivingEntity>.Instance condition, boolean inverted) {
         this.shouldRender = shouldRender;
         this.barIndex = barIndex;
         this.spriteLocation = spriteLocation;
@@ -24,7 +24,7 @@ public class HudRender {
         this.inverted = inverted;
     }
 
-    public Identifier getSpriteLocation() {
+    public ResourceLocation getSpriteLocation() {
         return spriteLocation;
     }
 
@@ -40,7 +40,7 @@ public class HudRender {
         return shouldRender;
     }
 
-    public boolean shouldRender(PlayerEntity player) {
+    public boolean shouldRender(Player player) {
         return shouldRender && (playerCondition == null || playerCondition.test(player));
     }
 

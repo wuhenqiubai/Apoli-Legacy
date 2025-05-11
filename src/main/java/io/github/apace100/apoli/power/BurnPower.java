@@ -4,7 +4,7 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class BurnPower extends Power {
 
@@ -20,8 +20,8 @@ public class BurnPower extends Power {
     }
 
     public void tick() {
-        if(entity.age % refreshInterval == 0) {
-            entity.setOnFireFor(burnDuration);
+        if(entity.tickCount % refreshInterval == 0) {
+            entity.setSecondsOnFire(burnDuration);
         }
     }
 

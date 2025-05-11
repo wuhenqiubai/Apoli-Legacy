@@ -5,18 +5,15 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.data.LegacyMaterial;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.registry.Registries;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 
 import java.util.List;
 
 public class MaterialCondition {
 
-    public static boolean condition(SerializableData.Instance data, CachedBlockPosition cachedBlockPosition) {
-        BlockState blockState = cachedBlockPosition.getBlockState();
+    public static boolean condition(SerializableData.Instance data, BlockInWorld cachedBlockPosition) {
+        BlockState blockState = cachedBlockPosition.getState();
         if(data.isPresent("material")) {
             if(data.<LegacyMaterial>get("material").blockStateIsOfMaterial(blockState)) {
                 return true;
@@ -28,7 +25,7 @@ public class MaterialCondition {
         return false;
     }
 
-    public static ConditionFactory<CachedBlockPosition> getFactory() {
+    public static ConditionFactory<BlockInWorld> getFactory() {
         return new ConditionFactory<>(Apoli.identifier("material"),
             new SerializableData()
                 .add("material", ApoliDataTypes.LEGACY_MATERIAL, null)

@@ -7,28 +7,27 @@ import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.util.HudRender;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class SelfActionWhenHitPower extends CooldownPower {
 
-    private final Predicate<Pair<DamageSource, Float>> damageCondition;
+    private final Predicate<Tuple<DamageSource, Float>> damageCondition;
     private final Consumer<Entity> entityAction;
 
-    public SelfActionWhenHitPower(PowerType<?> type, LivingEntity entity, int cooldownDuration, HudRender hudRender, Predicate<Pair<DamageSource, Float>> damageCondition, Consumer<Entity> entityAction) {
+    public SelfActionWhenHitPower(PowerType<?> type, LivingEntity entity, int cooldownDuration, HudRender hudRender, Predicate<Tuple<DamageSource, Float>> damageCondition, Consumer<Entity> entityAction) {
         super(type, entity, cooldownDuration, hudRender);
         this.damageCondition = damageCondition;
         this.entityAction = entityAction;
     }
 
     public void whenHit(DamageSource damageSource, float damageAmount) {
-        if(damageCondition == null || damageCondition.test(new Pair<>(damageSource, damageAmount))) {
+        if(damageCondition == null || damageCondition.test(new Tuple<>(damageSource, damageAmount))) {
             if(canUse()) {
                 this.entityAction.accept(this.entity);
                 use();
@@ -36,7 +35,7 @@ public class SelfActionWhenHitPower extends CooldownPower {
         }
     }
 
-    public static PowerFactory createFactory(Identifier identifier) {
+    public static PowerFactory createFactory(ResourceLocation identifier) {
         return new PowerFactory<>(identifier,
             new SerializableData()
                 .add("entity_action", ApoliDataTypes.ENTITY_ACTION)
@@ -45,7 +44,7 @@ public class SelfActionWhenHitPower extends CooldownPower {
                 .add("hud_render", ApoliDataTypes.HUD_RENDER, HudRender.DONT_RENDER),
             data ->
                 (type, player) -> new SelfActionWhenHitPower(type, player, data.getInt("cooldown"),
-                    (HudRender)data.get("hud_render"), (ConditionFactory<Pair<DamageSource, Float>>.Instance)data.get("damage_condition"),
+                    (HudRender)data.get("hud_render"), (ConditionFactory<Tuple<DamageSource, Float>>.Instance)data.get("damage_condition"),
                     (ActionFactory<Entity>.Instance)data.get("entity_action")))
             .allowCondition();
     }

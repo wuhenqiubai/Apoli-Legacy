@@ -6,10 +6,10 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.util.Pair;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -17,16 +17,16 @@ import java.util.function.Predicate;
 public class PreventDeathPower extends Power {
 
     private final Consumer<Entity> entityAction;
-    private final Predicate<Pair<DamageSource, Float>> condition;
+    private final Predicate<Tuple<DamageSource, Float>> condition;
 
-    public PreventDeathPower(PowerType<?> type, LivingEntity entity, Consumer<Entity> entityAction, Predicate<Pair<DamageSource, Float>> condition) {
+    public PreventDeathPower(PowerType<?> type, LivingEntity entity, Consumer<Entity> entityAction, Predicate<Tuple<DamageSource, Float>> condition) {
         super(type, entity);
         this.entityAction = entityAction;
         this.condition = condition;
     }
 
     public boolean doesApply(DamageSource source, float amount) {
-        return condition == null || condition.test(new Pair<>(source, amount));
+        return condition == null || condition.test(new Tuple<>(source, amount));
     }
 
     public void executeAction() {
@@ -43,7 +43,7 @@ public class PreventDeathPower extends Power {
             data ->
                 (type, player) -> new PreventDeathPower(type, player,
                     (ActionFactory<Entity>.Instance)data.get("entity_action"),
-                    (ConditionFactory<Pair<DamageSource, Float>>.Instance)data.get("damage_condition")))
+                    (ConditionFactory<Tuple<DamageSource, Float>>.Instance)data.get("damage_condition")))
             .allowCondition();
     }
 }

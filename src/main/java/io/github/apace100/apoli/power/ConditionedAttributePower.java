@@ -6,8 +6,8 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.AttributedEntityAttributeModifier;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class ConditionedAttributePower extends Power {
 
     @Override
     public void tick() {
-        if(entity.age % tickRate == 0) {
+        if(entity.tickCount % tickRate == 0) {
             if(this.isActive()) {
                 addMods();
             } else {
@@ -51,10 +51,10 @@ public class ConditionedAttributePower extends Power {
         float previousHealthPercent = entity.getHealth() / previousMaxHealth;
         modifiers.forEach(mod -> {
             if(entity.getAttributes().hasAttribute(mod.getAttribute())) {
-                EntityAttributeInstance instance = entity.getAttributeInstance(mod.getAttribute());
+                AttributeInstance instance = entity.getAttribute(mod.getAttribute());
                 if(instance != null) {
                     if(!instance.hasModifier(mod.getModifier())) {
-                        instance.addTemporaryModifier(mod.getModifier());
+                        instance.addTransientModifier(mod.getModifier());
                     }
                 }
             }
@@ -70,7 +70,7 @@ public class ConditionedAttributePower extends Power {
         float previousHealthPercent = entity.getHealth() / previousMaxHealth;
         modifiers.forEach(mod -> {
             if (entity.getAttributes().hasAttribute(mod.getAttribute())) {
-                EntityAttributeInstance instance = entity.getAttributeInstance(mod.getAttribute());
+                AttributeInstance instance = entity.getAttribute(mod.getAttribute());
                 if(instance != null) {
                     if(instance.hasModifier(mod.getModifier())) {
                         instance.removeModifier(mod.getModifier());

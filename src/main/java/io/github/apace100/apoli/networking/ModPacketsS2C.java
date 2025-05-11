@@ -19,17 +19,17 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientLoginNetworkHandler;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,29 +52,29 @@ public class ModPacketsS2C {
         }));
     }
 
-    private static void onStatusEffectSync(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+    private static void onStatusEffectSync(Minecraft minecraftClient, ClientPacketListener clientPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
         int targetId = packetByteBuf.readInt();
         SyncStatusEffectsUtil.UpdateType updateType = SyncStatusEffectsUtil.UpdateType.values()[packetByteBuf.readByte()];
-        StatusEffectInstance instance = null;
+        MobEffectInstance instance = null;
         if(updateType != SyncStatusEffectsUtil.UpdateType.CLEAR) {
             instance = SerializationHelper.readStatusEffect(packetByteBuf);
         }
-        StatusEffectInstance finalInstance = instance;
+        MobEffectInstance finalInstance = instance;
         minecraftClient.execute(() -> {
-            Entity target = clientPlayNetworkHandler.getWorld().getEntityById(targetId);
+            Entity target = clientPlayNetworkHandler.getLevel().getEntity(targetId);
             if (!(target instanceof LivingEntity living)) {
                 Apoli.LOGGER.warn("Received unknown target for status effect synchronization");
             } else {
                 switch(updateType) {
-                    case CLEAR -> living.getActiveStatusEffects().clear();
-                    case APPLY, UPGRADE -> living.getActiveStatusEffects().put(finalInstance.getEffectType(), finalInstance);
-                    case REMOVE -> living.getActiveStatusEffects().remove(finalInstance.getEffectType());
+                    case CLEAR -> living.getActiveEffectsMap().clear();
+                    case APPLY, UPGRADE -> living.getActiveEffectsMap().put(finalInstance.getEffect(), finalInstance);
+                    case REMOVE -> living.getActiveEffectsMap().remove(finalInstance.getEffect());
                 }
             }
         });
     }
 
-    private static void onSetAttacker(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+    private static void onSetAttacker(Minecraft minecraftClient, ClientPacketListener clientPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
         int targetId = packetByteBuf.readInt();
         boolean hasAttacker = packetByteBuf.readBoolean();
         int attackerId = 0;
@@ -83,10 +83,10 @@ public class ModPacketsS2C {
         }
         int finalAttackerId = attackerId;
         minecraftClient.execute(() -> {
-            Entity target = clientPlayNetworkHandler.getWorld().getEntityById(targetId);
+            Entity target = clientPlayNetworkHandler.getLevel().getEntity(targetId);
             Entity attacker = null;
             if(hasAttacker) {
-                attacker = clientPlayNetworkHandler.getWorld().getEntityById(finalAttackerId);
+                attacker = clientPlayNetworkHandler.getLevel().getEntity(finalAttackerId);
             }
             if (!(target instanceof LivingEntity)) {
                 Apoli.LOGGER.warn("Received unknown target");
@@ -94,9 +94,9 @@ public class ModPacketsS2C {
                 Apoli.LOGGER.warn("Received unknown attacker");
             } else {
                 if(hasAttacker) {
-                    ((LivingEntity)target).setAttacker((LivingEntity)attacker);
+                    ((LivingEntity)target).setLastHurtByMob((LivingEntity)attacker);
                 } else {
-                    ((LivingEntity)target).setAttacker(null);
+                    ((LivingEntity)target).setLastHurtByMob(null);
                 }
             }
         });
@@ -104,8 +104,8 @@ public class ModPacketsS2C {
 
 
     @Environment(EnvType.CLIENT)
-    private static CompletableFuture<PacketByteBuf> handleHandshake(MinecraftClient minecraftClient, ClientLoginNetworkHandler clientLoginNetworkHandler, PacketByteBuf packetByteBuf, Consumer<GenericFutureListener<? extends Future<? super Void>>> genericFutureListenerConsumer) {
-        PacketByteBuf buf = PacketByteBufs.create();
+    private static CompletableFuture<FriendlyByteBuf> handleHandshake(Minecraft minecraftClient, ClientHandshakePacketListenerImpl clientLoginNetworkHandler, FriendlyByteBuf packetByteBuf, Consumer<GenericFutureListener<? extends Future<? super Void>>> genericFutureListenerConsumer) {
+        FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeInt(Apoli.SEMVER.length);
         for(int i = 0; i < Apoli.SEMVER.length; i++) {
             buf.writeInt(Apoli.SEMVER[i]);
@@ -114,12 +114,12 @@ public class ModPacketsS2C {
     }
 
     @Environment(EnvType.CLIENT)
-    private static void receivePowerList(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+    private static void receivePowerList(Minecraft minecraftClient, ClientPacketListener clientPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
         int powerCount = packetByteBuf.readInt();
-        HashMap<Identifier, PowerType> factories = new HashMap<>();
+        HashMap<ResourceLocation, PowerType> factories = new HashMap<>();
         for(int i = 0; i < powerCount; i++) {
-            Identifier powerId = packetByteBuf.readIdentifier();
-            Identifier factoryId = packetByteBuf.readIdentifier();
+            ResourceLocation powerId = packetByteBuf.readResourceLocation();
+            ResourceLocation factoryId = packetByteBuf.readResourceLocation();
             try {
                 PowerFactory factory = ApoliRegistries.POWER_FACTORY.get(factoryId);
                 PowerFactory.Instance factoryInstance = factory.read(packetByteBuf);
@@ -127,15 +127,15 @@ public class ModPacketsS2C {
                 if(packetByteBuf.readBoolean()) {
                     type = new MultiplePowerType(powerId, factoryInstance);
                     int subPowerCount = packetByteBuf.readVarInt();
-                    List<Identifier> subPowers = new ArrayList<>(subPowerCount);
+                    List<ResourceLocation> subPowers = new ArrayList<>(subPowerCount);
                     for(int j = 0; j < subPowerCount; j++) {
-                        subPowers.add(packetByteBuf.readIdentifier());
+                        subPowers.add(packetByteBuf.readResourceLocation());
                     }
                     ((MultiplePowerType)type).setSubPowers(subPowers);
                 } else {
                     type = new PowerType(powerId, factoryInstance);
                 }
-                type.setTranslationKeys(packetByteBuf.readString(), packetByteBuf.readString());
+                type.setTranslationKeys(packetByteBuf.readUtf(), packetByteBuf.readUtf());
                 if (packetByteBuf.readBoolean()) {
                     type.setHidden();
                 }
@@ -152,12 +152,12 @@ public class ModPacketsS2C {
     }
 
     @Environment(EnvType.CLIENT)
-    private static void onPlayerMount(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+    private static void onPlayerMount(Minecraft minecraftClient, ClientPacketListener clientPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
         int mountingPlayerId = packetByteBuf.readInt();
         int mountedPlayerId = packetByteBuf.readInt();
         minecraftClient.execute(() -> {
-            Entity mountingPlayer = clientPlayNetworkHandler.getWorld().getEntityById(mountingPlayerId);
-            Entity mountedPlayer = clientPlayNetworkHandler.getWorld().getEntityById(mountedPlayerId);
+            Entity mountingPlayer = clientPlayNetworkHandler.getLevel().getEntity(mountingPlayerId);
+            Entity mountedPlayer = clientPlayNetworkHandler.getLevel().getEntity(mountedPlayerId);
             if (mountedPlayer == null) {
                 Apoli.LOGGER.warn("Received passenger for unknown player");
             } else if(mountingPlayer == null) {
@@ -174,32 +174,32 @@ public class ModPacketsS2C {
     }
 
     @Environment(EnvType.CLIENT)
-    private static void onPlayerDismount(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+    private static void onPlayerDismount(Minecraft minecraftClient, ClientPacketListener clientPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
         int dismountingPlayerId = packetByteBuf.readInt();
         minecraftClient.execute(() -> {
-            Entity dismountingPlayer = clientPlayNetworkHandler.getWorld().getEntityById(dismountingPlayerId);
+            Entity dismountingPlayer = clientPlayNetworkHandler.getLevel().getEntity(dismountingPlayerId);
             if (dismountingPlayer == null) {
                 Apoli.LOGGER.warn("Unknown player tried to dismount");
             } else {
-                if(dismountingPlayer.getVehicle() instanceof PlayerEntity) {
-                    dismountingPlayer.dismountVehicle();
+                if(dismountingPlayer.getVehicle() instanceof Player) {
+                    dismountingPlayer.removeVehicle();
                 }
             }
         });
     }
 
     @Environment(EnvType.CLIENT)
-    private static void onPowerSync(MinecraftClient minecraftClient, ClientPlayNetworkHandler clientPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+    private static void onPowerSync(Minecraft minecraftClient, ClientPacketListener clientPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
         int entityId = packetByteBuf.readInt();
-        Identifier powerId = packetByteBuf.readIdentifier();
-        NbtCompound powerNbtContainer = packetByteBuf.readNbt();
-        NbtElement powerNbt = powerNbtContainer.get("Data");
+        ResourceLocation powerId = packetByteBuf.readResourceLocation();
+        CompoundTag powerNbtContainer = packetByteBuf.readNbt();
+        Tag powerNbt = powerNbtContainer.get("Data");
         minecraftClient.execute(() -> {
             if(!PowerTypeRegistry.contains(powerId)) {
                 Apoli.LOGGER.warn("Received sync packet for unknown power type: " + powerId);
                 return;
             }
-            Entity entity = clientPlayNetworkHandler.getWorld().getEntityById(entityId);
+            Entity entity = clientPlayNetworkHandler.getLevel().getEntity(entityId);
             if (entity == null) {
                 Apoli.LOGGER.warn("Received sync packet for unknown power holder.");
                 return;

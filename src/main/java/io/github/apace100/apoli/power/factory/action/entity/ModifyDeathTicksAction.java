@@ -4,10 +4,8 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
-import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.Hand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class ModifyDeathTicksAction {
 

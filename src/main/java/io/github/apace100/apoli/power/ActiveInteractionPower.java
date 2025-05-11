@@ -1,11 +1,11 @@
 package io.github.apace100.apoli.power;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
-import net.minecraft.world.World;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.EnumSet;
 import java.util.function.Consumer;
@@ -15,7 +15,7 @@ public class ActiveInteractionPower extends InteractionPower implements Prioriti
 
     private final int priority;
 
-    public ActiveInteractionPower(PowerType<?> type, LivingEntity entity, EnumSet<Hand> hands, ActionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Pair<World, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Pair<World, ItemStack>> resultItemAction, int priority) {
+    public ActiveInteractionPower(PowerType<?> type, LivingEntity entity, EnumSet<InteractionHand> hands, InteractionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Tuple<Level, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Tuple<Level, ItemStack>> resultItemAction, int priority) {
         super(type, entity, hands, actionResult, itemCondition, heldItemAction, itemResult, resultItemAction);
         this.priority = priority;
     }

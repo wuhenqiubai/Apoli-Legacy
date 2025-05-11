@@ -6,9 +6,9 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 import java.util.function.Predicate;
@@ -31,14 +31,14 @@ public class ConditionedRestrictArmorPower extends Power {
 
     @Override
     public void tick() {
-        if(entity.age % tickRate == 0 && this.isActive()) {
+        if(entity.tickCount % tickRate == 0 && this.isActive()) {
             for(EquipmentSlot slot : armorConditions.keySet()) {
-                ItemStack equippedItem = entity.getEquippedStack(slot);
+                ItemStack equippedItem = entity.getItemBySlot(slot);
                 if(!equippedItem.isEmpty()) {
                     if(!canEquip(equippedItem, slot)) {
                         // TODO: Prefer putting armor into inv instead of dropping, if inv available
-                        entity.dropStack(equippedItem, entity.getEyeHeight(entity.getPose()));
-                        entity.equipStack(slot, ItemStack.EMPTY);
+                        entity.spawnAtLocation(equippedItem, entity.getEyeHeight(entity.getPose()));
+                        entity.setItemSlot(slot, ItemStack.EMPTY);
                     }
                 }
             }

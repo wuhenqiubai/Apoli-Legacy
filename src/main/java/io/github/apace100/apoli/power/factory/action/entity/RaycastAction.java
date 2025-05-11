@@ -7,23 +7,23 @@ import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Pair;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RaycastContext;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.function.Consumer;
@@ -32,9 +32,9 @@ public class RaycastAction {
 
     public static void action(SerializableData.Instance data, Entity entity) {
 
-        Vec3d origin = new Vec3d(entity.getX(), entity.getEyeY(), entity.getZ());
-        Vec3d direction = entity.getRotationVec(1);
-        Vec3d target = origin.add(direction.multiply((double)data.get("distance")));
+        Vec3 origin = new Vec3(entity.getX(), entity.getEyeY(), entity.getZ());
+        Vec3 direction = entity.getViewVector(1);
+        Vec3 target = origin.add(direction.scale((double)data.get("distance")));
 
         data.<Consumer<Entity>>ifPresent("before_action", action -> action.accept(entity));
 
@@ -48,7 +48,7 @@ public class RaycastAction {
                 if(hitResult == null || hitResult.getType() == HitResult.Type.MISS) {
                     hitResult = blockHit;
                 } else {
-                    if(hitResult.squaredDistanceTo(entity) > blockHit.squaredDistanceTo(entity)) {
+                    if(hitResult.distanceTo(entity) > blockHit.distanceTo(entity)) {
                         hitResult = blockHit;
                     }
                 }
@@ -56,42 +56,42 @@ public class RaycastAction {
         }
         if(hitResult != null && hitResult.getType() != HitResult.Type.MISS) {
             if(data.isPresent("command_at_hit")) {
-                Vec3d offsetDirection = direction;
+                Vec3 offsetDirection = direction;
                 double offset = 0;
-                Vec3d hitPos = hitResult.getPos();
+                Vec3 hitPos = hitResult.getLocation();
                 if(data.isPresent("command_hit_offset")) {
                     offset = data.getDouble("command_hit_offset");
                 } else {
                     if(hitResult instanceof BlockHitResult bhr) {
-                        if(bhr.getSide() == Direction.DOWN) {
-                            offset = entity.getHeight();
-                        } else if(bhr.getSide() == Direction.UP) {
+                        if(bhr.getDirection() == Direction.DOWN) {
+                            offset = entity.getBbHeight();
+                        } else if(bhr.getDirection() == Direction.UP) {
                             offset = 0;
                         } else {
-                            offset = entity.getWidth() / 2;
-                            offsetDirection = new Vec3d(
-                                bhr.getSide().getOffsetX(),
-                                bhr.getSide().getOffsetY(),
-                                bhr.getSide().getOffsetZ()
-                            ).multiply(-1);
+                            offset = entity.getBbWidth() / 2;
+                            offsetDirection = new Vec3(
+                                bhr.getDirection().getStepX(),
+                                bhr.getDirection().getStepY(),
+                                bhr.getDirection().getStepZ()
+                            ).scale(-1);
                         }
                     }
                     offset += 0.05;
                 }
-                Vec3d at = hitPos.subtract(offsetDirection.multiply(offset));
+                Vec3 at = hitPos.subtract(offsetDirection.scale(offset));
                 executeCommandAtHit(entity, at, data.getString("command_at_hit"));
             }
             if(data.isPresent("command_along_ray")) {
-                executeStepCommands(entity, origin, hitResult.getPos(), data.getString("command_along_ray"), data.getDouble("command_step"));
+                executeStepCommands(entity, origin, hitResult.getLocation(), data.getString("command_along_ray"), data.getDouble("command_step"));
             }
             if(data.isPresent("block_action") && hitResult instanceof BlockHitResult bhr) {
-                ActionFactory<Triple<World, BlockPos, Direction>>.Instance blockAction = data.get("block_action");
-                Triple<World, BlockPos, Direction> blockActionContext = Triple.of(entity.getWorld(), bhr.getBlockPos(), bhr.getSide());
+                ActionFactory<Triple<Level, BlockPos, Direction>>.Instance blockAction = data.get("block_action");
+                Triple<Level, BlockPos, Direction> blockActionContext = Triple.of(entity.level(), bhr.getBlockPos(), bhr.getDirection());
                 blockAction.accept(blockActionContext);
             }
             if(data.isPresent("bientity_action") && hitResult instanceof EntityHitResult ehr) {
-                ActionFactory<Pair<Entity, Entity>>.Instance bientityAction = data.get("bientity_action");
-                Pair<Entity, Entity> bientityActionContext = new Pair<>(entity, ehr.getEntity());
+                ActionFactory<Tuple<Entity, Entity>>.Instance bientityAction = data.get("bientity_action");
+                Tuple<Entity, Entity> bientityActionContext = new Tuple<>(entity, ehr.getEntity());
                 bientityAction.accept(bientityActionContext);
             }
             data.<Consumer<Entity>>ifPresent("hit_action", action -> action.accept(entity));
@@ -103,57 +103,57 @@ public class RaycastAction {
         }
     }
 
-    private static void executeStepCommands(Entity entity, Vec3d origin, Vec3d target, String command, double step) {
-        MinecraftServer server = entity.getWorld().getServer();
+    private static void executeStepCommands(Entity entity, Vec3 origin, Vec3 target, String command, double step) {
+        MinecraftServer server = entity.level().getServer();
         if(server != null) {
-            Vec3d direction = target.subtract(origin).normalize();
+            Vec3 direction = target.subtract(origin).normalize();
             double length = origin.distanceTo(target);
             for(double current = 0; current < length; current += step) {
-                boolean validOutput = !(entity instanceof ServerPlayerEntity) || ((ServerPlayerEntity)entity).networkHandler != null;
-                ServerCommandSource source = new ServerCommandSource(
-                    Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandOutput.DUMMY,
-                    origin.add(direction.multiply(current)),
-                    entity.getRotationClient(),
-                    entity.getWorld() instanceof ServerWorld ? (ServerWorld)entity.getWorld() : null,
+                boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
+                CommandSourceStack source = new CommandSourceStack(
+                    Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
+                    origin.add(direction.scale(current)),
+                    entity.getRotationVector(),
+                    entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
                     Apoli.config.executeCommand.permissionLevel,
                     entity.getName().getString(),
                     entity.getDisplayName(),
-                    entity.getWorld().getServer(),
+                    entity.level().getServer(),
                     entity);
-                server.getCommandManager().executeWithPrefix(source, command);
+                server.getCommands().performPrefixedCommand(source, command);
             }
         }
     }
 
-    private static void executeCommandAtHit(Entity entity, Vec3d hitPosition, String command) {
-        MinecraftServer server = entity.getWorld().getServer();
+    private static void executeCommandAtHit(Entity entity, Vec3 hitPosition, String command) {
+        MinecraftServer server = entity.level().getServer();
         if(server != null) {
-            boolean validOutput = !(entity instanceof ServerPlayerEntity) || ((ServerPlayerEntity)entity).networkHandler != null;
-            ServerCommandSource source = new ServerCommandSource(
-                Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandOutput.DUMMY,
+            boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
+            CommandSourceStack source = new CommandSourceStack(
+                Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
                 hitPosition,
-                entity.getRotationClient(),
-                entity.getWorld() instanceof ServerWorld ? (ServerWorld)entity.getWorld() : null,
+                entity.getRotationVector(),
+                entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
                 Apoli.config.executeCommand.permissionLevel,
                 entity.getName().getString(),
                 entity.getDisplayName(),
-                entity.getWorld().getServer(),
+                entity.level().getServer(),
                 entity);
-            server.getCommandManager().executeWithPrefix(source, command);
+            server.getCommands().performPrefixedCommand(source, command);
         }
     }
 
-    private static BlockHitResult performBlockRaycast(Entity source, Vec3d origin, Vec3d target, RaycastContext.ShapeType shapeType, RaycastContext.FluidHandling fluidHandling) {
-        RaycastContext context = new RaycastContext(origin, target, shapeType, fluidHandling, source);
-        return source.getWorld().raycast(context);
+    private static BlockHitResult performBlockRaycast(Entity source, Vec3 origin, Vec3 target, ClipContext.Block shapeType, ClipContext.Fluid fluidHandling) {
+        ClipContext context = new ClipContext(origin, target, shapeType, fluidHandling, source);
+        return source.level().clip(context);
     }
 
-    private static EntityHitResult performEntityRaycast(Entity source, Vec3d origin, Vec3d target, ConditionFactory<Pair<Entity, Entity>>.Instance biEntityCondition) {
-        Vec3d ray = target.subtract(origin);
-        Box box = source.getBoundingBox().stretch(ray).expand(1.0D, 1.0D, 1.0D);
-        EntityHitResult entityHitResult = ProjectileUtil.raycast(source, origin, target, box, (entityx) -> {
-            return !entityx.isSpectator() && (biEntityCondition == null || biEntityCondition.test(new Pair<>(source, entityx)));
-        }, ray.lengthSquared());
+    private static EntityHitResult performEntityRaycast(Entity source, Vec3 origin, Vec3 target, ConditionFactory<Tuple<Entity, Entity>>.Instance biEntityCondition) {
+        Vec3 ray = target.subtract(origin);
+        AABB box = source.getBoundingBox().expandTowards(ray).inflate(1.0D, 1.0D, 1.0D);
+        EntityHitResult entityHitResult = ProjectileUtil.getEntityHitResult(source, origin, target, box, (entityx) -> {
+            return !entityx.isSpectator() && (biEntityCondition == null || biEntityCondition.test(new Tuple<>(source, entityx)));
+        }, ray.lengthSqr());
         return entityHitResult;
     }
 
@@ -163,8 +163,8 @@ public class RaycastAction {
                 .add("distance", SerializableDataTypes.DOUBLE)
                 .add("block", SerializableDataTypes.BOOLEAN, true)
                 .add("entity", SerializableDataTypes.BOOLEAN, true)
-                .add("shape_type", SerializableDataType.enumValue(RaycastContext.ShapeType.class), RaycastContext.ShapeType.OUTLINE)
-                .add("fluid_handling", SerializableDataType.enumValue(RaycastContext.FluidHandling.class), RaycastContext.FluidHandling.ANY)
+                .add("shape_type", SerializableDataType.enumValue(ClipContext.Block.class), ClipContext.Block.OUTLINE)
+                .add("fluid_handling", SerializableDataType.enumValue(ClipContext.Fluid.class), ClipContext.Fluid.ANY)
                 .add("block_action", ApoliDataTypes.BLOCK_ACTION, null)
                 .add("bientity_condition", ApoliDataTypes.BIENTITY_CONDITION, null)
                 .add("bientity_action", ApoliDataTypes.BIENTITY_ACTION, null)

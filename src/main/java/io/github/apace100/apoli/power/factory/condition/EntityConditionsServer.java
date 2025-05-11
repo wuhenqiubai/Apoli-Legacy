@@ -5,12 +5,12 @@ import io.github.apace100.apoli.mixin.ServerPlayerInteractionManagerAccessor;
 import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-import net.minecraft.registry.Registry;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 
 public final class EntityConditionsServer {
 
@@ -18,37 +18,37 @@ public final class EntityConditionsServer {
     public static void register() {
         register(new ConditionFactory<>(Apoli.identifier("using_effective_tool"), new SerializableData(),
             (data, entity) -> {
-                if(entity instanceof ServerPlayerEntity) {
-                    ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayerEntity)entity).interactionManager);
-                    if(interactionMngr.getMining()) {
-                        return ((PlayerEntity)entity).canHarvest(entity.getWorld().getBlockState(interactionMngr.getMiningPos()));
+                if(entity instanceof ServerPlayer) {
+                    ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayer)entity).gameMode);
+                    if(interactionMngr.getIsDestroyingBlock()) {
+                        return ((Player)entity).hasCorrectToolForDrops(entity.level().getBlockState(interactionMngr.getDestroyPos()));
                     }
                 }
                 return false;
             }));
         register(new ConditionFactory<>(Apoli.identifier("gamemode"), new SerializableData()
             .add("gamemode", SerializableDataTypes.STRING), (data, entity) -> {
-            if(entity instanceof ServerPlayerEntity) {
-                ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayerEntity)entity).interactionManager);
-                return interactionMngr.getGameMode().getName().equals(data.getString("gamemode"));
+            if(entity instanceof ServerPlayer) {
+                ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayer)entity).gameMode);
+                return interactionMngr.getGameModeForPlayer().getName().equals(data.getString("gamemode"));
             }
             return false;
         }));
         register(new ConditionFactory<>(Apoli.identifier("advancement"), new SerializableData()
             .add("advancement", SerializableDataTypes.IDENTIFIER), (data, entity) -> {
-            Identifier id = data.getId("advancement");
-            if(entity instanceof ServerPlayerEntity) {
-                Advancement advancement = entity.getServer().getAdvancementLoader().get(id);
+            ResourceLocation id = data.getId("advancement");
+            if(entity instanceof ServerPlayer) {
+                Advancement advancement = entity.getServer().getAdvancements().getAdvancement(id);
                 if(advancement == null) {
                     Apoli.LOGGER.warn("Advancement \"" + id + "\" did not exist, but was referenced in an \"origins:advancement\" condition.");
                 } else {
-                    return ((ServerPlayerEntity)entity).getAdvancementTracker().getProgress(advancement).isDone();
+                    return ((ServerPlayer)entity).getAdvancements().getOrStartProgress(advancement).isDone();
                 }
             }
             return false;
         }));
         register(new ConditionFactory<>(Apoli.identifier("glowing"), new SerializableData(),
-            (data, entity) -> entity.isGlowing()));
+            (data, entity) -> entity.isCurrentlyGlowing()));
     }
 
     private static void register(ConditionFactory<Entity> conditionFactory) {

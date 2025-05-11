@@ -1,8 +1,8 @@
 package io.github.apace100.apoli.mixin;
 
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Pose;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
@@ -10,5 +10,5 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface EyeHeightAccess {
 
     @Invoker
-    float callGetEyeHeight(EntityPose pose, EntityDimensions dimensions);
+    float callGetEyeHeight(Pose pose, EntityDimensions dimensions);
 }

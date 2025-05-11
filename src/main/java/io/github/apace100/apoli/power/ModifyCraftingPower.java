@@ -5,17 +5,16 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.CraftingRecipe;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.level.Level;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.Optional;
@@ -24,16 +23,16 @@ import java.util.function.Predicate;
 
 public class ModifyCraftingPower extends ValueModifyingPower {
 
-    private final Identifier recipeIdentifier;
+    private final ResourceLocation recipeIdentifier;
     private final Predicate<ItemStack> itemCondition;
 
     private final ItemStack newStack;
-    private final Consumer<Pair<World, ItemStack>> itemAction;
-    private final Consumer<Pair<World, ItemStack>> lateItemAction;
+    private final Consumer<Tuple<Level, ItemStack>> itemAction;
+    private final Consumer<Tuple<Level, ItemStack>> lateItemAction;
     private final Consumer<Entity> entityAction;
-    private final Consumer<Triple<World, BlockPos, Direction>> blockAction;
+    private final Consumer<Triple<Level, BlockPos, Direction>> blockAction;
 
-    public ModifyCraftingPower(PowerType<?> type, LivingEntity entity, Identifier recipeIdentifier, Predicate<ItemStack> itemCondition, ItemStack newStack, Consumer<Pair<World, ItemStack>> itemAction, Consumer<Pair<World, ItemStack>> lateItemAction, Consumer<Entity> entityAction, Consumer<Triple<World, BlockPos, Direction>> blockAction) {
+    public ModifyCraftingPower(PowerType<?> type, LivingEntity entity, ResourceLocation recipeIdentifier, Predicate<ItemStack> itemCondition, ItemStack newStack, Consumer<Tuple<Level, ItemStack>> itemAction, Consumer<Tuple<Level, ItemStack>> lateItemAction, Consumer<Entity> entityAction, Consumer<Triple<Level, BlockPos, Direction>> blockAction) {
         super(type, entity);
         this.recipeIdentifier = recipeIdentifier;
         this.itemCondition = itemCondition;
@@ -44,14 +43,14 @@ public class ModifyCraftingPower extends ValueModifyingPower {
         this.blockAction = blockAction;
     }
 
-    public boolean doesApply(CraftingInventory inventory, CraftingRecipe recipe) {
+    public boolean doesApply(TransientCraftingContainer inventory, CraftingRecipe recipe) {
         if(recipeIdentifier != null) {
             if(!recipe.getId().equals(recipeIdentifier)) {
                 return false;
             }
         }
         if(itemCondition != null) {
-            if(!itemCondition.test(recipe.craft(inventory, entity.getWorld().getRegistryManager()))) {
+            if(!itemCondition.test(recipe.assemble(inventory, entity.level().registryAccess()))) {
                 return false;
             }
         }
@@ -62,25 +61,25 @@ public class ModifyCraftingPower extends ValueModifyingPower {
         if(lateItemAction == null) {
             return;
         }
-        lateItemAction.accept(new Pair<>(entity.getWorld(), output));
+        lateItemAction.accept(new Tuple<>(entity.level(), output));
     }
 
-    public ItemStack getNewResult(CraftingInventory inventory, CraftingRecipe recipe) {
+    public ItemStack getNewResult(TransientCraftingContainer inventory, CraftingRecipe recipe) {
         ItemStack stack;
         if(newStack != null) {
             stack = newStack.copy();
         } else {
-            stack = recipe.craft(inventory, entity.getWorld().getRegistryManager());
+            stack = recipe.assemble(inventory, entity.level().registryAccess());
         }
         if(itemAction != null) {
-            itemAction.accept(new Pair<>(entity.getWorld(), stack));
+            itemAction.accept(new Tuple<>(entity.level(), stack));
         }
         return stack;
     }
 
     public void executeActions(Optional<BlockPos> craftingBlockPos) {
         if(craftingBlockPos.isPresent() && blockAction != null) {
-            blockAction.accept(Triple.of(entity.getWorld(), craftingBlockPos.get(), Direction.UP));
+            blockAction.accept(Triple.of(entity.level(), craftingBlockPos.get(), Direction.UP));
         }
         if(entityAction != null) {
             entityAction.accept(entity);

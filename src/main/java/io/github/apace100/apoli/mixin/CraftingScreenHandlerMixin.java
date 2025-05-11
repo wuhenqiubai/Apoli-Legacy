@@ -2,16 +2,10 @@ package io.github.apace100.apoli.mixin;
 
 import io.github.apace100.apoli.access.PowerCraftingInventory;
 import io.github.apace100.apoli.power.ModifyCraftingPower;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.CraftingResultInventory;
-import net.minecraft.inventory.RecipeInputInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerContext;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.*;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,28 +15,28 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-@Mixin(CraftingScreenHandler.class)
+@Mixin(CraftingMenu.class)
 public class CraftingScreenHandlerMixin {
 
-    @Shadow @Final private ScreenHandlerContext context;
+    @Shadow @Final private ContainerLevelAccess access;
 
-    @Shadow @Final private RecipeInputInventory input;
+    @Shadow @Final private CraftingContainer craftSlots;
 
-    @Inject(method = "updateResult", at = @At(value = "INVOKE", target = "Lnet/minecraft/recipe/RecipeManager;getFirstMatch(Lnet/minecraft/recipe/RecipeType;Lnet/minecraft/inventory/Inventory;Lnet/minecraft/world/World;)Ljava/util/Optional;"))
-    private static void clearPowerCraftingInventory(ScreenHandler handler, World world, PlayerEntity player, RecipeInputInventory inventory, CraftingResultInventory resultInventory, CallbackInfo ci) {
-        if (inventory instanceof CraftingInventory craftingInventory) ((PowerCraftingInventory)craftingInventory).setPower(null);
+    @Inject(method = "slotChangedCraftingGrid", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/crafting/RecipeManager;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/Container;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;"))
+    private static void clearPowerCraftingInventory(AbstractContainerMenu handler, Level world, Player player, CraftingContainer inventory, ResultContainer resultInventory, CallbackInfo ci) {
+        if (inventory instanceof TransientCraftingContainer craftingInventory) ((PowerCraftingInventory)craftingInventory).setPower(null);
     }
 
-    @Inject(method = "canUse", at = @At("HEAD"), cancellable = true)
-    private void allowUsingViaPower(PlayerEntity player, CallbackInfoReturnable<Boolean> cir) {
-        if(context.get((world, pos) -> pos.equals(player.getBlockPos()), false)) {
+    @Inject(method = "stillValid", at = @At("HEAD"), cancellable = true)
+    private void allowUsingViaPower(Player player, CallbackInfoReturnable<Boolean> cir) {
+        if(access.evaluate((world, pos) -> pos.equals(player.blockPosition()), false)) {
             cir.setReturnValue(true);
         }
     }
 
-    @Inject(method = "quickMove", at = @At(value = "INVOKE", target = "Lnet/minecraft/item/ItemStack;copy()Lnet/minecraft/item/ItemStack;", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
-    private void modifyOutputItems(PlayerEntity player, int index, CallbackInfoReturnable<ItemStack> cir, ItemStack itemStack, Slot slot, ItemStack itemStack2) {
-        if(input instanceof PowerCraftingInventory pci) {
+    @Inject(method = "quickMoveStack", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;copy()Lnet/minecraft/world/item/ItemStack;", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILHARD)
+    private void modifyOutputItems(Player player, int index, CallbackInfoReturnable<ItemStack> cir, ItemStack itemStack, Slot slot, ItemStack itemStack2) {
+        if(craftSlots instanceof PowerCraftingInventory pci) {
             if(pci.getPower() instanceof ModifyCraftingPower mcp) {
                 mcp.applyAfterCraftingItemAction(itemStack2);
             }

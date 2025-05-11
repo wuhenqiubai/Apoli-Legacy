@@ -6,20 +6,20 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import io.github.apace100.apoli.Apoli;
 import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 
 import java.util.Set;
 
 public class ApoliResourceConditions {
 
-	public static final Identifier ANY_NAMESPACE_LOADED = Apoli.identifier("any_namespace_loaded");
+	public static final ResourceLocation ANY_NAMESPACE_LOADED = Apoli.identifier("any_namespace_loaded");
 
-	public static final Identifier ALL_NAMESPACES_LOADED = Apoli.identifier("all_namespaces_loaded");
+	public static final ResourceLocation ALL_NAMESPACES_LOADED = Apoli.identifier("all_namespaces_loaded");
 
 	public static boolean namespacesLoaded(JsonObject jsonObject, Set<String> namespaces, boolean and) {
 
-		JsonArray jsonArray = JsonHelper.getArray(jsonObject, "namespaces");
+		JsonArray jsonArray = GsonHelper.getAsJsonArray(jsonObject, "namespaces");
 		for (JsonElement jsonElement : jsonArray) {
 			if (jsonElement.isJsonPrimitive()) {
 				if (namespaces.contains(jsonElement.getAsString()) != and) {
@@ -34,10 +34,10 @@ public class ApoliResourceConditions {
 
 	}
 
-	public static boolean test(Identifier id, JsonObject jsonObject) {
+	public static boolean test(ResourceLocation id, JsonObject jsonObject) {
 
 		try {
-			JsonArray conditions = JsonHelper.getArray(jsonObject, ResourceConditions.CONDITIONS_KEY, null);
+			JsonArray conditions = GsonHelper.getAsJsonArray(jsonObject, ResourceConditions.CONDITIONS_KEY, null);
 			if (conditions == null) {
 				return true;
 			} else {

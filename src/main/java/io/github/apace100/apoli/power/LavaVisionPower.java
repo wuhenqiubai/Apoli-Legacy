@@ -5,8 +5,8 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 public class LavaVisionPower extends AttributePower {
 
@@ -15,7 +15,7 @@ public class LavaVisionPower extends AttributePower {
 
     public LavaVisionPower(PowerType<?> type, LivingEntity entity, float s, float v) {
         super(type, entity, false);
-        addModifier(AdditionalEntityAttributes.LAVA_VISIBILITY, new EntityAttributeModifier("Lava vision power", v - 1, EntityAttributeModifier.Operation.ADDITION));
+        addModifier(AdditionalEntityAttributes.LAVA_VISIBILITY, new AttributeModifier("Lava vision power", v - 1, AttributeModifier.Operation.ADDITION));
         this.s = s;
         this.v = v;
     }

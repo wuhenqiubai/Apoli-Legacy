@@ -1,43 +1,41 @@
 package io.github.apace100.apoli.power;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.player.PlayerEntity;
-
 import java.util.LinkedList;
 import java.util.List;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.LivingEntity;
 
 public class StatusEffectPower extends Power {
 
-    protected final List<StatusEffectInstance> effects = new LinkedList<>();
+    protected final List<MobEffectInstance> effects = new LinkedList<>();
 
     public StatusEffectPower(PowerType<?> type, LivingEntity entity) {
         super(type, entity);
     }
-    public StatusEffectPower(PowerType<?> type, LivingEntity entity, StatusEffectInstance effectInstance) {
+    public StatusEffectPower(PowerType<?> type, LivingEntity entity, MobEffectInstance effectInstance) {
         super(type, entity);
         addEffect(effectInstance);
     }
 
-    public StatusEffectPower addEffect(StatusEffect effect) {
+    public StatusEffectPower addEffect(MobEffect effect) {
         return addEffect(effect, 80);
     }
 
-    public StatusEffectPower addEffect(StatusEffect effect, int lingerDuration) {
+    public StatusEffectPower addEffect(MobEffect effect, int lingerDuration) {
         return addEffect(effect, lingerDuration, 0);
     }
 
-    public StatusEffectPower addEffect(StatusEffect effect, int lingerDuration, int amplifier) {
-        return addEffect(new StatusEffectInstance(effect, lingerDuration, amplifier));
+    public StatusEffectPower addEffect(MobEffect effect, int lingerDuration, int amplifier) {
+        return addEffect(new MobEffectInstance(effect, lingerDuration, amplifier));
     }
 
-    public StatusEffectPower addEffect(StatusEffectInstance instance) {
+    public StatusEffectPower addEffect(MobEffectInstance instance) {
         effects.add(instance);
         return this;
     }
 
     public void applyEffects() {
-        effects.stream().map(StatusEffectInstance::new).forEach(entity::addStatusEffect);
+        effects.stream().map(MobEffectInstance::new).forEach(entity::addEffect);
     }
 }

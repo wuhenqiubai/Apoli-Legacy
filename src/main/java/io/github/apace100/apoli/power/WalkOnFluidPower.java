@@ -4,9 +4,9 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.registry.tag.TagKey;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.material.Fluid;
 
 public class WalkOnFluidPower extends Power {
 

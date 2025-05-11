@@ -7,11 +7,9 @@ import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.VariableIntPower;
 import io.github.apace100.calio.data.SerializableData;
-import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import me.shedaniel.clothconfig2.api.animator.ValueProvider;
-import net.minecraft.data.client.BlockStateVariantMap;
-import net.minecraft.entity.Entity;
+import net.minecraft.data.models.blockstates.PropertyDispatch;
+import net.minecraft.world.entity.Entity;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -101,9 +99,9 @@ public enum ModifierOperation implements IModifierOperation {
 
     private final Phase phase;
     private final int order;
-    private final BlockStateVariantMap.TriFunction<List<Double>, Double, Double, Double> function;
+    private final PropertyDispatch.TriFunction<List<Double>, Double, Double, Double> function;
 
-    ModifierOperation(Phase phase, int order, BlockStateVariantMap.TriFunction<List<Double>, Double, Double, Double> function) {
+    ModifierOperation(Phase phase, int order, PropertyDispatch.TriFunction<List<Double>, Double, Double, Double> function) {
         this.phase = phase;
         this.order = order;
         this.function = function;

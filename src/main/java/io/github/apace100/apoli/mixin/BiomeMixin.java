@@ -1,7 +1,7 @@
 package io.github.apace100.apoli.mixin;
 
 import io.github.apace100.apoli.access.BiomeWeatherAccess;
-import net.minecraft.world.biome.Biome;
+import net.minecraft.world.level.biome.Biome;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 

@@ -7,9 +7,9 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtByte;
-import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.ByteTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.entity.LivingEntity;
 
 public class ToggleNightVisionPower extends NightVisionPower implements Active {
     private boolean isActive;
@@ -34,14 +34,14 @@ public class ToggleNightVisionPower extends NightVisionPower implements Active {
     }
 
     @Override
-    public NbtElement toTag() {
-        return NbtByte.of(isActive);
+    public Tag toTag() {
+        return ByteTag.valueOf(isActive);
     }
 
     @Override
-    public void fromTag(NbtElement tag) {
-        if(tag instanceof NbtByte) {
-            isActive = ((NbtByte)tag).byteValue() > 0;
+    public void fromTag(Tag tag) {
+        if(tag instanceof ByteTag) {
+            isActive = ((ByteTag)tag).getAsByte() > 0;
         }
     }
 

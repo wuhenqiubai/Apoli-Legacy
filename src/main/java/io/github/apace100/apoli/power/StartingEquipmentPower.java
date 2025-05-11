@@ -5,15 +5,14 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Pair;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 public class StartingEquipmentPower extends Power {
 
@@ -51,25 +50,25 @@ public class StartingEquipmentPower extends Power {
 
     private void giveStacks() {
         slottedStacks.forEach((slot, stack) -> {
-            if(entity instanceof PlayerEntity) {
-                PlayerEntity player = (PlayerEntity)entity;
-                PlayerInventory inventory = player.getInventory();
-                if(inventory.getStack(slot).isEmpty()) {
-                    inventory.setStack(slot, stack);
+            if(entity instanceof Player) {
+                Player player = (Player)entity;
+                Inventory inventory = player.getInventory();
+                if(inventory.getItem(slot).isEmpty()) {
+                    inventory.setItem(slot, stack);
                 } else {
-                    player.giveItemStack(stack);
+                    player.addItem(stack);
                 }
             } else {
-                entity.dropStack(stack);
+                entity.spawnAtLocation(stack);
             }
         });
         itemStacks.forEach(is -> {
             ItemStack copy = is.copy();
-            if(entity instanceof PlayerEntity) {
-                PlayerEntity player = (PlayerEntity)entity;
-                player.giveItemStack(copy);
+            if(entity instanceof Player) {
+                Player player = (Player)entity;
+                player.addItem(copy);
             } else {
-                entity.dropStack(copy);
+                entity.spawnAtLocation(copy);
             }
         });
     }
@@ -84,22 +83,22 @@ public class StartingEquipmentPower extends Power {
                 (type, player) -> {
                     StartingEquipmentPower power = new StartingEquipmentPower(type, player);
                     if(data.isPresent("stack")) {
-                        Pair<Integer, ItemStack> stack = (Pair<Integer, ItemStack>)data.get("stack");
-                        int slot = stack.getLeft();
+                        Tuple<Integer, ItemStack> stack = (Tuple<Integer, ItemStack>)data.get("stack");
+                        int slot = stack.getA();
                         if(slot > Integer.MIN_VALUE) {
-                            power.addStack(stack.getLeft(), stack.getRight());
+                            power.addStack(stack.getA(), stack.getB());
                         } else {
-                            power.addStack(stack.getRight());
+                            power.addStack(stack.getB());
                         }
                     }
                     if(data.isPresent("stacks")) {
-                        ((List<Pair<Integer, ItemStack>>)data.get("stacks"))
+                        ((List<Tuple<Integer, ItemStack>>)data.get("stacks"))
                             .forEach(integerItemStackPair -> {
-                                int slot = integerItemStackPair.getLeft();
+                                int slot = integerItemStackPair.getA();
                                 if(slot > Integer.MIN_VALUE) {
-                                    power.addStack(integerItemStackPair.getLeft(), integerItemStackPair.getRight());
+                                    power.addStack(integerItemStackPair.getA(), integerItemStackPair.getB());
                                 } else {
-                                    power.addStack(integerItemStackPair.getRight());
+                                    power.addStack(integerItemStackPair.getB());
                                 }
                             });
                     }

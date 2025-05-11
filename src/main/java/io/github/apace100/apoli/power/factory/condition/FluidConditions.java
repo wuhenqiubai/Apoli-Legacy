@@ -5,8 +5,10 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.registry.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.FluidState;
 
 import java.util.List;
 
@@ -31,13 +33,13 @@ public class FluidConditions {
         register(new ConditionFactory<>(Apoli.identifier("empty"), new SerializableData(),
             (data, fluid) -> fluid.isEmpty()));
         register(new ConditionFactory<>(Apoli.identifier("still"), new SerializableData(),
-            (data, fluid) -> fluid.isStill()));
+            (data, fluid) -> fluid.isSource()));
         register(new ConditionFactory<>(Apoli.identifier("in_tag"), new SerializableData()
             .add("tag", SerializableDataTypes.FLUID_TAG),
-            (data, fluid) -> fluid.getRegistryEntry().isIn(data.get("tag"))));
+            (data, fluid) -> fluid.holder().is((TagKey<Fluid>) data.get("tag"))));
         register(new ConditionFactory<>(Apoli.identifier("fluid"), new SerializableData()
             .add("fluid", SerializableDataTypes.FLUID),
-            (data, fluid) -> fluid.getFluid() == data.get("fluid")));
+            (data, fluid) -> fluid.getType() == data.get("fluid")));
     }
 
     private static void register(ConditionFactory<FluidState> conditionFactory) {

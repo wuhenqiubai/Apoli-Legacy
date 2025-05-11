@@ -1,24 +1,22 @@
 package io.github.apace100.apoli.mixin;
 
-import com.google.common.collect.Lists;
-import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.IdentifiedLootTable;
 import io.github.apace100.apoli.access.ReplacingLootContext;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ReplaceLootTablePower;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.ai.brain.MemoryModuleType;
-import net.minecraft.entity.mob.PiglinEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.FishingBobberEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootManager;
-import net.minecraft.loot.LootTable;
-import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.loot.context.LootContextType;
-import net.minecraft.loot.context.LootContextTypes;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.monster.piglin.Piglin;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.FishingHook;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootDataManager;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSet;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,40 +32,40 @@ import java.util.function.Consumer;
 public class LootTableMixin implements IdentifiedLootTable {
 
     @Unique
-    private Identifier apoli$id;
+    private ResourceLocation apoli$id;
     @Unique
-    private LootManager apoli$lootManager;
+    private LootDataManager apoli$lootManager;
 
     @Override
-    public void setId(Identifier id, LootManager lootManager) {
+    public void setId(ResourceLocation id, LootDataManager lootManager) {
         apoli$id = id;
         apoli$lootManager = lootManager;
     }
 
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return apoli$id;
     }
 
-    @Inject(method = "generateUnprocessedLoot(Lnet/minecraft/loot/context/LootContext;Ljava/util/function/Consumer;)V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getRandomItemsRaw(Lnet/minecraft/world/level/storage/loot/LootContext;Ljava/util/function/Consumer;)V", at = @At("HEAD"), cancellable = true)
     private void modifyLootTable(LootContext context, Consumer<ItemStack> lootConsumer, CallbackInfo ci) {
         if(((ReplacingLootContext)context).isReplaced((LootTable)(Object)this)) {
             return;
         }
-        if(context.hasParameter(LootContextParameters.THIS_ENTITY)) {
-            LootContextType type = ((ReplacingLootContext)context).getType();
-            Entity entity = context.get(LootContextParameters.THIS_ENTITY);
-            if(type == LootContextTypes.FISHING) {
-                if(entity instanceof FishingBobberEntity bobber) {
+        if(context.hasParam(LootContextParams.THIS_ENTITY)) {
+            LootContextParamSet type = ((ReplacingLootContext)context).getType();
+            Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
+            if(type == LootContextParamSets.FISHING) {
+                if(entity instanceof FishingHook bobber) {
                     entity = bobber.getPlayerOwner();
                 }
-            } else if(type == LootContextTypes.ENTITY) {
-                if(context.hasParameter(LootContextParameters.KILLER_ENTITY)) {
-                    entity = context.get(LootContextParameters.KILLER_ENTITY);
+            } else if(type == LootContextParamSets.ENTITY) {
+                if(context.hasParam(LootContextParams.KILLER_ENTITY)) {
+                    entity = context.getParamOrNull(LootContextParams.KILLER_ENTITY);
                 }
-            } else if(type == LootContextTypes.BARTER) {
-                if(entity instanceof PiglinEntity piglin) {
-                    Optional<PlayerEntity> optional = piglin.getBrain().getOptionalMemory(MemoryModuleType.NEAREST_VISIBLE_PLAYER);
+            } else if(type == LootContextParamSets.PIGLIN_BARTER) {
+                if(entity instanceof Piglin piglin) {
+                    Optional<Player> optional = piglin.getBrain().getMemoryInternal(MemoryModuleType.NEAREST_VISIBLE_PLAYER);
                     if(optional.isPresent()) {
                         entity = optional.get();
                     }
@@ -84,23 +82,23 @@ public class LootTableMixin implements IdentifiedLootTable {
             ReplaceLootTablePower.addToStack((LootTable)(Object)this);
             LootTable replacement = null;
             for (ReplaceLootTablePower power : powers) {
-                Identifier id = power.getReplacement(apoli$id);
+                ResourceLocation id = power.getReplacement(apoli$id);
                 replacement = apoli$lootManager.getLootTable(id);
                 ReplaceLootTablePower.addToStack(replacement);
             }
             ((ReplacingLootContext)context).setReplaced((LootTable)(Object)this);
-            replacement.generateUnprocessedLoot(context, lootConsumer);
+            replacement.getRandomItemsRaw(context, lootConsumer);
             ReplaceLootTablePower.clearStack();
             ci.cancel();
         }
     }
 
-    @Inject(method = "generateUnprocessedLoot(Lnet/minecraft/loot/context/LootContext;Ljava/util/function/Consumer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/loot/context/LootContext;markActive(Lnet/minecraft/loot/context/LootContext$Entry;)Z"))
+    @Inject(method = "getRandomItemsRaw(Lnet/minecraft/world/level/storage/loot/LootContext;Ljava/util/function/Consumer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/storage/loot/LootContext;pushVisitedElement(Lnet/minecraft/world/level/storage/loot/LootContext$VisitedEntry;)Z"))
     private void popReplacementStack(LootContext context, Consumer<ItemStack> lootConsumer, CallbackInfo ci) {
         ReplaceLootTablePower.pop();
     }
 
-    @Inject(method = "generateUnprocessedLoot(Lnet/minecraft/loot/context/LootContext;Ljava/util/function/Consumer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/loot/context/LootContext;markInactive(Lnet/minecraft/loot/context/LootContext$Entry;)V"))
+    @Inject(method = "getRandomItemsRaw(Lnet/minecraft/world/level/storage/loot/LootContext;Ljava/util/function/Consumer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/storage/loot/LootContext;popVisitedElement(Lnet/minecraft/world/level/storage/loot/LootContext$VisitedEntry;)V"))
     private void restoreReplacementStack(LootContext context, Consumer<ItemStack> lootConsumer, CallbackInfo ci) {
         ReplaceLootTablePower.restore();
     }

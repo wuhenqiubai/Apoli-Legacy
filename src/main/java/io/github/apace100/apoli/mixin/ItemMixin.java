@@ -3,20 +3,18 @@ package io.github.apace100.apoli.mixin;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ItemOnItemPower;
 import io.github.apace100.apoli.power.ModifyFoodPower;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.StackReference;
-import net.minecraft.item.FoodComponent;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.util.ClickType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
-import net.minecraft.world.World;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.SlotAccess;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickAction;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
@@ -25,22 +23,22 @@ import java.util.stream.Collectors;
 @Mixin(Item.class)
 public class ItemMixin {
 
-    @Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/TypedActionResult;fail(Ljava/lang/Object;)Lnet/minecraft/util/TypedActionResult;"), cancellable = true)
-    private void tryItemAlwaysEdible(World world, PlayerEntity user, Hand hand, CallbackInfoReturnable<TypedActionResult<ItemStack>> cir) {
-        ItemStack itemStack = user.getStackInHand(hand);
+    @Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/InteractionResultHolder;fail(Ljava/lang/Object;)Lnet/minecraft/world/InteractionResultHolder;"), cancellable = true)
+    private void tryItemAlwaysEdible(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
+        ItemStack itemStack = user.getItemInHand(hand);
         if (PowerHolderComponent.KEY.get(user).getPowers(ModifyFoodPower.class).stream()
             .anyMatch(p -> p.doesMakeAlwaysEdible() && p.doesApply(itemStack))) {
-            user.setCurrentHand(hand);
-            cir.setReturnValue(TypedActionResult.consume(itemStack));
+            user.startUsingItem(hand);
+            cir.setReturnValue(InteractionResultHolder.consume(itemStack));
         }
     }
 
-    @Inject(method = "onClicked", at = @At("RETURN"), cancellable = true)
-    private void forgeItem(ItemStack stack, ItemStack otherStack, Slot slot, ClickType clickType, PlayerEntity player, StackReference cursorStackReference, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "overrideOtherStackedOnMe", at = @At("RETURN"), cancellable = true)
+    private void forgeItem(ItemStack stack, ItemStack otherStack, Slot slot, ClickAction clickType, Player player, SlotAccess cursorStackReference, CallbackInfoReturnable<Boolean> cir) {
         if(cir.getReturnValue()) {
             return;
         }
-        if (clickType != ClickType.RIGHT) {
+        if (clickType != ClickAction.SECONDARY) {
             return;
         }
         List<ItemOnItemPower> powers = PowerHolderComponent.getPowers(player, ItemOnItemPower.class).stream().filter(p -> p.doesApply(otherStack, stack)).collect(Collectors.toList());

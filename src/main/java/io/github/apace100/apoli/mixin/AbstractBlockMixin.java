@@ -1,31 +1,22 @@
 package io.github.apace100.apoli.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ModifyBreakSpeedPower;
-import io.github.apace100.apoli.power.PreventBlockSelectionPower;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.EntityShapeContext;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.BlockView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(AbstractBlock.class)
+@Mixin(BlockBehaviour.class)
 public abstract class AbstractBlockMixin {
 
-    @Inject(at = @At("RETURN"), method = "calcBlockBreakingDelta", cancellable = true)
-    private void modifyBlockBreakSpeed(BlockState state, PlayerEntity player, BlockView world, BlockPos pos, CallbackInfoReturnable<Float> info) {
-        float base = info.getReturnValue();
-        float modified = PowerHolderComponent.modify(player, ModifyBreakSpeedPower.class, base, p -> p.doesApply(player.getWorld(), pos));
-        info.setReturnValue(modified);
+    @ModifyReturnValue(at = @At("RETURN"), method = "getDestroyProgress")
+    private float modifyBlockBreakSpeed(float base, BlockState state, Player player, BlockGetter world, BlockPos pos) {
+        return PowerHolderComponent.modify(player, ModifyBreakSpeedPower.class, base, p -> p.doesApply(player.level(), pos));
     }
 
 }

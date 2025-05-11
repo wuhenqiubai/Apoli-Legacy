@@ -6,15 +6,15 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.NameMutableDamageSource;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.damage.DamageSources;
-import net.minecraft.entity.damage.DamageType;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.registry.tag.DamageTypeTags;
-import net.minecraft.registry.tag.TagKey;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageSources;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
 
 import java.util.*;
 
@@ -51,7 +51,7 @@ public class DamageSourceDescription {
     private final String name;
     private final Set<TagKey<DamageType>> desiredDamageTypeTags = new HashSet<>();
 
-    private RegistryKey<DamageType> damageType;
+    private ResourceKey<DamageType> damageType;
 
     public DamageSourceDescription(String name) {
         this.name = name;
@@ -69,7 +69,7 @@ public class DamageSourceDescription {
         desiredDamageTypeTags.add(damageTypeTag);
     }
 
-    public RegistryKey<DamageType> getDamageType(DamageSources damageSources) {
+    public ResourceKey<DamageType> getDamageType(DamageSources damageSources) {
         if(damageType == null) {
             findBestMatchingDamageType(damageSources);
         }
@@ -77,19 +77,19 @@ public class DamageSourceDescription {
     }
 
     public DamageSource create(DamageSources damageSources) {
-        DamageSource damageSource = damageSources.create(getDamageType(damageSources));
+        DamageSource damageSource = damageSources.source(getDamageType(damageSources));
         overwriteDamageSourceMessageKey(damageSource);
         return damageSource;
     }
 
     public DamageSource create(DamageSources damageSources, Entity attacker) {
-        DamageSource damageSource = damageSources.create(getDamageType(damageSources), attacker);
+        DamageSource damageSource = damageSources.source(getDamageType(damageSources), attacker);
         overwriteDamageSourceMessageKey(damageSource);
         return damageSource;
     }
 
     public DamageSource create(DamageSources damageSources, Entity source, Entity attacker) {
-        DamageSource damageSource = damageSources.create(getDamageType(damageSources), source, attacker);
+        DamageSource damageSource = damageSources.source(getDamageType(damageSources), source, attacker);
         overwriteDamageSourceMessageKey(damageSource);
         return damageSource;
     }
@@ -99,25 +99,25 @@ public class DamageSourceDescription {
     }
 
     private void findBestMatchingDamageType(DamageSources damageSources) {
-        Optional<? extends RegistryEntry<DamageType>> bestMatchingDamageType = damageSources.registry.streamEntries()
+        Optional<? extends Holder<DamageType>> bestMatchingDamageType = damageSources.damageTypes.holders()
                 .max(Comparator.comparingInt(this::getTagMatches));
         if(bestMatchingDamageType.isPresent()) {
-            RegistryEntry<DamageType> bestMatch = bestMatchingDamageType.get();
+            Holder<DamageType> bestMatch = bestMatchingDamageType.get();
             int bestMatchTagCount = getTagMatches(bestMatch);
             if(bestMatchTagCount < TAG_COUNT) {
                 Apoli.LOGGER.warn("Could not find a perfect damage type for legacy damage source field, best match: {} out of {} tags with damage type \"{}\". Consider creating your own custom damage type.",
-                        bestMatchTagCount, TAG_COUNT, bestMatch.getKey().map(RegistryKey::getValue).map(Identifier::toString).orElse("<unknown>"));
+                        bestMatchTagCount, TAG_COUNT, bestMatch.unwrapKey().map(ResourceKey::location).map(ResourceLocation::toString).orElse("<unknown>"));
             }
-            damageType = bestMatch.getKey().orElseThrow();
+            damageType = bestMatch.unwrapKey().orElseThrow();
         } else {
             throw new NoSuchElementException("Damage type registry was empty or not loaded yet");
         }
     }
 
-    private int getTagMatches(RegistryEntry<DamageType> damageType) {
+    private int getTagMatches(Holder<DamageType> damageType) {
         int count = 0;
         for(TagKey<DamageType> tag : STRING_TO_TAGS.values()) {
-            if(damageType.isIn(tag) == desiredDamageTypeTags.contains(tag)) {
+            if(damageType.is(tag) == desiredDamageTypeTags.contains(tag)) {
                 count++;
             }
         }

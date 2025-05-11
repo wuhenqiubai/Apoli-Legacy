@@ -6,15 +6,15 @@ import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -23,46 +23,46 @@ public class FireProjectileAction {
 
     public static void action(SerializableData.Instance data, Entity entity) {
 
-        if (entity.getWorld().isClient) return;
+        if (entity.level().isClientSide) return;
 
-        ServerWorld serverWorld = (ServerWorld) entity.getWorld();
+        ServerLevel serverWorld = (ServerLevel) entity.level();
         int count = data.get("count");
 
         for (int i = 0; i < count; i++) {
 
             EntityType<?> entityType = data.get("entity_type");
-            NbtCompound entityNbt = data.get("tag");
-            float yaw = entity.getYaw();
-            float pitch = entity.getPitch();
+            CompoundTag entityNbt = data.get("tag");
+            float yaw = entity.getYRot();
+            float pitch = entity.getXRot();
 
             Optional<Entity> opt$entityToSpawn = MiscUtil.getEntityWithPassengers(
                 serverWorld,
                 entityType,
                 entityNbt,
-                entity.getPos().add(0, entity.getEyeHeight(entity.getPose()), 0),
+                entity.position().add(0, entity.getEyeHeight(entity.getPose()), 0),
                 yaw,
                 pitch
             );
             if (opt$entityToSpawn.isEmpty()) return;
 
-            Vec3d rotationVector = entity.getRotationVector();
-            Vec3d velocity = entity.getVelocity();
+            Vec3 rotationVector = entity.getLookAngle();
+            Vec3 velocity = entity.getDeltaMovement();
             Entity entityToSpawn = opt$entityToSpawn.get();
-            Random random = serverWorld.getRandom();
+            RandomSource random = serverWorld.getRandom();
 
             float divergence = data.get("divergence");
             float speed = data.get("speed");
 
-            if (entityToSpawn instanceof ProjectileEntity projectileToSpawn) {
+            if (entityToSpawn instanceof Projectile projectileToSpawn) {
 
-                if (projectileToSpawn instanceof ExplosiveProjectileEntity explosiveProjectileToSpawn) {
-                    explosiveProjectileToSpawn.powerX = rotationVector.x * speed;
-                    explosiveProjectileToSpawn.powerY = rotationVector.y * speed;
-                    explosiveProjectileToSpawn.powerZ = rotationVector.z * speed;
+                if (projectileToSpawn instanceof AbstractHurtingProjectile explosiveProjectileToSpawn) {
+                    explosiveProjectileToSpawn.xPower = rotationVector.x * speed;
+                    explosiveProjectileToSpawn.yPower = rotationVector.y * speed;
+                    explosiveProjectileToSpawn.zPower = rotationVector.z * speed;
                 }
 
                 projectileToSpawn.setOwner(entity);
-                projectileToSpawn.setVelocity(entity, pitch, yaw, 0F, speed, divergence);
+                projectileToSpawn.shootFromRotation(entity, pitch, yaw, 0F, speed, divergence);
 
             }
 
@@ -71,21 +71,21 @@ public class FireProjectileAction {
                 float  j = 0.017453292F;
                 double k = 0.007499999832361937D;
 
-                float l = -MathHelper.sin(yaw * j) * MathHelper.cos(pitch * j);
-                float m = -MathHelper.sin(pitch * j);
-                float n =  MathHelper.cos(yaw * j) * MathHelper.cos(pitch * j);
+                float l = -Mth.sin(yaw * j) * Mth.cos(pitch * j);
+                float m = -Mth.sin(pitch * j);
+                float n =  Mth.cos(yaw * j) * Mth.cos(pitch * j);
 
-                Vec3d vec3d = new Vec3d(l, m, n)
+                Vec3 vec3d = new Vec3(l, m, n)
                     .normalize()
                     .add(random.nextGaussian() * k * divergence, random.nextGaussian() * k * divergence, random.nextGaussian() * k * divergence)
-                    .multiply(speed);
+                    .scale(speed);
 
-                entityToSpawn.setVelocity(vec3d);
-                entityToSpawn.addVelocity(velocity.x, entity.isOnGround() ? 0.0D : velocity.y, velocity.z);
+                entityToSpawn.setDeltaMovement(vec3d);
+                entityToSpawn.push(velocity.x, entity.onGround() ? 0.0D : velocity.y, velocity.z);
 
             }
 
-            serverWorld.spawnNewEntityAndPassengers(entityToSpawn);
+            serverWorld.tryAddFreshEntityWithPassengers(entityToSpawn);
             data.<Consumer<Entity>>ifPresent("projectile_action", projectileAction -> projectileAction.accept(entityToSpawn));
 
         }

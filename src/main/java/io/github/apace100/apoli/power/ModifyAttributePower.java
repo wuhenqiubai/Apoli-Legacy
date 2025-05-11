@@ -5,21 +5,21 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 
 import java.util.List;
 
 public class ModifyAttributePower extends ValueModifyingPower {
 
-    private final EntityAttribute attribute;
+    private final Attribute attribute;
 
-    public ModifyAttributePower(PowerType<?> type, LivingEntity entity, EntityAttribute attribute) {
+    public ModifyAttributePower(PowerType<?> type, LivingEntity entity, Attribute attribute) {
         super(type, entity);
         this.attribute = attribute;
     }
 
-    public EntityAttribute getAttribute() {
+    public Attribute getAttribute() {
         return attribute;
     }
 

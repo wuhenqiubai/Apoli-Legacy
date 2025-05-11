@@ -7,9 +7,9 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.HudRender;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtLong;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.entity.LivingEntity;
 
 public class CooldownPower extends Power implements HudRendered {
 
@@ -25,44 +25,44 @@ public class CooldownPower extends Power implements HudRendered {
     }
 
     public boolean canUse() {
-        return entity.getEntityWorld().getTime() >= lastUseTime + cooldownDuration && isActive();
+        return entity.getCommandSenderWorld().getGameTime() >= lastUseTime + cooldownDuration && isActive();
     }
 
     public void use() {
-        lastUseTime = entity.getEntityWorld().getTime();
+        lastUseTime = entity.getCommandSenderWorld().getGameTime();
         PowerHolderComponent.syncPower(entity, this.type);
     }
 
     public float getProgress() {
-        float time = entity.getEntityWorld().getTime() - lastUseTime;
+        float time = entity.getCommandSenderWorld().getGameTime() - lastUseTime;
         return Math.min(1F, Math.max(time / (float)cooldownDuration, 0F));
     }
 
     public int getRemainingTicks() {
-        return (int)Math.max(0, cooldownDuration - (entity.getEntityWorld().getTime() - lastUseTime));
+        return (int)Math.max(0, cooldownDuration - (entity.getCommandSenderWorld().getGameTime() - lastUseTime));
     }
 
     public void modify(int changeInTicks){
         this.lastUseTime += changeInTicks;
-        long currentTime = entity.getEntityWorld().getTime();
+        long currentTime = entity.getCommandSenderWorld().getGameTime();
         if(this.lastUseTime > currentTime) {
             lastUseTime = currentTime;
         }
     }
 
     public void setCooldown(int cooldownInTicks) {
-        long currentTime = entity.getEntityWorld().getTime();
+        long currentTime = entity.getCommandSenderWorld().getGameTime();
         this.lastUseTime = currentTime - Math.min(cooldownInTicks, cooldownDuration);
     }
 
     @Override
-    public NbtElement toTag() {
-        return NbtLong.of(lastUseTime);
+    public Tag toTag() {
+        return LongTag.valueOf(lastUseTime);
     }
 
     @Override
-    public void fromTag(NbtElement tag) {
-        lastUseTime = ((NbtLong)tag).longValue();
+    public void fromTag(Tag tag) {
+        lastUseTime = ((LongTag)tag).getAsLong();
     }
 
     @Override
@@ -77,7 +77,7 @@ public class CooldownPower extends Power implements HudRendered {
 
     @Override
     public boolean shouldRender() {
-        return (entity.getEntityWorld().getTime() - lastUseTime) <= cooldownDuration;
+        return (entity.getCommandSenderWorld().getGameTime() - lastUseTime) <= cooldownDuration;
     }
 
     public static PowerFactory createFactory() {

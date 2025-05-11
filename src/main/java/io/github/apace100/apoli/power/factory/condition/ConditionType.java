@@ -4,10 +4,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.github.apace100.apoli.util.NamespaceAlias;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.registry.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 
 import java.util.Optional;
 
@@ -21,12 +21,12 @@ public class ConditionType<T> {
         this.conditionRegistry = conditionRegistry;
     }
 
-    public void write(PacketByteBuf buf, ConditionFactory.Instance conditionInstance) {
+    public void write(FriendlyByteBuf buf, ConditionFactory.Instance conditionInstance) {
         conditionInstance.write(buf);
     }
 
-    public ConditionFactory<T>.Instance read(PacketByteBuf buf) {
-        Identifier type = Identifier.tryParse(buf.readString(32767));
+    public ConditionFactory<T>.Instance read(FriendlyByteBuf buf) {
+        ResourceLocation type = ResourceLocation.tryParse(buf.readUtf(32767));
         ConditionFactory<T> conditionFactory = conditionRegistry.get(type);
         return conditionFactory.read(buf);
     }
@@ -37,12 +37,12 @@ public class ConditionType<T> {
             if(!obj.has("type")) {
                 throw new JsonSyntaxException(conditionTypeName + " json requires \"type\" identifier.");
             }
-            String typeIdentifier = JsonHelper.getString(obj, "type");
-            Identifier type = Identifier.tryParse(typeIdentifier);
-            Optional<ConditionFactory<T>> optionalCondition = conditionRegistry.getOrEmpty(type);
+            String typeIdentifier = GsonHelper.getAsString(obj, "type");
+            ResourceLocation type = ResourceLocation.tryParse(typeIdentifier);
+            Optional<ConditionFactory<T>> optionalCondition = conditionRegistry.getOptional(type);
             if(!optionalCondition.isPresent()) {
                 if(NamespaceAlias.hasAlias(type)) {
-                    optionalCondition = conditionRegistry.getOrEmpty(NamespaceAlias.resolveAlias(type));
+                    optionalCondition = conditionRegistry.getOptional(NamespaceAlias.resolveAlias(type));
                 }
                 if(!optionalCondition.isPresent()) {
                     throw new JsonSyntaxException(conditionTypeName + " json type \"" + type.toString() + "\" is not defined.");

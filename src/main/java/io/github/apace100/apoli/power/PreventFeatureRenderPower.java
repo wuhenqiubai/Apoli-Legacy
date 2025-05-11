@@ -8,9 +8,8 @@ import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.render.entity.feature.FeatureRenderer;
-import net.minecraft.entity.LivingEntity;
-
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.world.entity.LivingEntity;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -28,10 +27,10 @@ public class PreventFeatureRenderPower extends Power {
     }
 
     @Environment(EnvType.CLIENT)
-    public boolean doesApply(Class<? extends FeatureRenderer<?, ?>> cls) {
-        Optional<ClassDataRegistry> optionalCdr = ClassDataRegistry.get(ClassUtil.castClass(FeatureRenderer.class));
+    public boolean doesApply(Class<? extends RenderLayer<?, ?>> cls) {
+        Optional<ClassDataRegistry> optionalCdr = ClassDataRegistry.get(ClassUtil.castClass(RenderLayer.class));
         if(optionalCdr.isPresent()) {
-            ClassDataRegistry<? extends FeatureRenderer<?, ?>> cdr = optionalCdr.get();
+            ClassDataRegistry<? extends RenderLayer<?, ?>> cdr = optionalCdr.get();
             return classStrings.stream()
                 .map(cdr::mapStringToClass)
                 .filter(Optional::isPresent)

@@ -20,24 +20,24 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import io.github.apace100.calio.util.ArgumentWrapper;
 import io.github.ladysnake.pal.Pal;
 import io.github.ladysnake.pal.PlayerAbility;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.command.EntitySelector;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.command.argument.ItemSlotArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.explosion.Explosion;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.SlotArgument;
+import net.minecraft.commands.arguments.selector.EntitySelector;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.level.material.FluidState;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.EnumSet;
@@ -55,10 +55,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ConditionFactory<Entity>.Instance>> ENTITY_CONDITIONS =
         SerializableDataType.list(ENTITY_CONDITION);
 
-    public static final SerializableDataType<ConditionFactory<Pair<Entity, Entity>>.Instance> BIENTITY_CONDITION =
+    public static final SerializableDataType<ConditionFactory<Tuple<Entity, Entity>>.Instance> BIENTITY_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.BIENTITY);
 
-    public static final SerializableDataType<List<ConditionFactory<Pair<Entity, Entity>>.Instance>> BIENTITY_CONDITIONS =
+    public static final SerializableDataType<List<ConditionFactory<Tuple<Entity, Entity>>.Instance>> BIENTITY_CONDITIONS =
         SerializableDataType.list(BIENTITY_CONDITION);
 
     public static final SerializableDataType<ConditionFactory<ItemStack>.Instance> ITEM_CONDITION =
@@ -67,10 +67,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ConditionFactory<ItemStack>.Instance>> ITEM_CONDITIONS =
         SerializableDataType.list(ITEM_CONDITION);
 
-    public static final SerializableDataType<ConditionFactory<CachedBlockPosition>.Instance> BLOCK_CONDITION =
+    public static final SerializableDataType<ConditionFactory<BlockInWorld>.Instance> BLOCK_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.BLOCK);
 
-    public static final SerializableDataType<List<ConditionFactory<CachedBlockPosition>.Instance>> BLOCK_CONDITIONS =
+    public static final SerializableDataType<List<ConditionFactory<BlockInWorld>.Instance>> BLOCK_CONDITIONS =
         SerializableDataType.list(BLOCK_CONDITION);
 
     public static final SerializableDataType<ConditionFactory<FluidState>.Instance> FLUID_CONDITION =
@@ -79,16 +79,16 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ConditionFactory<FluidState>.Instance>> FLUID_CONDITIONS =
         SerializableDataType.list(FLUID_CONDITION);
 
-    public static final SerializableDataType<ConditionFactory<Pair<DamageSource, Float>>.Instance> DAMAGE_CONDITION =
+    public static final SerializableDataType<ConditionFactory<Tuple<DamageSource, Float>>.Instance> DAMAGE_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.DAMAGE);
 
-    public static final SerializableDataType<List<ConditionFactory<Pair<DamageSource, Float>>.Instance>> DAMAGE_CONDITIONS =
+    public static final SerializableDataType<List<ConditionFactory<Tuple<DamageSource, Float>>.Instance>> DAMAGE_CONDITIONS =
         SerializableDataType.list(DAMAGE_CONDITION);
 
-    public static final SerializableDataType<ConditionFactory<RegistryEntry<Biome>>.Instance> BIOME_CONDITION =
+    public static final SerializableDataType<ConditionFactory<Holder<Biome>>.Instance> BIOME_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.BIOME);
 
-    public static final SerializableDataType<List<ConditionFactory<RegistryEntry<Biome>>.Instance>> BIOME_CONDITIONS =
+    public static final SerializableDataType<List<ConditionFactory<Holder<Biome>>.Instance>> BIOME_CONDITIONS =
         SerializableDataType.list(BIOME_CONDITION);
 
     public static final SerializableDataType<ActionFactory<Entity>.Instance> ENTITY_ACTION =
@@ -97,22 +97,22 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ActionFactory<Entity>.Instance>> ENTITY_ACTIONS =
         SerializableDataType.list(ENTITY_ACTION);
 
-    public static final SerializableDataType<ActionFactory<Pair<Entity, Entity>>.Instance> BIENTITY_ACTION =
+    public static final SerializableDataType<ActionFactory<Tuple<Entity, Entity>>.Instance> BIENTITY_ACTION =
         action(ClassUtil.castClass(ActionFactory.Instance.class), ActionTypes.BIENTITY);
 
-    public static final SerializableDataType<List<ActionFactory<Pair<Entity, Entity>>.Instance>> BIENTITY_ACTIONS =
+    public static final SerializableDataType<List<ActionFactory<Tuple<Entity, Entity>>.Instance>> BIENTITY_ACTIONS =
         SerializableDataType.list(BIENTITY_ACTION);
 
-    public static final SerializableDataType<ActionFactory<Triple<World, BlockPos, Direction>>.Instance> BLOCK_ACTION =
+    public static final SerializableDataType<ActionFactory<Triple<Level, BlockPos, Direction>>.Instance> BLOCK_ACTION =
         action(ClassUtil.castClass(ActionFactory.Instance.class), ActionTypes.BLOCK);
 
-    public static final SerializableDataType<List<ActionFactory<Triple<World, BlockPos, Direction>>.Instance>> BLOCK_ACTIONS =
+    public static final SerializableDataType<List<ActionFactory<Triple<Level, BlockPos, Direction>>.Instance>> BLOCK_ACTIONS =
         SerializableDataType.list(BLOCK_ACTION);
 
-    public static final SerializableDataType<ActionFactory<Pair<World, ItemStack>>.Instance> ITEM_ACTION =
+    public static final SerializableDataType<ActionFactory<Tuple<Level, ItemStack>>.Instance> ITEM_ACTION =
         action(ClassUtil.castClass(ActionFactory.Instance.class), ActionTypes.ITEM);
 
-    public static final SerializableDataType<List<ActionFactory<Pair<World, ItemStack>>.Instance>> ITEM_ACTIONS =
+    public static final SerializableDataType<List<ActionFactory<Tuple<Level, ItemStack>>.Instance>> ITEM_ACTIONS =
         SerializableDataType.list(ITEM_ACTION);
 
     public static final SerializableDataType<Space> SPACE = SerializableDataType.enumValue(Space.class);
@@ -133,7 +133,7 @@ public class ApoliDataTypes {
             .add("value", SerializableDataTypes.DOUBLE)
             .add("name", SerializableDataTypes.STRING, "Unnamed EntityAttributeModifier"),
         dataInst -> new AttributedEntityAttributeModifier(dataInst.get("attribute"),
-            new EntityAttributeModifier(
+            new AttributeModifier(
                 dataInst.getString("name"),
                 dataInst.getDouble("value"),
                 dataInst.get("operation"))),
@@ -141,7 +141,7 @@ public class ApoliDataTypes {
             SerializableData.Instance dataInst = data.new Instance();
             dataInst.set("attribute", inst.getAttribute());
             dataInst.set("operation", inst.getModifier().getOperation());
-            dataInst.set("value", inst.getModifier().getValue());
+            dataInst.set("value", inst.getModifier().getAmount());
             dataInst.set("name", inst.getModifier().getName());
             return dataInst;
         });
@@ -149,7 +149,7 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<AttributedEntityAttributeModifier>> ATTRIBUTED_ATTRIBUTE_MODIFIERS =
         SerializableDataType.list(ATTRIBUTED_ATTRIBUTE_MODIFIER);
 
-    public static final SerializableDataType<Pair<Integer, ItemStack>> POSITIONED_ITEM_STACK = SerializableDataType.compound(ClassUtil.castClass(Pair.class),
+    public static final SerializableDataType<Tuple<Integer, ItemStack>> POSITIONED_ITEM_STACK = SerializableDataType.compound(ClassUtil.castClass(Tuple.class),
         new SerializableData()
             .add("item", SerializableDataTypes.ITEM)
             .add("amount", SerializableDataTypes.INT, 1)
@@ -158,20 +158,20 @@ public class ApoliDataTypes {
         (data) ->  {
             ItemStack stack = new ItemStack((Item)data.get("item"), data.getInt("amount"));
             if(data.isPresent("tag")) {
-                stack.setNbt(data.get("tag"));
+                stack.setTag(data.get("tag"));
             }
-            return new Pair<>(data.getInt("slot"), stack);
+            return new Tuple<>(data.getInt("slot"), stack);
         },
         ((serializableData, positionedStack) -> {
             SerializableData.Instance data = serializableData.new Instance();
-            data.set("item", positionedStack.getRight().getItem());
-            data.set("amount", positionedStack.getRight().getCount());
-            data.set("tag", positionedStack.getRight().hasNbt() ? positionedStack.getRight().getNbt() : null);
-            data.set("slot", positionedStack.getLeft());
+            data.set("item", positionedStack.getB().getItem());
+            data.set("amount", positionedStack.getB().getCount());
+            data.set("tag", positionedStack.getB().hasTag() ? positionedStack.getB().getTag() : null);
+            data.set("slot", positionedStack.getA());
             return data;
         }));
 
-    public static final SerializableDataType<List<Pair<Integer, ItemStack>>> POSITIONED_ITEM_STACKS = SerializableDataType.list(POSITIONED_ITEM_STACK);
+    public static final SerializableDataType<List<Tuple<Integer, ItemStack>>> POSITIONED_ITEM_STACKS = SerializableDataType.list(POSITIONED_ITEM_STACK);
 
     public static final SerializableDataType<Active.Key> KEY = SerializableDataType.compound(Active.Key.class,
         new SerializableData()
@@ -206,7 +206,7 @@ public class ApoliDataTypes {
             SerializableData()
             .add("should_render", SerializableDataTypes.BOOLEAN, true)
             .add("bar_index", SerializableDataTypes.INT, 0)
-            .add("sprite_location", SerializableDataTypes.IDENTIFIER, new Identifier("origins", "textures/gui/resource_bar.png"))
+            .add("sprite_location", SerializableDataTypes.IDENTIFIER, new ResourceLocation("origins", "textures/gui/resource_bar.png"))
             .add("condition", ENTITY_CONDITION, null)
             .add("inverted", SerializableDataTypes.BOOLEAN, false),
         (dataInst) -> new HudRender(
@@ -232,18 +232,18 @@ public class ApoliDataTypes {
         PlayerAbility.class, SerializableDataTypes.IDENTIFIER,
         PlayerAbility::getId, id -> Pal.provideRegisteredAbility(id).get());
 
-    public static final SerializableDataType<ArgumentWrapper<Integer>> ITEM_SLOT = SerializableDataType.argumentType(ItemSlotArgumentType.itemSlot());
+    public static final SerializableDataType<ArgumentWrapper<Integer>> ITEM_SLOT = SerializableDataType.argumentType(SlotArgument.slot());
 
     public static final SerializableDataType<List<ArgumentWrapper<Integer>>> ITEM_SLOTS = SerializableDataType.list(ITEM_SLOT);
 
-    public static final SerializableDataType<Explosion.DestructionType> BACKWARDS_COMPATIBLE_DESTRUCTION_TYPE = SerializableDataType.mapped(Explosion.DestructionType.class,
+    public static final SerializableDataType<Explosion.BlockInteraction> BACKWARDS_COMPATIBLE_DESTRUCTION_TYPE = SerializableDataType.mapped(Explosion.BlockInteraction.class,
             HashBiMap.create(ImmutableBiMap.of(
-                    "none", Explosion.DestructionType.KEEP,
-                    "break", Explosion.DestructionType.DESTROY,
-                    "destroy", Explosion.DestructionType.DESTROY_WITH_DECAY)
+                    "none", Explosion.BlockInteraction.KEEP,
+                    "break", Explosion.BlockInteraction.DESTROY,
+                    "destroy", Explosion.BlockInteraction.DESTROY_WITH_DECAY)
             ));
 
-    public static final SerializableDataType<ArgumentWrapper<EntitySelector>> ENTITIES_SELECTOR = SerializableDataType.argumentType(EntityArgumentType.entities());
+    public static final SerializableDataType<ArgumentWrapper<EntitySelector>> ENTITIES_SELECTOR = SerializableDataType.argumentType(EntityArgument.entities());
 
     public static final SerializableDataType<DamageSourceDescription> DAMAGE_SOURCE_DESCRIPTION = SerializableDataType.compound(DamageSourceDescription.class,
             DamageSourceDescription.DATA, DamageSourceDescription::fromData, DamageSourceDescription::toData);

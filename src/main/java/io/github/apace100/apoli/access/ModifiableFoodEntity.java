@@ -1,7 +1,7 @@
 package io.github.apace100.apoli.access;
 
 import io.github.apace100.apoli.power.ModifyFoodPower;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 

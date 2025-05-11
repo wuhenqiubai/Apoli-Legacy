@@ -1,24 +1,24 @@
 package io.github.apace100.apoli.mixin;
 
 import io.github.apace100.apoli.access.ReplacingLootContextParameterSet;
-import net.minecraft.loot.context.LootContextParameterSet;
-import net.minecraft.loot.context.LootContextType;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParamSet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(LootContextParameterSet.class)
+@Mixin(LootParams.class)
 public class LootContextParameterSetMixin implements ReplacingLootContextParameterSet {
 
     @Unique
-    private LootContextType apoli$lootContextType;
+    private LootContextParamSet apoli$lootContextType;
 
     @Override
-    public void setType(LootContextType type) {
+    public void setType(LootContextParamSet type) {
         apoli$lootContextType = type;
     }
 
     @Override
-    public LootContextType getType() {
+    public LootContextParamSet getType() {
         return apoli$lootContextType;
     }
 

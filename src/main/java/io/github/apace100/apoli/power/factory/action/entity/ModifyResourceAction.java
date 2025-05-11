@@ -8,11 +8,10 @@ import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.VariableIntPower;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
-import io.github.apace100.apoli.util.ResourceOperation;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class ModifyResourceAction {
 

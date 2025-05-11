@@ -6,37 +6,29 @@ import io.github.apace100.apoli.mixin.CraftingInventoryAccessor;
 import io.github.apace100.apoli.mixin.CraftingScreenHandlerAccessor;
 import io.github.apace100.apoli.mixin.PlayerScreenHandlerAccessor;
 import io.github.apace100.apoli.power.RecipePower;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.RecipeInputInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeSerializer;
-import net.minecraft.recipe.SpecialCraftingRecipe;
-import net.minecraft.recipe.SpecialRecipeSerializer;
-import net.minecraft.recipe.book.CraftingRecipeCategory;
-import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.screen.CraftingScreenHandler;
-import net.minecraft.screen.PlayerScreenHandler;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.util.Identifier;
-import net.minecraft.world.World;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.*;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.level.Level;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class PowerRestrictedCraftingRecipe extends SpecialCraftingRecipe {
+public class PowerRestrictedCraftingRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<?> SERIALIZER = new SpecialRecipeSerializer<PowerRestrictedCraftingRecipe>(PowerRestrictedCraftingRecipe::new);
+    public static final RecipeSerializer<?> SERIALIZER = new SimpleCraftingRecipeSerializer<PowerRestrictedCraftingRecipe>(PowerRestrictedCraftingRecipe::new);
 
-    public PowerRestrictedCraftingRecipe(Identifier id, CraftingRecipeCategory category) {
+    public PowerRestrictedCraftingRecipe(ResourceLocation id, CraftingBookCategory category) {
         super(id, category);
     }
 
     @Override
-    public boolean matches(RecipeInputInventory inventory, World world) {
-        if (inventory instanceof CraftingInventory craftingInventory)
+    public boolean matches(CraftingContainer inventory, Level world) {
+        if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
             return getRecipes(craftingInventory).stream().anyMatch(r -> r.matches(craftingInventory, world));
         }
@@ -45,17 +37,17 @@ public class PowerRestrictedCraftingRecipe extends SpecialCraftingRecipe {
     }
 
     @Override
-    public ItemStack craft(RecipeInputInventory inventory, DynamicRegistryManager registryManager) {
-        if (inventory instanceof CraftingInventory craftingInventory)
+    public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryManager) {
+        if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
-            PlayerEntity player = getPlayerFromInventory(craftingInventory);
+            Player player = getPlayerFromInventory(craftingInventory);
             if (player != null)
             {
-                Optional<Recipe<CraftingInventory>> optional = getRecipes(craftingInventory).stream().filter(r -> r.matches(craftingInventory, player.getWorld())).findFirst();
+                Optional<Recipe<TransientCraftingContainer>> optional = getRecipes(craftingInventory).stream().filter(r -> r.matches(craftingInventory, player.level())).findFirst();
                 if (optional.isPresent())
                 {
-                    Recipe<CraftingInventory> recipe = optional.get();
-                    return recipe.craft(craftingInventory, registryManager);
+                    Recipe<TransientCraftingContainer> recipe = optional.get();
+                    return recipe.assemble(craftingInventory, registryManager);
                 }
             }
         }
@@ -63,7 +55,7 @@ public class PowerRestrictedCraftingRecipe extends SpecialCraftingRecipe {
     }
 
     @Override
-    public boolean fits(int width, int height) {
+    public boolean canCraftInDimensions(int width, int height) {
         return true;
     }
 
@@ -72,25 +64,25 @@ public class PowerRestrictedCraftingRecipe extends SpecialCraftingRecipe {
         return SERIALIZER;
     }
 
-    private PlayerEntity getPlayerFromInventory(CraftingInventory inv) {
-        ScreenHandler handler = ((CraftingInventoryAccessor)inv).getHandler();
+    private Player getPlayerFromInventory(TransientCraftingContainer inv) {
+        AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
         return getPlayerFromHandler(handler);
     }
 
-    private List<Recipe<CraftingInventory>> getRecipes(CraftingInventory inv) {
-        ScreenHandler handler = ((CraftingInventoryAccessor)inv).getHandler();
-        PlayerEntity player = getPlayerFromHandler(handler);
+    private List<Recipe<TransientCraftingContainer>> getRecipes(TransientCraftingContainer inv) {
+        AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
+        Player player = getPlayerFromHandler(handler);
         if(player != null) {
             return PowerHolderComponent.getPowers(player, RecipePower.class).stream().map(RecipePower::getRecipe).collect(Collectors.toList());
         }
         return Lists.newArrayList();
     }
 
-    private PlayerEntity getPlayerFromHandler(ScreenHandler screenHandler) {
-        if(screenHandler instanceof CraftingScreenHandler) {
+    private Player getPlayerFromHandler(AbstractContainerMenu screenHandler) {
+        if(screenHandler instanceof CraftingMenu) {
             return ((CraftingScreenHandlerAccessor)screenHandler).getPlayer();
         }
-        if(screenHandler instanceof PlayerScreenHandler) {
+        if(screenHandler instanceof InventoryMenu) {
             return ((PlayerScreenHandlerAccessor)screenHandler).getOwner();
         }
         return null;

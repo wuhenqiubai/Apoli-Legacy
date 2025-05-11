@@ -5,22 +5,21 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class ModifyStatusEffectDurationPower extends ValueModifyingPower {
-    private final List<StatusEffect> statusEffects;
+    private final List<MobEffect> statusEffects;
 
-    public ModifyStatusEffectDurationPower(PowerType<?> type, LivingEntity entity, List<StatusEffect> statusEffects) {
+    public ModifyStatusEffectDurationPower(PowerType<?> type, LivingEntity entity, List<MobEffect> statusEffects) {
         super(type, entity);
         this.statusEffects = statusEffects;
     }
 
-    public boolean doesApply(StatusEffect statusEffect) {
+    public boolean doesApply(MobEffect statusEffect) {
         return statusEffects == null || statusEffects.contains(statusEffect);
     }
 
@@ -33,9 +32,9 @@ public class ModifyStatusEffectDurationPower extends ValueModifyingPower {
                 .add("modifier", Modifier.DATA_TYPE, null)
                 .add("modifiers", Modifier.LIST_TYPE, null),
             data -> (type, player) -> {
-                List<StatusEffect> statusEffects = new LinkedList<>();
-                data.<StatusEffect>ifPresent("status_effect", statusEffects::add);
-                data.<List<StatusEffect>>ifPresent("status_effects", statusEffects::addAll);
+                List<MobEffect> statusEffects = new LinkedList<>();
+                data.<MobEffect>ifPresent("status_effect", statusEffects::add);
+                data.<List<MobEffect>>ifPresent("status_effects", statusEffects::addAll);
                 ModifyStatusEffectDurationPower power = new ModifyStatusEffectDurationPower(type, player,
                     data.isPresent("status_effect") || data.isPresent("status_effects") ? statusEffects : null);
                 data.ifPresent("modifier", power::addModifier);

@@ -4,12 +4,11 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtInt;
-
 import java.util.List;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.LivingEntity;
 
 public class StackingStatusEffectPower extends StatusEffectPower {
 
@@ -30,7 +29,7 @@ public class StackingStatusEffectPower extends StatusEffectPower {
     }
 
     public void tick() {
-        if(entity.age % tickRate == 0) {
+        if(entity.tickCount % tickRate == 0) {
             if(isActive()) {
                 currentStack += 1;
                 if(currentStack > maxStack) {
@@ -53,20 +52,20 @@ public class StackingStatusEffectPower extends StatusEffectPower {
         effects.forEach(sei -> {
             int duration = durationPerStack * currentStack;
             if(duration > 0) {
-                StatusEffectInstance applySei = new StatusEffectInstance(sei.getEffectType(), duration, sei.getAmplifier(), sei.isAmbient(), sei.shouldShowParticles(), sei.shouldShowIcon());
-                entity.addStatusEffect(applySei);
+                MobEffectInstance applySei = new MobEffectInstance(sei.getEffect(), duration, sei.getAmplifier(), sei.isAmbient(), sei.isVisible(), sei.showIcon());
+                entity.addEffect(applySei);
             }
         });
     }
 
     @Override
-    public NbtElement toTag() {
-        return NbtInt.of(currentStack);
+    public Tag toTag() {
+        return IntTag.valueOf(currentStack);
     }
 
     @Override
-    public void fromTag(NbtElement tag) {
-        currentStack = ((NbtInt)tag).intValue();
+    public void fromTag(Tag tag) {
+        currentStack = ((IntTag)tag).getAsInt();
     }
 
     public static PowerFactory createFactory() {
@@ -86,10 +85,10 @@ public class StackingStatusEffectPower extends StatusEffectPower {
                         data.getInt("duration_per_stack"),
                         data.getInt("tick_rate"));
                     if(data.isPresent("effect")) {
-                        power.addEffect((StatusEffectInstance)data.get("effect"));
+                        power.addEffect((MobEffectInstance)data.get("effect"));
                     }
                     if(data.isPresent("effects")) {
-                        ((List<StatusEffectInstance>)data.get("effects")).forEach(power::addEffect);
+                        ((List<MobEffectInstance>)data.get("effects")).forEach(power::addEffect);
                     }
                     return power;
                 })

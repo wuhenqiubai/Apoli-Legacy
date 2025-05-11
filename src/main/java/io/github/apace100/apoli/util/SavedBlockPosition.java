@@ -1,39 +1,39 @@
 package io.github.apace100.apoli.util;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 
-public class SavedBlockPosition extends CachedBlockPosition {
+public class SavedBlockPosition extends BlockInWorld {
 
     private final BlockState blockState;
     private final BlockEntity blockEntity;
 
-    public SavedBlockPosition(WorldView world, BlockPos pos) {
+    public SavedBlockPosition(LevelReader world, BlockPos pos) {
         super(world, pos, true);
         this.blockState = world.getBlockState(pos);
         this.blockEntity = world.getBlockEntity(pos);
     }
 
     @Override
-    public BlockState getBlockState() {
+    public BlockState getState() {
         return blockState;
     }
 
     @Override
-    public BlockEntity getBlockEntity() {
+    public BlockEntity getEntity() {
         return blockEntity;
     }
 
     @Override
-    public WorldView getWorld() {
-        return super.getWorld();
+    public LevelReader getLevel() {
+        return super.getLevel();
     }
 
     @Override
-    public BlockPos getBlockPos() {
-        return super.getBlockPos();
+    public BlockPos getPos() {
+        return super.getPos();
     }
 }

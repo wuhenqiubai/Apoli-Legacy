@@ -5,19 +5,19 @@ import io.github.apace100.apoli.access.EntityLinkedItemStack;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.Pair;
-import net.minecraft.world.World;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.function.Consumer;
 
 public class HolderAction {
-    public static void action(SerializableData.Instance data, Pair<World, ItemStack> worldAndStack) {
-        if(worldAndStack.getRight().isEmpty()) {
+    public static void action(SerializableData.Instance data, Tuple<Level, ItemStack> worldAndStack) {
+        if(worldAndStack.getB().isEmpty()) {
             return;
         }
-        Entity holder = ((EntityLinkedItemStack)worldAndStack.getRight()).getEntity();
+        Entity holder = ((EntityLinkedItemStack)worldAndStack.getB()).getEntity();
         if(holder == null) {
             return;
         }
@@ -25,7 +25,7 @@ public class HolderAction {
         entityAction.accept(holder);
     }
 
-    public static ActionFactory<Pair<World, ItemStack>> getFactory() {
+    public static ActionFactory<Tuple<Level, ItemStack>> getFactory() {
         return new ActionFactory<>(Apoli.identifier("holder"),
             new SerializableData()
                 .add("entity_action", ApoliDataTypes.ENTITY_ACTION),

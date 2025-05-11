@@ -3,16 +3,12 @@ package io.github.apace100.apoli.power;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
-import io.github.apace100.apoli.power.factory.action.ActionFactory;
-import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
-import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.util.Pair;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -20,20 +16,20 @@ import java.util.function.Predicate;
 
 public class ModifyProjectileDamagePower extends ValueModifyingPower {
 
-    private final Predicate<Pair<DamageSource, Float>> condition;
+    private final Predicate<Tuple<DamageSource, Float>> condition;
     private final Predicate<Entity> targetCondition;
 
     private Consumer<Entity> targetAction;
     private Consumer<Entity> selfAction;
 
-    public ModifyProjectileDamagePower(PowerType<?> type, LivingEntity entity, Predicate<Pair<DamageSource, Float>> condition, Predicate<Entity> targetCondition) {
+    public ModifyProjectileDamagePower(PowerType<?> type, LivingEntity entity, Predicate<Tuple<DamageSource, Float>> condition, Predicate<Entity> targetCondition) {
         super(type, entity);
         this.condition = condition;
         this.targetCondition = targetCondition;
     }
 
     public boolean doesApply(DamageSource source, float damageAmount, LivingEntity target) {
-        return condition.test(new Pair<>(source, damageAmount)) && (target == null || targetCondition == null || targetCondition.test(target));
+        return condition.test(new Tuple<>(source, damageAmount)) && (target == null || targetCondition == null || targetCondition.test(target));
     }
 
     public void setTargetAction(Consumer<Entity> targetAction) {

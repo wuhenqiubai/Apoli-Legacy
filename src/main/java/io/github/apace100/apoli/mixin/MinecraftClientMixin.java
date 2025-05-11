@@ -1,41 +1,42 @@
 package io.github.apace100.apoli.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.EntityGlowPower;
 import io.github.apace100.apoli.power.SelfGlowPower;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public class MinecraftClientMixin {
 
-    @Shadow public ClientPlayerEntity player;
+    @Shadow public LocalPlayer player;
 
-    @Inject(method = "hasOutline", at = @At("RETURN"), cancellable = true)
-    private void makeEntitiesGlow(Entity entity, CallbackInfoReturnable<Boolean> cir) {
-        if(!cir.getReturnValue()) {
+    @ModifyReturnValue(method = "shouldEntityAppearGlowing", at = @At("RETURN"))
+    private boolean makeEntitiesGlow(boolean original, @Local(argsOnly = true) Entity entity) {
+        if(!original) {
             if(this.player != null) {
                 if(player != entity) {
                     if(PowerHolderComponent.getPowers(player, EntityGlowPower.class).stream().anyMatch(p -> p.doesApply(entity))) {
-                        cir.setReturnValue(true);
+                        return true;
                     }
                 }
                 if (entity instanceof LivingEntity) {
                     if (PowerHolderComponent.getPowers(entity, SelfGlowPower.class).stream().anyMatch(p -> p.doesApply(this.player))) {
-                        cir.setReturnValue(true);
+                        return true;
                     }
                 }
             }
         }
+        return original;
     }
 }

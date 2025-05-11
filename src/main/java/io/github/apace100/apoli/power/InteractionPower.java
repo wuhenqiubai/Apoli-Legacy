@@ -1,13 +1,12 @@
 package io.github.apace100.apoli.power;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Pair;
-import net.minecraft.world.World;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.EnumSet;
 import java.util.function.Consumer;
@@ -15,14 +14,14 @@ import java.util.function.Predicate;
 
 public class InteractionPower extends Power {
 
-    private final EnumSet<Hand> hands;
-    private final ActionResult actionResult;
+    private final EnumSet<InteractionHand> hands;
+    private final InteractionResult actionResult;
     private final Predicate<ItemStack> itemCondition;
-    protected final Consumer<Pair<World, ItemStack>> heldItemAction;
+    protected final Consumer<Tuple<Level, ItemStack>> heldItemAction;
     protected final ItemStack itemResult;
-    protected final Consumer<Pair<World, ItemStack>> resultItemAction;
+    protected final Consumer<Tuple<Level, ItemStack>> resultItemAction;
 
-    public InteractionPower(PowerType<?> type, LivingEntity entity, EnumSet<Hand> hands, ActionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Pair<World, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Pair<World, ItemStack>> resultItemAction) {
+    public InteractionPower(PowerType<?> type, LivingEntity entity, EnumSet<InteractionHand> hands, InteractionResult actionResult, Predicate<ItemStack> itemCondition, Consumer<Tuple<Level, ItemStack>> heldItemAction, ItemStack itemResult, Consumer<Tuple<Level, ItemStack>> resultItemAction) {
         super(type, entity);
         this.hands = hands;
         this.actionResult = actionResult;
@@ -32,7 +31,7 @@ public class InteractionPower extends Power {
         this.resultItemAction = resultItemAction;
     }
 
-    public boolean shouldExecute(Hand hand, ItemStack heldStack) {
+    public boolean shouldExecute(InteractionHand hand, ItemStack heldStack) {
         if(!doesApplyToHand(hand)) {
             return false;
         }
@@ -42,7 +41,7 @@ public class InteractionPower extends Power {
         return true;
     }
 
-    public boolean doesApplyToHand(Hand hand) {
+    public boolean doesApplyToHand(InteractionHand hand) {
         return hands.contains(hand);
     }
 
@@ -50,26 +49,26 @@ public class InteractionPower extends Power {
         return itemCondition == null || itemCondition.test(heldStack);
     }
 
-    public ActionResult getActionResult() {
+    public InteractionResult getActionResult() {
         return actionResult;
     }
 
-    protected void performActorItemStuff(InteractionPower power, PlayerEntity actor, Hand hand) {
-        ItemStack heldStack = actor.getStackInHand(hand);
+    protected void performActorItemStuff(InteractionPower power, Player actor, InteractionHand hand) {
+        ItemStack heldStack = actor.getItemInHand(hand);
         if(power.heldItemAction != null) {
-            power.heldItemAction.accept(new Pair<>(actor.getWorld(), heldStack));
+            power.heldItemAction.accept(new Tuple<>(actor.level(), heldStack));
         }
         ItemStack resultingStack = power.itemResult == null ? heldStack : power.itemResult.copy();
         boolean modified = power.itemResult != null;
         if(power.resultItemAction != null) {
-            power.resultItemAction.accept(new Pair<>(actor.getWorld(), resultingStack));
+            power.resultItemAction.accept(new Tuple<>(actor.level(), resultingStack));
             modified = true;
         }
         if(modified) {
             if(heldStack.isEmpty()) {
-                actor.setStackInHand(hand, resultingStack);
+                actor.setItemInHand(hand, resultingStack);
             } else {
-                actor.getInventory().offerOrDrop(resultingStack);
+                actor.getInventory().placeItemBackInInventory(resultingStack);
             }
         }
     }

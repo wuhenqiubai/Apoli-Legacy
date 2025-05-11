@@ -1,7 +1,6 @@
 package io.github.apace100.apoli.util;
 
-import io.github.apace100.apoli.Apoli;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
 
@@ -17,14 +16,14 @@ public final class NamespaceAlias {
         return aliasedNamespaces.containsKey(namespace);
     }
 
-    public static boolean hasAlias(Identifier identifier) {
+    public static boolean hasAlias(ResourceLocation identifier) {
         return hasAlias(identifier.getNamespace());
     }
 
-    public static Identifier resolveAlias(Identifier original) {
+    public static ResourceLocation resolveAlias(ResourceLocation original) {
         if(!aliasedNamespaces.containsKey(original.getNamespace())) {
             throw new RuntimeException("Tried to resolve a namespace alias for a namespace which didn't have an alias.");
         }
-        return new Identifier(aliasedNamespaces.get(original.getNamespace()), original.getPath());
+        return new ResourceLocation(aliasedNamespaces.get(original.getNamespace()), original.getPath());
     }
 }

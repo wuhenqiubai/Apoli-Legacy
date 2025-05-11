@@ -2,9 +2,8 @@ package io.github.apace100.apoli.mixin;
 
 import io.github.apace100.apoli.access.ReplacingLootContext;
 import io.github.apace100.apoli.access.ReplacingLootContextParameterSet;
-import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameterSet;
-import net.minecraft.loot.context.LootContextType;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootParams;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -16,11 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class LootContextBuilderMixin {
     @Shadow
     @Final
-    private LootContextParameterSet parameters;
+    private LootParams params;
 
-    @Inject(method = "build", at = @At("RETURN"))
+    @Inject(method = "create", at = @At("RETURN"))
     private void setLootContextType(CallbackInfoReturnable<LootContext> cir) {
-        ReplacingLootContextParameterSet rlcps = (ReplacingLootContextParameterSet) parameters;
+        ReplacingLootContextParameterSet rlcps = (ReplacingLootContextParameterSet) params;
 
         ReplacingLootContext rlc = (ReplacingLootContext) cir.getReturnValue();
         rlc.setType(rlcps.getType());

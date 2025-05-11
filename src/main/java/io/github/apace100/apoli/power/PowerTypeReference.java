@@ -1,14 +1,14 @@
 package io.github.apace100.apoli.power;
 
 import io.github.apace100.apoli.power.factory.PowerFactory;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 
 public class PowerTypeReference<T extends Power> extends PowerType<T> {
 
     private PowerType<T> referencedPowerType;
 
-    public PowerTypeReference(Identifier id) {
+    public PowerTypeReference(ResourceLocation id) {
         super(id, null);
     }
 

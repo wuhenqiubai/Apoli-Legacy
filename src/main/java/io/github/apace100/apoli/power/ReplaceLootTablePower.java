@@ -12,40 +12,39 @@ import io.github.apace100.calio.ClassUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootTable;
-import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Predicate;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
 public class ReplaceLootTablePower extends Power {
 
-    public static final Identifier REPLACED_TABLE_UTIL_ID = new Identifier(Apoli.MODID, "replaced_loot_table");
-    public static Identifier LAST_REPLACED_TABLE_ID;
+    public static final ResourceLocation REPLACED_TABLE_UTIL_ID = new ResourceLocation(Apoli.MODID, "replaced_loot_table");
+    public static ResourceLocation LAST_REPLACED_TABLE_ID;
 
     private static Stack<LootTable> REPLACEMENT_STACK = new Stack<>();
     private static Stack<LootTable> BACKTRACK_STACK = new Stack<>();
 
-    private final Map<String, Identifier> replacements;
+    private final Map<String, ResourceLocation> replacements;
 
     private final int priority;
 
     private final Predicate<ItemStack> itemCondition;
-    private final Predicate<Pair<Entity, Entity>> biEntityCondition;
-    private final Predicate<CachedBlockPosition> blockCondition;
+    private final Predicate<Tuple<Entity, Entity>> biEntityCondition;
+    private final Predicate<BlockInWorld> blockCondition;
 
-    public ReplaceLootTablePower(PowerType<?> type, LivingEntity entity, Map<String, Identifier> replacements, int priority, Predicate<ItemStack> itemCondition, Predicate<Pair<Entity, Entity>> biEntityCondition, Predicate<CachedBlockPosition> blockCondition) {
+    public ReplaceLootTablePower(PowerType<?> type, LivingEntity entity, Map<String, ResourceLocation> replacements, int priority, Predicate<ItemStack> itemCondition, Predicate<Tuple<Entity, Entity>> biEntityCondition, Predicate<BlockInWorld> blockCondition) {
         super(type, entity);
         this.replacements = replacements;
         this.priority = priority;
@@ -54,7 +53,7 @@ public class ReplaceLootTablePower extends Power {
         this.blockCondition = blockCondition;
     }
 
-    public boolean hasReplacement(Identifier id) {
+    public boolean hasReplacement(ResourceLocation id) {
         String idString = id.toString();
         if(replacements.containsKey(idString)) {
             return true;
@@ -64,17 +63,17 @@ public class ReplaceLootTablePower extends Power {
 
     public boolean doesApply(LootContext lootContext) {
         if(biEntityCondition != null
-            && !biEntityCondition.test(new Pair<>(entity, lootContext.get(LootContextParameters.THIS_ENTITY)))) {
+            && !biEntityCondition.test(new Tuple<>(entity, lootContext.getParamOrNull(LootContextParams.THIS_ENTITY)))) {
             return false;
         }
         if(itemCondition != null
-            && lootContext.hasParameter(LootContextParameters.TOOL)
-            && !itemCondition.test(lootContext.get(LootContextParameters.TOOL))) {
+            && lootContext.hasParam(LootContextParams.TOOL)
+            && !itemCondition.test(lootContext.getParamOrNull(LootContextParams.TOOL))) {
             return false;
         }
-        if(blockCondition != null && lootContext.hasParameter(LootContextParameters.ORIGIN)) {
-            BlockPos blockPos = BlockPos.ofFloored(lootContext.get(LootContextParameters.ORIGIN));
-            CachedBlockPosition cbp = new CachedBlockPosition(lootContext.getWorld(), blockPos, true);
+        if(blockCondition != null && lootContext.hasParam(LootContextParams.ORIGIN)) {
+            BlockPos blockPos = BlockPos.containing(lootContext.getParamOrNull(LootContextParams.ORIGIN));
+            BlockInWorld cbp = new BlockInWorld(lootContext.getLevel(), blockPos, true);
             if(!blockCondition.test(cbp)) {
                 return false;
             }
@@ -82,7 +81,7 @@ public class ReplaceLootTablePower extends Power {
         return true;
     }
 
-    public Identifier getReplacement(Identifier id) {
+    public ResourceLocation getReplacement(ResourceLocation id) {
         String idString = id.toString();
         if(replacements.containsKey(idString)) {
             return replacements.get(idString);
@@ -169,7 +168,7 @@ public class ReplaceLootTablePower extends Power {
 
     public static PowerFactory createFactory() {
         return new PowerFactory<>(
-            new Identifier(Apoli.MODID, "replace_loot_table"),
+            new ResourceLocation(Apoli.MODID, "replace_loot_table"),
             new SerializableData()
                 .add("replace", REPLACEMENTS_DATA_TYPE)
                 .add("priority", SerializableDataTypes.INT, 0)
@@ -184,27 +183,27 @@ public class ReplaceLootTablePower extends Power {
             .allowCondition();
     }
 
-    private static final SerializableDataType<Map<String, Identifier>> REPLACEMENTS_DATA_TYPE = new SerializableDataType<>(ClassUtil.castClass(Map.class),
+    private static final SerializableDataType<Map<String, ResourceLocation>> REPLACEMENTS_DATA_TYPE = new SerializableDataType<>(ClassUtil.castClass(Map.class),
         (packetByteBuf, stringIdentifierMap) -> {
             packetByteBuf.writeInt(stringIdentifierMap.size());
             stringIdentifierMap.forEach(((s, identifier) -> {
-                packetByteBuf.writeString(s);
-                packetByteBuf.writeIdentifier(identifier);
+                packetByteBuf.writeUtf(s);
+                packetByteBuf.writeResourceLocation(identifier);
             }));
         },
         packetByteBuf -> {
             int count = packetByteBuf.readInt();
-            Map<String, Identifier> map = new LinkedHashMap<>();
+            Map<String, ResourceLocation> map = new LinkedHashMap<>();
             for(int i = 0;i < count; i++) {
-                String s = packetByteBuf.readString();
-                Identifier id = packetByteBuf.readIdentifier();
+                String s = packetByteBuf.readUtf();
+                ResourceLocation id = packetByteBuf.readResourceLocation();
                 map.put(s, id);
             }
             return map;
         }, jsonElement -> {
             if(jsonElement.isJsonObject()) {
                 JsonObject jo = jsonElement.getAsJsonObject();
-                Map<String, Identifier> map = new LinkedHashMap<>();
+                Map<String, ResourceLocation> map = new LinkedHashMap<>();
                 for(String s : jo.keySet()) {
                     JsonElement ele = jo.get(s);
                     if(!ele.isJsonPrimitive()) {
@@ -214,7 +213,7 @@ public class ReplaceLootTablePower extends Power {
                     if(!jp.isString()) {
                         continue;
                     }
-                    Identifier id = new Identifier(jp.getAsString());
+                    ResourceLocation id = new ResourceLocation(jp.getAsString());
                     map.put(s, id);
                 }
                 return map;

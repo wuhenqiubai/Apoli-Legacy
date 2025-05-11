@@ -1,12 +1,10 @@
 package io.github.apace100.apoli.integration;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.apace100.apoli.power.PowerType;
-import io.github.apace100.calio.data.SerializableData;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * This callback is fired for each power that is loaded. It contains the ID of the power that is being read, as well as
@@ -23,5 +21,5 @@ public interface PostPowerLoadCallback {
         }
     );
 
-    void onPostPowerLoad(Identifier powerId, Identifier factoryId, boolean isSubPower, JsonObject json, PowerType<?> powerType);
+    void onPostPowerLoad(ResourceLocation powerId, ResourceLocation factoryId, boolean isSubPower, JsonObject json, PowerType<?> powerType);
 }

@@ -3,30 +3,30 @@ package io.github.apace100.apoli.power.factory.action.entity;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.EnderChestInventory;
-import net.minecraft.screen.GenericContainerScreenHandler;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
-import net.minecraft.stat.Stats;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.stats.Stats;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.PlayerEnderChestContainer;
 
 public class EnderChestAction {
-    private static final Text TITLE = Text.translatable("container.enderchest");
+    private static final Component TITLE = Component.translatable("container.enderchest");
 
     public static void action(SerializableData.Instance data, Entity entity) {
-        if (!(entity instanceof PlayerEntity player)) return;
+        if (!(entity instanceof Player player)) return;
 
-        EnderChestInventory enderChestContainer = player.getEnderChestInventory();
+        PlayerEnderChestContainer enderChestContainer = player.getEnderChestInventory();
 
-        player.openHandledScreen(
-                new SimpleNamedScreenHandlerFactory((i, inventory, _player) ->
-                        GenericContainerScreenHandler.createGeneric9x3(i, inventory, enderChestContainer),
+        player.openMenu(
+                new SimpleMenuProvider((i, inventory, _player) ->
+                        ChestMenu.threeRows(i, inventory, enderChestContainer),
                         TITLE
                 )
         );
 
-        player.incrementStat(Stats.OPEN_ENDERCHEST);
+        player.awardStat(Stats.OPEN_ENDERCHEST);
     }
 
     public static ActionFactory<Entity> getFactory() {

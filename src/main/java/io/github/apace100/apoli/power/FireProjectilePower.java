@@ -7,20 +7,20 @@ import io.github.apace100.apoli.util.HudRender;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtLong;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.random.Random;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -34,7 +34,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
     private final float speed;
     private final float divergence;
     private final SoundEvent soundEvent;
-    private final NbtCompound tag;
+    private final CompoundTag tag;
     private final Consumer<Entity> projectileAction;
     private final Consumer<Entity> shooterAction;
 
@@ -42,7 +42,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
     private boolean finishedStartDelay;
     private int shotProjectiles;
 
-    public FireProjectilePower(PowerType<?> type, LivingEntity entity, int cooldownDuration, HudRender hudRender, EntityType<?> entityType, int projectileCount, int interval, int startDelay, float speed, float divergence, SoundEvent soundEvent, NbtCompound tag, Consumer<Entity> projectileAction, Consumer<Entity> shooterAction) {
+    public FireProjectilePower(PowerType<?> type, LivingEntity entity, int cooldownDuration, HudRender hudRender, EntityType<?> entityType, int projectileCount, int interval, int startDelay, float speed, float divergence, SoundEvent soundEvent, CompoundTag tag, Consumer<Entity> projectileAction, Consumer<Entity> shooterAction) {
         super(type, entity, cooldownDuration, hudRender, null);
         this.entityType = entityType;
         this.projectileCount = projectileCount;
@@ -66,8 +66,8 @@ public class FireProjectilePower extends ActiveCooldownPower {
     }
 
     @Override
-    public NbtElement toTag() {
-        NbtCompound nbt = new NbtCompound();
+    public Tag toTag() {
+        CompoundTag nbt = new CompoundTag();
         nbt.putLong("LastUseTime", lastUseTime);
         nbt.putInt("ShotProjectiles", shotProjectiles);
         nbt.putBoolean("FinishedStartDelay", finishedStartDelay);
@@ -76,15 +76,15 @@ public class FireProjectilePower extends ActiveCooldownPower {
     }
 
     @Override
-    public void fromTag(NbtElement tag) {
-        if(tag instanceof NbtLong) {
-            lastUseTime = ((NbtLong)tag).longValue();
+    public void fromTag(Tag tag) {
+        if(tag instanceof LongTag) {
+            lastUseTime = ((LongTag)tag).getAsLong();
         }
         else {
-            lastUseTime = ((NbtCompound)tag).getLong("LastUseTime");
-            shotProjectiles = ((NbtCompound)tag).getInt("ShotProjectiles");
-            finishedStartDelay = ((NbtCompound)tag).getBoolean("FinishedStartDelay");
-            isFiringProjectiles = ((NbtCompound)tag).getBoolean("IsFiringProjectiles");
+            lastUseTime = ((CompoundTag)tag).getLong("LastUseTime");
+            shotProjectiles = ((CompoundTag)tag).getInt("ShotProjectiles");
+            finishedStartDelay = ((CompoundTag)tag).getBoolean("FinishedStartDelay");
+            isFiringProjectiles = ((CompoundTag)tag).getBoolean("IsFiringProjectiles");
         }
     }
 
@@ -93,14 +93,14 @@ public class FireProjectilePower extends ActiveCooldownPower {
             if(!finishedStartDelay && startDelay == 0) {
                 finishedStartDelay = true;
             }
-            if(!finishedStartDelay && (entity.getEntityWorld().getTime() - lastUseTime) % startDelay == 0) {
+            if(!finishedStartDelay && (entity.getCommandSenderWorld().getGameTime() - lastUseTime) % startDelay == 0) {
                 finishedStartDelay = true;
                 shotProjectiles += 1;
                 if(shotProjectiles <= projectileCount) {
                     if(soundEvent != null) {
-                        entity.getWorld().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundCategory.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
+                        entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
                     }
-                    if(!entity.getWorld().isClient) {
+                    if(!entity.level().isClientSide) {
                         fireProjectile();
                     }
                 }
@@ -112,9 +112,9 @@ public class FireProjectilePower extends ActiveCooldownPower {
             }
             else if(interval == 0 && finishedStartDelay) {
                 if(soundEvent != null) {
-                    entity.getWorld().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundCategory.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
+                    entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
                 }
-                if(!entity.getWorld().isClient) {
+                if(!entity.level().isClientSide) {
                     for(; shotProjectiles < projectileCount; shotProjectiles++) {
                         fireProjectile();
                     }
@@ -123,13 +123,13 @@ public class FireProjectilePower extends ActiveCooldownPower {
                 finishedStartDelay = false;
                 isFiringProjectiles = false;
             }
-            else if (finishedStartDelay && (entity.getEntityWorld().getTime() - lastUseTime) % interval == 0) {
+            else if (finishedStartDelay && (entity.getCommandSenderWorld().getGameTime() - lastUseTime) % interval == 0) {
                 shotProjectiles += 1;
                 if(shotProjectiles <= projectileCount) {
                     if(soundEvent != null) {
-                        entity.getWorld().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundCategory.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
+                        entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
                     }
-                    if(!entity.getWorld().isClient) {
+                    if(!entity.level().isClientSide) {
                         fireProjectile();
                     }
                 }
@@ -144,38 +144,38 @@ public class FireProjectilePower extends ActiveCooldownPower {
 
     private void fireProjectile() {
 
-        if (entityType == null || entity.getWorld().isClient) return;
+        if (entityType == null || entity.level().isClientSide) return;
 
-        ServerWorld serverWorld = (ServerWorld) entity.getWorld();
-        float yaw = entity.getYaw();
-        float pitch = entity.getPitch();
+        ServerLevel serverWorld = (ServerLevel) entity.level();
+        float yaw = entity.getYRot();
+        float pitch = entity.getXRot();
 
         Optional<Entity> opt$entityToSpawn = MiscUtil.getEntityWithPassengers(
             serverWorld,
             entityType,
             tag,
-            entity.getPos().add(0, entity.getEyeHeight(entity.getPose()), 0),
+            entity.position().add(0, entity.getEyeHeight(entity.getPose()), 0),
             yaw,
             pitch
         );
 
         if (opt$entityToSpawn.isEmpty()) return;
 
-        Vec3d rotationVector = entity.getRotationVector();
-        Vec3d velocity = entity.getVelocity();
+        Vec3 rotationVector = entity.getLookAngle();
+        Vec3 velocity = entity.getDeltaMovement();
         Entity entityToSpawn = opt$entityToSpawn.get();
-        Random random = serverWorld.getRandom();
+        RandomSource random = serverWorld.getRandom();
 
-        if (entityToSpawn instanceof ProjectileEntity projectileToSpawn) {
+        if (entityToSpawn instanceof Projectile projectileToSpawn) {
 
-            if (projectileToSpawn instanceof ExplosiveProjectileEntity explosiveProjectileToSpawn) {
-                explosiveProjectileToSpawn.powerX = rotationVector.x * speed;
-                explosiveProjectileToSpawn.powerY = rotationVector.y * speed;
-                explosiveProjectileToSpawn.powerZ = rotationVector.z * speed;
+            if (projectileToSpawn instanceof AbstractHurtingProjectile explosiveProjectileToSpawn) {
+                explosiveProjectileToSpawn.xPower = rotationVector.x * speed;
+                explosiveProjectileToSpawn.yPower = rotationVector.y * speed;
+                explosiveProjectileToSpawn.zPower = rotationVector.z * speed;
             }
 
             projectileToSpawn.setOwner(entity);
-            projectileToSpawn.setVelocity(entity, pitch, yaw, 0F, speed, divergence);
+            projectileToSpawn.shootFromRotation(entity, pitch, yaw, 0F, speed, divergence);
 
         }
 
@@ -184,21 +184,21 @@ public class FireProjectilePower extends ActiveCooldownPower {
             float  f = 0.017453292F;
             double g = 0.007499999832361937D;
 
-            float h = -MathHelper.sin(yaw * f) * MathHelper.cos(pitch * f);
-            float i = -MathHelper.sin(pitch * f);
-            float j =  MathHelper.cos(yaw * f) * MathHelper.cos(pitch * f);
+            float h = -Mth.sin(yaw * f) * Mth.cos(pitch * f);
+            float i = -Mth.sin(pitch * f);
+            float j =  Mth.cos(yaw * f) * Mth.cos(pitch * f);
 
-            Vec3d vec3d = new Vec3d(h, i, j)
+            Vec3 vec3d = new Vec3(h, i, j)
                 .normalize()
                 .add(random.nextGaussian() * g * divergence, random.nextGaussian() * g * divergence, random.nextGaussian() * g * divergence)
-                .multiply(speed);
+                .scale(speed);
 
-            entityToSpawn.setVelocity(vec3d);
-            entityToSpawn.addVelocity(velocity.x, entity.isOnGround() ? 0.0D : velocity.y, velocity.z);
+            entityToSpawn.setDeltaMovement(vec3d);
+            entityToSpawn.push(velocity.x, entity.onGround() ? 0.0D : velocity.y, velocity.z);
 
         }
 
-        serverWorld.spawnNewEntityAndPassengers(entityToSpawn);
+        serverWorld.tryAddFreshEntityWithPassengers(entityToSpawn);
         if (projectileAction != null) projectileAction.accept(entityToSpawn);
         if (shooterAction != null) shooterAction.accept(entity);
 

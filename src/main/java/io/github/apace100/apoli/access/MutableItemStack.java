@@ -1,7 +1,7 @@
 package io.github.apace100.apoli.access;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 public interface MutableItemStack {
 

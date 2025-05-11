@@ -9,17 +9,16 @@ import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.advancement.Advancement;
-import net.minecraft.advancement.AdvancementProgress;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientAdvancementManager;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.Identifier;
-import net.minecraft.registry.Registry;
-
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientAdvancements;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import java.util.Map;
 
 public final class EntityConditionsClient {
@@ -29,48 +28,48 @@ public final class EntityConditionsClient {
     public static void register() {
         register(new ConditionFactory<>(Apoli.identifier("using_effective_tool"), new SerializableData(),
             (data, entity) -> {
-                if(entity instanceof ServerPlayerEntity) {
-                    ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayerEntity)entity).interactionManager);
-                    if(interactionMngr.getMining()) {
-                        return ((PlayerEntity)entity).canHarvest(entity.getWorld().getBlockState(interactionMngr.getMiningPos()));
+                if(entity instanceof ServerPlayer) {
+                    ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayer)entity).gameMode);
+                    if(interactionMngr.getIsDestroyingBlock()) {
+                        return ((Player)entity).hasCorrectToolForDrops(entity.level().getBlockState(interactionMngr.getDestroyPos()));
                     }
                 } else
-                if(entity instanceof ClientPlayerEntity) {
-                    ClientPlayerInteractionManagerAccessor interactionMngr = (ClientPlayerInteractionManagerAccessor) MinecraftClient.getInstance().interactionManager;
-                    if(interactionMngr.getBreakingBlock()) {
-                        return ((PlayerEntity)entity).canHarvest(entity.getWorld().getBlockState(interactionMngr.getCurrentBreakingPos()));
+                if(entity instanceof LocalPlayer) {
+                    ClientPlayerInteractionManagerAccessor interactionMngr = (ClientPlayerInteractionManagerAccessor) Minecraft.getInstance().gameMode;
+                    if(interactionMngr.getIsDestroying()) {
+                        return ((Player)entity).hasCorrectToolForDrops(entity.level().getBlockState(interactionMngr.getDestroyBlockPos()));
                     }
                 }
                 return false;
             }));
         register(new ConditionFactory<>(Apoli.identifier("gamemode"), new SerializableData()
             .add("gamemode", SerializableDataTypes.STRING), (data, entity) -> {
-            if(entity instanceof ServerPlayerEntity) {
-                ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayerEntity)entity).interactionManager);
-                return interactionMngr.getGameMode().getName().equals(data.getString("gamemode"));
+            if(entity instanceof ServerPlayer) {
+                ServerPlayerInteractionManagerAccessor interactionMngr = ((ServerPlayerInteractionManagerAccessor)((ServerPlayer)entity).gameMode);
+                return interactionMngr.getGameModeForPlayer().getName().equals(data.getString("gamemode"));
             } else
-            if(entity instanceof ClientPlayerEntity) {
-                ClientPlayerInteractionManagerAccessor interactionMngr = (ClientPlayerInteractionManagerAccessor) MinecraftClient.getInstance().interactionManager;
-                return interactionMngr.getGameMode().getName().equals(data.getString("gamemode"));
+            if(entity instanceof LocalPlayer) {
+                ClientPlayerInteractionManagerAccessor interactionMngr = (ClientPlayerInteractionManagerAccessor) Minecraft.getInstance().gameMode;
+                return interactionMngr.getLocalPlayerMode().getName().equals(data.getString("gamemode"));
             }
             return false;
         }));
         register(new ConditionFactory<>(Apoli.identifier("advancement"), new SerializableData()
             .add("advancement", SerializableDataTypes.IDENTIFIER), (data, entity) -> {
-            Identifier id = data.getId("advancement");
-            if(entity instanceof ServerPlayerEntity) {
-                Advancement advancement = entity.getServer().getAdvancementLoader().get(id);
+            ResourceLocation id = data.getId("advancement");
+            if(entity instanceof ServerPlayer) {
+                Advancement advancement = entity.getServer().getAdvancements().getAdvancement(id);
                 if(advancement == null) {
                     Apoli.LOGGER.warn("Advancement \"" + id + "\" did not exist, but was referenced in an \"origins:advancement\" condition.");
                 } else {
-                    return ((ServerPlayerEntity)entity).getAdvancementTracker().getProgress(advancement).isDone();
+                    return ((ServerPlayer)entity).getAdvancements().getOrStartProgress(advancement).isDone();
                 }
             } else
-            if(entity instanceof ClientPlayerEntity) {
-                ClientAdvancementManager advancementManager = MinecraftClient.getInstance().getNetworkHandler().getAdvancementHandler();
-                Advancement advancement = advancementManager.getManager().get(id);
+            if(entity instanceof LocalPlayer) {
+                ClientAdvancements advancementManager = Minecraft.getInstance().getConnection().getAdvancements();
+                Advancement advancement = advancementManager.getAdvancements().get(id);
                 if(advancement != null) {
-                    Map<Advancement, AdvancementProgress> progressMap = ((ClientAdvancementManagerAccessor)advancementManager).getAdvancementProgresses();
+                    Map<Advancement, AdvancementProgress> progressMap = ((ClientAdvancementManagerAccessor)advancementManager).getProgress();
                     if(progressMap.containsKey(advancement)) {
                         return progressMap.get(advancement).isDone();
                     }
@@ -81,7 +80,7 @@ public final class EntityConditionsClient {
             return false;
         }));
         register(new ConditionFactory<>(Apoli.identifier("glowing"), new SerializableData(),
-            (data, entity) -> MinecraftClient.getInstance().hasOutline(entity)));
+            (data, entity) -> Minecraft.getInstance().shouldEntityAppearGlowing(entity)));
     }
 
     private static void register(ConditionFactory<Entity> conditionFactory) {

@@ -19,9 +19,9 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -32,11 +32,11 @@ public class ApoliClient implements ClientModInitializer {
 
 	public static boolean shouldReloadWorldRenderer = false;
 
-	private static HashMap<String, KeyBinding> idToKeyBindingMap = new HashMap<>();
+	private static HashMap<String, KeyMapping> idToKeyBindingMap = new HashMap<>();
 	private static HashMap<String, Boolean> lastKeyBindingStates = new HashMap<>();
 	private static boolean initializedKeyBindingMap = false;
 
-	public static void registerPowerKeybinding(String keyId, KeyBinding keyBinding) {
+	public static void registerPowerKeybinding(String keyId, KeyMapping keyBinding) {
 		idToKeyBindingMap.put(keyId, keyBinding);
 	}
 
@@ -58,10 +58,10 @@ public class ApoliClient implements ClientModInitializer {
 					if(power instanceof Active) {
 						Active active = (Active)power;
 						Active.Key key = active.getKey();
-						KeyBinding keyBinding = getKeyBinding(key.key);
+						KeyMapping keyBinding = getKeyBinding(key.key);
 						if(keyBinding != null) {
 							if(!currentKeyBindingStates.containsKey(key.key)) {
-								currentKeyBindingStates.put(key.key, keyBinding.isPressed());
+								currentKeyBindingStates.put(key.key, keyBinding.isDown());
 							}
 							if(currentKeyBindingStates.get(key.key) && (key.continuous || !lastKeyBindingStates.getOrDefault(key.key, false))) {
 								pressedPowers.add(power);
@@ -84,23 +84,23 @@ public class ApoliClient implements ClientModInitializer {
 
 	@Environment(EnvType.CLIENT)
 	private void performActivePowers(List<Power> powers) {
-		PacketByteBuf buffer = new PacketByteBuf(Unpooled.buffer());
+		FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
 		buffer.writeInt(powers.size());
 		for(Power power : powers) {
-			buffer.writeIdentifier(power.getType().getIdentifier());
+			buffer.writeResourceLocation(power.getType().getIdentifier());
 			((Active)power).onUse();
 		}
 		ClientPlayNetworking.send(ModPackets.USE_ACTIVE_POWERS, buffer);
 	}
 
 	@Environment(EnvType.CLIENT)
-	private KeyBinding getKeyBinding(String key) {
+	private KeyMapping getKeyBinding(String key) {
 		if(!idToKeyBindingMap.containsKey(key)) {
 			if(!initializedKeyBindingMap) {
 				initializedKeyBindingMap = true;
-				MinecraftClient client = MinecraftClient.getInstance();
-				for(int i = 0; i < client.options.allKeys.length; i++) {
-					idToKeyBindingMap.put(client.options.allKeys[i].getTranslationKey(), client.options.allKeys[i]);
+				Minecraft client = Minecraft.getInstance();
+				for(int i = 0; i < client.options.keyMappings.length; i++) {
+					idToKeyBindingMap.put(client.options.keyMappings[i].getName(), client.options.keyMappings[i]);
 				}
 				return getKeyBinding(key);
 			}

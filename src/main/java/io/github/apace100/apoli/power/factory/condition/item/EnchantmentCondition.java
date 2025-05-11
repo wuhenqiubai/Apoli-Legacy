@@ -6,9 +6,9 @@ import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
 public class EnchantmentCondition {
 
@@ -18,8 +18,8 @@ public class EnchantmentCondition {
         Comparison comparison = data.get("comparison");
         int compareTo = data.get("compare_to");
 
-        if (enchantment != null) return comparison.compare(EnchantmentHelper.getLevel(enchantment, stack), compareTo);
-        else return comparison.compare(EnchantmentHelper.get(stack).size(), compareTo);
+        if (enchantment != null) return comparison.compare(EnchantmentHelper.getItemEnchantmentLevel(enchantment, stack), compareTo);
+        else return comparison.compare(EnchantmentHelper.getEnchantments(stack).size(), compareTo);
 
     }
 

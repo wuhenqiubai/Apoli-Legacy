@@ -1,7 +1,6 @@
 package io.github.apace100.apoli.power;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.LivingEntity;
 
 public class ModifyExperiencePower extends ValueModifyingPower {
 

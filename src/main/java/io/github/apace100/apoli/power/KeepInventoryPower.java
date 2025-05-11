@@ -5,9 +5,9 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -31,37 +31,37 @@ public class KeepInventoryPower extends Power {
         }
     }
 
-    public void preventItemsFromDropping(Inventory inventory) {
-        savedStacks = new ItemStack[inventory.size()];
-        for(int i = 0; i < inventory.size(); i++) {
+    public void preventItemsFromDropping(Container inventory) {
+        savedStacks = new ItemStack[inventory.getContainerSize()];
+        for(int i = 0; i < inventory.getContainerSize(); i++) {
             if(slots != null && !slots.contains(i)) {
                 continue;
             }
-            ItemStack stack = inventory.getStack(i);
+            ItemStack stack = inventory.getItem(i);
             if(!stack.isEmpty()) {
                 if(keepItemCondition == null || keepItemCondition.test(stack)) {
                     savedStacks[i] = stack;
-                    inventory.setStack(i, ItemStack.EMPTY);
+                    inventory.setItem(i, ItemStack.EMPTY);
                 }
             }
         }
     }
 
-    public void restoreSavedItems(Inventory inventory) {
+    public void restoreSavedItems(Container inventory) {
         if(savedStacks == null) {
             Apoli.LOGGER.error(KeepInventoryPower.class.getSimpleName() +
                 ": Tried to restore items without having saved any on entity \""
                 + entity.getName().getString() + "\". Power may not have functioned correctly.");
             return;
         }
-        if(inventory.size() != savedStacks.length) {
+        if(inventory.getContainerSize() != savedStacks.length) {
             Apoli.LOGGER.error(KeepInventoryPower.class.getSimpleName() +
                 ": Tried to restore items with differently sized inventory on entity \""
                 + entity.getName().getString() + "\". Items may have been lost.");
         }
-        for(int i = 0; i < inventory.size() && i < savedStacks.length; i++) {
+        for(int i = 0; i < inventory.getContainerSize() && i < savedStacks.length; i++) {
             if(savedStacks[i] != null && !savedStacks[i].isEmpty()) {
-                inventory.setStack(i, savedStacks[i]);
+                inventory.setItem(i, savedStacks[i]);
             }
         }
         savedStacks = null;

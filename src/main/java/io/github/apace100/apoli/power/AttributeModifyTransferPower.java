@@ -7,21 +7,21 @@ import io.github.apace100.apoli.util.modifier.ModifierUtil;
 import io.github.apace100.calio.data.ClassDataRegistry;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.AttributeContainer;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 import java.util.List;
 
 public class AttributeModifyTransferPower extends Power {
 
     private final Class<?> modifyClass;
-    private final EntityAttribute attribute;
+    private final Attribute attribute;
     private final double valueMultiplier;
 
-    public AttributeModifyTransferPower(PowerType<?> type, LivingEntity entity, Class<?> modifyClass, EntityAttribute attribute, double valueMultiplier) {
+    public AttributeModifyTransferPower(PowerType<?> type, LivingEntity entity, Class<?> modifyClass, Attribute attribute, double valueMultiplier) {
         super(type, entity);
         this.modifyClass = modifyClass;
         this.attribute = attribute;
@@ -33,24 +33,24 @@ public class AttributeModifyTransferPower extends Power {
     }
 
     public void addModifiers(List<Modifier> modifiers) {
-        AttributeContainer attrContainer = entity.getAttributes();
+        AttributeMap attrContainer = entity.getAttributes();
         if(attrContainer.hasAttribute(attribute)) {
-            EntityAttributeInstance attributeInstance = attrContainer.getCustomInstance(attribute);
+            AttributeInstance attributeInstance = attrContainer.getInstance(attribute);
             attributeInstance.getModifiers().forEach(mod -> {
-                EntityAttributeModifier transferMod =
-                    new EntityAttributeModifier(mod.getName(), mod.getValue() * valueMultiplier, mod.getOperation());
+                AttributeModifier transferMod =
+                    new AttributeModifier(mod.getName(), mod.getAmount() * valueMultiplier, mod.getOperation());
                 modifiers.add(ModifierUtil.fromAttributeModifier(transferMod));
             });
         }
     }
 
-    public void apply(List<EntityAttributeModifier> modifiers) {
-        AttributeContainer attrContainer = entity.getAttributes();
+    public void apply(List<AttributeModifier> modifiers) {
+        AttributeMap attrContainer = entity.getAttributes();
         if(attrContainer.hasAttribute(attribute)) {
-            EntityAttributeInstance attributeInstance = attrContainer.getCustomInstance(attribute);
+            AttributeInstance attributeInstance = attrContainer.getInstance(attribute);
             attributeInstance.getModifiers().forEach(mod -> {
-                EntityAttributeModifier transferMod =
-                    new EntityAttributeModifier(mod.getName(), mod.getValue() * valueMultiplier, mod.getOperation());
+                AttributeModifier transferMod =
+                    new AttributeModifier(mod.getName(), mod.getAmount() * valueMultiplier, mod.getOperation());
                 modifiers.add(transferMod);
             });
         }
@@ -65,7 +65,7 @@ public class AttributeModifyTransferPower extends Power {
             data ->
                 (type, player) -> new AttributeModifyTransferPower(type, player,
                     (Class<?>)data.get("class"),
-                    (EntityAttribute)data.get("attribute"),
+                    (Attribute)data.get("attribute"),
                     data.getDouble("multiplier")))
             .allowCondition();
     }

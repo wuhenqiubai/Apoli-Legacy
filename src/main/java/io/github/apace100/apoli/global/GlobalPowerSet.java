@@ -9,8 +9,8 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import io.github.apace100.calio.registry.DataObject;
 import io.github.apace100.calio.registry.DataObjectFactory;
 import io.github.apace100.calio.util.TagLike;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

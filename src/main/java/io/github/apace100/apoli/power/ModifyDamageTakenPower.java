@@ -3,16 +3,12 @@ package io.github.apace100.apoli.power;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
-import io.github.apace100.apoli.power.factory.action.ActionFactory;
-import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.calio.data.SerializableData;
-import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.util.Pair;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -20,17 +16,17 @@ import java.util.function.Predicate;
 
 public class ModifyDamageTakenPower extends ValueModifyingPower {
 
-    private final Predicate<Pair<DamageSource, Float>> condition;
-    private final Predicate<Pair<Entity, Entity>> biEntityCondition;
+    private final Predicate<Tuple<DamageSource, Float>> condition;
+    private final Predicate<Tuple<Entity, Entity>> biEntityCondition;
 
     private Consumer<Entity> attackerAction;
     private Consumer<Entity> selfAction;
-    private Consumer<Pair<Entity, Entity>> biEntityAction;
+    private Consumer<Tuple<Entity, Entity>> biEntityAction;
 
     private Predicate<Entity> applyArmorCondition;
     private Predicate<Entity> damageArmorCondition;
 
-    public ModifyDamageTakenPower(PowerType<?> type, LivingEntity entity, Predicate<Pair<DamageSource, Float>> condition, Predicate<Pair<Entity, Entity>> biEntityCondition) {
+    public ModifyDamageTakenPower(PowerType<?> type, LivingEntity entity, Predicate<Tuple<DamageSource, Float>> condition, Predicate<Tuple<Entity, Entity>> biEntityCondition) {
         super(type, entity);
         this.condition = condition;
         this.biEntityCondition = biEntityCondition;
@@ -61,7 +57,7 @@ public class ModifyDamageTakenPower extends ValueModifyingPower {
     }
 
     public boolean doesApply(DamageSource source, float damageAmount) {
-        return source.getAttacker() == null ? this.condition.test(new Pair(source, damageAmount)) && biEntityCondition == null : this.condition.test(new Pair(source, damageAmount)) && (biEntityCondition == null || biEntityCondition.test(new Pair(source.getAttacker(), entity)));
+        return source.getEntity() == null ? this.condition.test(new Tuple(source, damageAmount)) && biEntityCondition == null : this.condition.test(new Tuple(source, damageAmount)) && (biEntityCondition == null || biEntityCondition.test(new Tuple(source.getEntity(), entity)));
     }
 
     public void setAttackerAction(Consumer<Entity> attackerAction) {
@@ -72,7 +68,7 @@ public class ModifyDamageTakenPower extends ValueModifyingPower {
         this.selfAction = selfAction;
     }
 
-    public void setBiEntityAction(Consumer<Pair<Entity, Entity>> biEntityAction) {
+    public void setBiEntityAction(Consumer<Tuple<Entity, Entity>> biEntityAction) {
         this.biEntityAction = biEntityAction;
     }
 
@@ -84,7 +80,7 @@ public class ModifyDamageTakenPower extends ValueModifyingPower {
             attackerAction.accept(attacker);
         }
         if(biEntityAction != null) {
-            biEntityAction.accept(new Pair<>(attacker, entity));
+            biEntityAction.accept(new Tuple<>(attacker, entity));
         }
     }
 

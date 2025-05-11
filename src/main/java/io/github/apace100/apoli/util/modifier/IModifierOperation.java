@@ -3,7 +3,7 @@ package io.github.apace100.apoli.util.modifier;
 import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 import java.util.List;
 import java.util.Locale;

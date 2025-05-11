@@ -5,23 +5,20 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.PowerType;
-import io.github.apace100.apoli.registry.ApoliRegistries;
-import io.github.apace100.calio.data.MultiJsonDataLoader;
 import io.github.apace100.calio.data.SerializableData;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.minecraft.registry.Registry;
-import net.minecraft.resource.JsonDataLoader;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.profiler.Profiler;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.util.profiling.ProfilerFiller;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class GlobalPowerSetLoader extends JsonDataLoader implements IdentifiableResourceReloadListener {
+public class GlobalPowerSetLoader extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
 
-    public static final Set<Identifier> DEPENDENCIES = Set.of(Apoli.identifier("powers"));
+    public static final Set<ResourceLocation> DEPENDENCIES = Set.of(Apoli.identifier("powers"));
 
     public static List<GlobalPowerSet> ALL = new LinkedList<>();
 
@@ -36,7 +33,7 @@ public class GlobalPowerSetLoader extends JsonDataLoader implements Identifiable
     }
 
     @Override
-    protected void apply(Map<Identifier, JsonElement> prepared, ResourceManager manager, Profiler profiler) {
+    protected void apply(Map<ResourceLocation, JsonElement> prepared, ResourceManager manager, ProfilerFiller profiler) {
         ALL.clear();
         prepared.forEach((id, json) -> {
             if(json.isJsonObject()) {
@@ -47,7 +44,7 @@ public class GlobalPowerSetLoader extends JsonDataLoader implements Identifiable
                     Apoli.LOGGER.error("Global power set \"{}\" contained invalid powers: {}",
                             id, invalidPowerTypes.stream()
                                     .map(PowerType::getIdentifier)
-                                    .map(Identifier::toString)
+                                    .map(ResourceLocation::toString)
                                     .collect(Collectors.joining(", ")));
                 }
                 ALL.add(gps);
@@ -57,12 +54,12 @@ public class GlobalPowerSetLoader extends JsonDataLoader implements Identifiable
     }
 
     @Override
-    public Identifier getFabricId() {
+    public ResourceLocation getFabricId() {
         return Apoli.identifier("global_powers");
     }
 
     @Override
-    public Collection<Identifier> getFabricDependencies() {
+    public Collection<ResourceLocation> getFabricDependencies() {
         return DEPENDENCIES;
     }
 }

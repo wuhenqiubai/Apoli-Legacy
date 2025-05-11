@@ -1,8 +1,8 @@
 package io.github.apace100.apoli.util.modifier;
 
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -19,7 +19,7 @@ public class ModifierUtil {
         return new Modifier(operation, data);
     }
 
-    public static Modifier fromAttributeModifier(EntityAttributeModifier attributeModifier) {
+    public static Modifier fromAttributeModifier(AttributeModifier attributeModifier) {
         IModifierOperation operation = null;
         switch(attributeModifier.getOperation()) {
             case ADDITION -> operation = ModifierOperation.ADD_BASE_EARLY;
@@ -31,7 +31,7 @@ public class ModifierUtil {
                 "Could not construct generic modifier from attribute modifier. Unknown operation: "
                     + attributeModifier.getOperation());
         }
-        return createSimpleModifier(operation, attributeModifier.getValue());
+        return createSimpleModifier(operation, attributeModifier.getAmount());
     }
 
     public static Map<IModifierOperation, List<SerializableData.Instance>> sortModifiers(List<Modifier> modifiers) {

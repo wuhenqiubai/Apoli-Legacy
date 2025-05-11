@@ -5,10 +5,10 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.block.pattern.CachedBlockPosition;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.phys.AABB;
 
 import java.util.function.Predicate;
 
@@ -16,26 +16,26 @@ public class BlockCollisionCondition {
 
     public static boolean condition(SerializableData.Instance data, Entity entity) {
 
-        Box entityBoundingBox = entity.getBoundingBox();
-        Box offsetEntityBoundingBox = entityBoundingBox.offset(
-            data.getFloat("offset_x") * entityBoundingBox.getXLength(),
-            data.getFloat("offset_y") * entityBoundingBox.getYLength(),
-            data.getFloat("offset_z") * entityBoundingBox.getZLength()
+        AABB entityBoundingBox = entity.getBoundingBox();
+        AABB offsetEntityBoundingBox = entityBoundingBox.move(
+            data.getFloat("offset_x") * entityBoundingBox.getXsize(),
+            data.getFloat("offset_y") * entityBoundingBox.getYsize(),
+            data.getFloat("offset_z") * entityBoundingBox.getZsize()
         );
 
         if (data.isPresent("block_condition")) {
 
-            Predicate<CachedBlockPosition> blockCondition = data.get("block_condition");
-            BlockPos minBlockPos = BlockPos.ofFloored(offsetEntityBoundingBox.minX + 0.001, offsetEntityBoundingBox.minY + 0.001, offsetEntityBoundingBox.minZ + 0.001);
-            BlockPos maxBlockPos = BlockPos.ofFloored(offsetEntityBoundingBox.maxX - 0.001, offsetEntityBoundingBox.maxY - 0.001, offsetEntityBoundingBox.maxZ - 0.001);
-            BlockPos.Mutable mutableBlockPos = new BlockPos.Mutable();
+            Predicate<BlockInWorld> blockCondition = data.get("block_condition");
+            BlockPos minBlockPos = BlockPos.containing(offsetEntityBoundingBox.minX + 0.001, offsetEntityBoundingBox.minY + 0.001, offsetEntityBoundingBox.minZ + 0.001);
+            BlockPos maxBlockPos = BlockPos.containing(offsetEntityBoundingBox.maxX - 0.001, offsetEntityBoundingBox.maxY - 0.001, offsetEntityBoundingBox.maxZ - 0.001);
+            BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
             int matchingBlocks = 0;
 
             for (int x = minBlockPos.getX(); x <= maxBlockPos.getX(); x++) {
                 for (int y = minBlockPos.getY(); y <= maxBlockPos.getY(); y++) {
                     for (int z = minBlockPos.getZ(); z <= maxBlockPos.getZ(); z++) {
                         mutableBlockPos.set(x, y, z);
-                        if (blockCondition.test(new CachedBlockPosition(entity.getWorld(), mutableBlockPos, true))) matchingBlocks++;
+                        if (blockCondition.test(new BlockInWorld(entity.level(), mutableBlockPos, true))) matchingBlocks++;
                     }
                 }
             }
@@ -44,7 +44,7 @@ public class BlockCollisionCondition {
 
         }
 
-        else return entity.getWorld()
+        else return entity.level()
             .getBlockCollisions(entity, offsetEntityBoundingBox)
             .iterator()
             .hasNext();

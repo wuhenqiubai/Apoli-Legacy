@@ -7,13 +7,13 @@ import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.apoli.util.HudRender;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.function.Consumer;
 
@@ -78,15 +78,15 @@ public class ActiveCooldownPower extends CooldownPower implements Active {
                         data.getInt("cooldown"),
                         (HudRender) data.get("hud_render"),
                         e -> {
-                            if (!e.getWorld().isClient && e instanceof PlayerEntity) {
-                                PlayerEntity p = (PlayerEntity) e;
-                                p.addVelocity(0, data.getFloat("speed"), 0);
-                                p.velocityModified = true;
+                            if (!e.level().isClientSide && e instanceof Player) {
+                                Player p = (Player) e;
+                                p.push(0, data.getFloat("speed"), 0);
+                                p.hurtMarked = true;
                                 if (soundEvent != null) {
-                                    p.getWorld().playSound((PlayerEntity) null, p.getX(), p.getY(), p.getZ(), soundEvent, SoundCategory.NEUTRAL, 0.5F, 0.4F / (p.getRandom().nextFloat() * 0.4F + 0.8F));
+                                    p.level().playSound((Player) null, p.getX(), p.getY(), p.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (p.getRandom().nextFloat() * 0.4F + 0.8F));
                                 }
                                 for (int i = 0; i < 4; ++i) {
-                                    ((ServerWorld) p.getWorld()).spawnParticles(ParticleTypes.CLOUD, p.getX(), p.getRandomBodyY(), p.getZ(), 8, p.getRandom().nextGaussian(), 0.0D, p.getRandom().nextGaussian(), 0.5);
+                                    ((ServerLevel) p.level()).sendParticles(ParticleTypes.CLOUD, p.getX(), p.getRandomY(), p.getZ(), 8, p.getRandom().nextGaussian(), 0.0D, p.getRandom().nextGaussian(), 0.5);
                                 }
                             }
                         });

@@ -3,12 +3,12 @@ package io.github.apace100.apoli.mixin;
 import io.github.apace100.apoli.access.PowerCraftingInventory;
 import io.github.apace100.apoli.power.ModifyCraftingPower;
 import io.github.apace100.apoli.util.ModifiedCraftingRecipe;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.RecipeInputInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.slot.CraftingResultSlot;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.inventory.ResultSlot;
+import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -18,16 +18,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Optional;
 
-@Mixin(CraftingResultSlot.class)
+@Mixin(ResultSlot.class)
 public class CraftingResultSlotMixin {
 
-    @Shadow @Final private RecipeInputInventory input;
+    @Shadow @Final private CraftingContainer craftSlots;
 
-    @Inject(method = "onTakeItem", at = @At(value = "INVOKE", target = "Lnet/minecraft/recipe/RecipeManager;getRemainingStacks(Lnet/minecraft/recipe/RecipeType;Lnet/minecraft/inventory/Inventory;Lnet/minecraft/world/World;)Lnet/minecraft/util/collection/DefaultedList;"))
-    private void testOnTakeItem(PlayerEntity player, ItemStack stack, CallbackInfo ci) {
-        if (input instanceof CraftingInventory craftingInventory)
+    @Inject(method = "onTake", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/crafting/RecipeManager;getRemainingItemsFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/Container;Lnet/minecraft/world/level/Level;)Lnet/minecraft/core/NonNullList;"))
+    private void testOnTakeItem(Player player, ItemStack stack, CallbackInfo ci) {
+        if (craftSlots instanceof TransientCraftingContainer craftingInventory)
         {
-            if (!player.getWorld().isClient)
+            if (!player.level().isClientSide)
             {
                 PowerCraftingInventory pci = (PowerCraftingInventory) craftingInventory;
                 if (pci.getPower() instanceof ModifyCraftingPower mcp)

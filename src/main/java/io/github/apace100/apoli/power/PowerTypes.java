@@ -11,10 +11,10 @@ import io.github.apace100.calio.data.MultiJsonDataLoader;
 import io.github.apace100.calio.data.SerializableData;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.JsonHelper;
-import net.minecraft.util.profiler.Profiler;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -23,15 +23,15 @@ import java.util.function.BiFunction;
 @SuppressWarnings("rawtypes")
 public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResourceReloadListener {
 
-    public static final Set<Identifier> DEPENDENCIES = new HashSet<>();
+    public static final Set<ResourceLocation> DEPENDENCIES = new HashSet<>();
     public static final Set<String> LOADED_NAMESPACES = new HashSet<>();
 
-    private static final Identifier MULTIPLE = Apoli.identifier("multiple");
-    private static final Identifier SIMPLE = Apoli.identifier("simple");
+    private static final ResourceLocation MULTIPLE = Apoli.identifier("multiple");
+    private static final ResourceLocation SIMPLE = Apoli.identifier("simple");
 
     private static final Gson GSON = (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create();
 
-    private static final HashMap<Identifier, Integer> LOADING_PRIORITIES = new HashMap<>();
+    private static final HashMap<ResourceLocation, Integer> LOADING_PRIORITIES = new HashMap<>();
 
     private static final HashMap<String, AdditionalPowerDataCallback> ADDITIONAL_DATA = new HashMap<>();
 
@@ -40,11 +40,11 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
     }
 
     @Override
-    protected void apply(Map<Identifier, List<JsonElement>> loader, ResourceManager manager, Profiler profiler) {
+    protected void apply(Map<ResourceLocation, List<JsonElement>> loader, ResourceManager manager, ProfilerFiller profiler) {
         PowerTypeRegistry.reset();
         LOADING_PRIORITIES.clear();
         LOADED_NAMESPACES.clear();
-        LOADED_NAMESPACES.addAll(manager.getAllNamespaces());
+        LOADED_NAMESPACES.addAll(manager.getNamespaces());
         PowerReloadCallback.EVENT.invoker().onPowerReload();
         PrePowerReloadCallback.EVENT.invoker().onPrePowerReload();
         loader.forEach((id, jel) -> {
@@ -56,9 +56,9 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
 
                     PrePowerLoadCallback.EVENT.invoker().onPrePowerLoad(id, jo);
 
-                    Identifier factoryId = Identifier.tryParse(JsonHelper.getString(jo, "type"));
+                    ResourceLocation factoryId = ResourceLocation.tryParse(GsonHelper.getAsString(jo, "type"));
                     if (isMultiple(factoryId)) {
-                        List<Identifier> subPowers = new LinkedList<>();
+                        List<ResourceLocation> subPowers = new LinkedList<>();
                         for (Map.Entry<String, JsonElement> entry : jo.entrySet()) {
                             if (entry.getKey().equals("type")
                                 || entry.getKey().equals("loading_priority")
@@ -71,7 +71,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                                 || entry.getKey().equals(ResourceConditions.CONDITIONS_KEY)) {
                                 continue;
                             }
-                            Identifier subId = new Identifier(id + "_" + entry.getKey());
+                            ResourceLocation subId = new ResourceLocation(id + "_" + entry.getKey());
                             try {
                                 PowerType<?> subPower = readPower(subId, entry.getValue(), true);
                                 if (subPower != null) {
@@ -106,21 +106,21 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
         Apoli.LOGGER.info("Finished loading powers from data files. Registry contains " + PowerTypeRegistry.size() + " powers.");
     }
 
-    private boolean isResourceConditionValid(Identifier id, JsonObject jo) {
+    private boolean isResourceConditionValid(ResourceLocation id, JsonObject jo) {
         return ApoliResourceConditions.test(id, jo);
     }
 
     @Nullable
-    private PowerType readPower(Identifier id, JsonElement je, boolean isSubPower) {
+    private PowerType readPower(ResourceLocation id, JsonElement je, boolean isSubPower) {
         return readPower(id, je, isSubPower, PowerType::new);
     }
 
     @Nullable
-    private PowerType readPower(Identifier id, JsonElement je, boolean isSubPower,
-                                BiFunction<Identifier, PowerFactory.Instance, PowerType> powerTypeFactory) {
+    private PowerType readPower(ResourceLocation id, JsonElement je, boolean isSubPower,
+                                BiFunction<ResourceLocation, PowerFactory.Instance, PowerType> powerTypeFactory) {
         JsonObject jo = je.getAsJsonObject();
-        Identifier factoryId = new Identifier(JsonHelper.getString(jo, "type"));
-        int priority = JsonHelper.getInt(jo, "loading_priority", 0);
+        ResourceLocation factoryId = new ResourceLocation(GsonHelper.getAsString(jo, "type"));
+        int priority = GsonHelper.getAsInt(jo, "loading_priority", 0);
 
         if (!isResourceConditionValid(id, jo)) {
             if(!PowerTypeRegistry.contains(id)) {
@@ -136,10 +136,10 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                     + "another \"" + MULTIPLE + "\" power.");
             }
         }
-        Optional<PowerFactory> optionalFactory = ApoliRegistries.POWER_FACTORY.getOrEmpty(factoryId);
+        Optional<PowerFactory> optionalFactory = ApoliRegistries.POWER_FACTORY.getOptional(factoryId);
         if(optionalFactory.isEmpty()) {
             if(NamespaceAlias.hasAlias(factoryId)) {
-                optionalFactory = ApoliRegistries.POWER_FACTORY.getOrEmpty(NamespaceAlias.resolveAlias(factoryId));
+                optionalFactory = ApoliRegistries.POWER_FACTORY.getOptional(NamespaceAlias.resolveAlias(factoryId));
             }
             if(optionalFactory.isEmpty()) {
                 throw new JsonSyntaxException("Power type \"" + factoryId + "\" is not defined.");
@@ -147,9 +147,9 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
         }
         PowerFactory.Instance factoryInstance = optionalFactory.get().read(jo);
         PowerType type = powerTypeFactory.apply(id, factoryInstance);
-        String name = JsonHelper.getString(jo, "name", "");
-        String description = JsonHelper.getString(jo, "description", "");
-        boolean hidden = JsonHelper.getBoolean(jo, "hidden", false);
+        String name = GsonHelper.getAsString(jo, "name", "");
+        String description = GsonHelper.getAsString(jo, "description", "");
+        boolean hidden = GsonHelper.getAsBoolean(jo, "hidden", false);
         if(hidden || isSubPower) {
             type.setHidden();
         }
@@ -174,7 +174,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
         return type;
     }
 
-    private boolean isMultiple(Identifier id) {
+    private boolean isMultiple(ResourceLocation id) {
         if(MULTIPLE.equals(id)) {
             return true;
         }
@@ -184,7 +184,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
         return false;
     }
 
-    private void handleAdditionalData(Identifier powerId, Identifier factoryId, boolean isSubPower, JsonObject json, PowerType<?> powerType) {
+    private void handleAdditionalData(ResourceLocation powerId, ResourceLocation factoryId, boolean isSubPower, JsonObject json, PowerType<?> powerType) {
         ADDITIONAL_DATA.forEach((dataFieldName, callback) -> {
             if(json.has(dataFieldName)) {
                 callback.readAdditionalPowerData(powerId, factoryId, isSubPower, json.get(dataFieldName), powerType);
@@ -193,8 +193,8 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
     }
 
     @Override
-    public Identifier getFabricId() {
-        return new Identifier(Apoli.MODID, "powers");
+    public ResourceLocation getFabricId() {
+        return new ResourceLocation(Apoli.MODID, "powers");
     }
 
     public static void registerAdditionalData(String data, AdditionalPowerDataCallback callback) {
@@ -206,7 +206,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
         ADDITIONAL_DATA.put(data, callback);
     }
 
-    public static int getLoadingPriority(Identifier powerId) {
+    public static int getLoadingPriority(ResourceLocation powerId) {
         if(!LOADING_PRIORITIES.containsKey(powerId)) {
             return Integer.MIN_VALUE;
         }
@@ -214,7 +214,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
     }
 
     @Override
-    public Collection<Identifier> getFabricDependencies() {
+    public Collection<ResourceLocation> getFabricDependencies() {
         return DEPENDENCIES;
     }
 }
