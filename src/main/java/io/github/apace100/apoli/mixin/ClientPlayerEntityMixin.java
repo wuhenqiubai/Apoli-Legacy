@@ -1,6 +1,7 @@
 package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.mojang.authlib.GameProfile;
 import io.github.apace100.apoli.access.WaterMovingEntity;
 import io.github.apace100.apoli.component.PowerHolderComponent;
@@ -14,7 +15,6 @@ import net.minecraft.client.player.LocalPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -55,9 +55,13 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayer imple
         return PowerHolderComponent.modify(this, ModifyAirSpeedPower.class, original);
     }
 
-    @ModifyVariable(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;onGround()Z", ordinal = 0), ordinal = 4)
-    private boolean modifySprintAbility(boolean original) {
-        boolean prevent = PowerHolderComponent.hasPower(this, PreventSprintingPower.class);
-        return !prevent && original;
+    @WrapWithCondition(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;setSprinting(Z)V"))
+    private boolean modifySprintAbility(LocalPlayer instance, boolean original) {
+        if (original) {
+            boolean prevent = PowerHolderComponent.hasPower(this, PreventSprintingPower.class);
+            return !prevent;
+        }
+
+        return true;
     }
 }

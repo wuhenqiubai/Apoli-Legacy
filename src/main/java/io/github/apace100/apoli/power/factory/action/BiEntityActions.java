@@ -10,10 +10,8 @@ import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.apoli.util.Space;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.Registry;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
@@ -56,9 +54,6 @@ public class BiEntityActions {
             (data, entities) -> {
                 entities.getA().startRiding(entities.getB(), true);
                 if(!entities.getA().level().isClientSide && entities.getB() instanceof Player) {
-                    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-                    buf.writeInt(entities.getA().getId());
-                    buf.writeInt(entities.getB().getId());
                     ServerPlayNetworking.send((ServerPlayer) entities.getB(), new PlayerMountPacket(entities.getA().getId(), entities.getB().getId()));
                 }
             }));

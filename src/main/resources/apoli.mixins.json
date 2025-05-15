@@ -39,7 +39,6 @@
         "LootContextMixin",
         "LootContextParameterSetBuilderMixin",
         "LootContextParameterSetMixin",
-        "LootDataLookupMixin",
         "LootTableMixin",
         "PhantomSpawnerMixin",
         "PlayerEntityMixin",

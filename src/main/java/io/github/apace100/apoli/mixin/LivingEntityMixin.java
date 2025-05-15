@@ -15,13 +15,11 @@ import io.github.apace100.apoli.power.*;
 import io.github.apace100.apoli.util.InventoryUtil;
 import io.github.apace100.apoli.util.StackPowerUtil;
 import io.github.apace100.apoli.util.SyncStatusEffectsUtil;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,10 +28,7 @@ import net.minecraft.world.damagesource.CombatRules;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -121,16 +116,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     @Inject(method = "setLastHurtByMob", at = @At("TAIL"))
     private void syncAttacker(LivingEntity attacker, CallbackInfo ci) {
         if(!level().isClientSide) {
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-            buf.writeInt(getId());
-            if(this.lastHurtByMob == null) {
-                buf.writeBoolean(false);
-            } else {
-                buf.writeBoolean(true);
-                buf.writeInt(this.lastHurtByMob.getId());
-            }
             for (ServerPlayer player : PlayerLookup.tracking(this)) {
-                ServerPlayNetworking.send(player, new SetAttackerPacket(getId(), this.lastHurtByMob == null ? Optional.empty() : Optional.of(this.lastHurtByMob.getId())));
+                ServerPlayNetworking.send(player, new SetAttackerPacket(getId(), this.lastHurtByMob == null ? Optional.empty() : Optional.of(this.lastHurtByMob.getEntity(this.level(), LivingEntity.class).getId())));
             }
         }
     }
@@ -429,8 +416,6 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @Shadow @Nullable private LivingEntity lastHurtByMob;
-
     @Shadow protected abstract void hurtArmor(DamageSource source, float amount);
 
     @Shadow public abstract int getArmorValue();
@@ -438,6 +423,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     @Shadow public abstract AttributeMap getAttributes();
 
     @Shadow public abstract double getAttributeValue(Holder<Attribute> attribute);
+
+    @Shadow private @Nullable EntityReference<LivingEntity> lastHurtByMob;
 
     @Inject(method = "getFlyingSpeed", at = @At("RETURN"), cancellable = true)
     private void modifyFlySpeed(CallbackInfoReturnable<Float> cir) {
