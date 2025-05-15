@@ -3,6 +3,7 @@ package io.github.apace100.apoli.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ModifyCameraSubmersionTypePower;
 import io.github.apace100.apoli.power.NightVisionPower;
@@ -69,17 +70,19 @@ public abstract class BackgroundRendererMixin {
     }
 
     @Inject(method = "computeFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogRenderer;getPriorityFogFunction(Lnet/minecraft/world/entity/Entity;F)Lnet/minecraft/client/renderer/FogRenderer$MobEffectFogFunction;"))
-    private static void modifyFogColor(Camera camera, float partialTick, ClientLevel level, int renderDistance, float darkenWorldAmount, CallbackInfoReturnable<Vector4f> cir) {
+    private static void modifyFogColor(Camera camera, float partialTick, ClientLevel level, int renderDistance, float darkenWorldAmount, CallbackInfoReturnable<Vector4f> cir, @Local(ordinal = 2) LocalFloatRef r, @Local(ordinal = 3) LocalFloatRef g, @Local(ordinal = 4) LocalFloatRef b) {
         if(camera.getEntity() instanceof LivingEntity) {
             if(PowerHolderComponent.getPowers(camera.getEntity(), PhasingPower.class).stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.BLINDNESS)) {
                 if(MiscUtil.getInWallBlockState((Player)camera.getEntity()) != null) {
-                    targetBiomeFog = 0;
+                    r.set(0f);
+                    g.set(0f);
+                    b.set(0f);
                 }
             }
         }
     }
 
-    @Inject(method = "setupFog", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/FogParameters;<init>(FFLcom/mojang/blaze3d/shaders/FogShape;FFFF)V", shift = At.Shift.BEFORE))
+    @Inject(method = "setupFog", at = @At(value = "NEW", target = "(FFLcom/mojang/blaze3d/shaders/FogShape;FFFF)Lnet/minecraft/client/renderer/FogParameters;", shift = At.Shift.BEFORE))
     private static void modifyFogData(Camera camera, FogRenderer.FogMode fogMode, Vector4f fogColor, float renderDistance, boolean isFoggy, float partialTick, CallbackInfoReturnable<FogParameters> cir, @Local FogRenderer.FogData fogData) {
         if(camera.getEntity() instanceof LivingEntity) {
             List<PhasingPower> phasings = PowerHolderComponent.getPowers(camera.getEntity(), PhasingPower.class);
