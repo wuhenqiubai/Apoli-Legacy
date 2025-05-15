@@ -23,16 +23,15 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 import java.util.List;
 
@@ -87,18 +86,18 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
     }
 
     @Environment(EnvType.CLIENT)
-    @ModifyArgs(method = "render(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"))
-    private void renderColorChangedModel(Args args, @Local(argsOnly = true) LivingEntityRenderState renderState) {
+    @ModifyArg(method = "render(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"), index = 4)
+    private int renderColorChangedModel(int rgb, @Local(argsOnly = true) LivingEntityRenderState renderState) {
         List<ModelColorPower> modelColorPowers = PowerHolderComponent.getPowers(renderState, ModelColorPower.class);
         if (modelColorPowers.size() > 0) {
             float r = modelColorPowers.stream().map(ModelColorPower::getRed).reduce((a, b) -> a * b).get();
             float g = modelColorPowers.stream().map(ModelColorPower::getGreen).reduce((a, b) -> a * b).get();
             float b = modelColorPowers.stream().map(ModelColorPower::getBlue).reduce((a, c) -> a * c).get();
             float a = modelColorPowers.stream().map(ModelColorPower::getAlpha).min(Float::compare).get();
-            args.set(4, (float) args.get(4) * r);
-            args.set(5, (float) args.get(5) * g);
-            args.set(6, (float) args.get(6) * b);
-            args.set(7, (float) args.get(7) * a);
+
+            return ARGB.colorFromFloat(ARGB.alphaFloat(rgb) * a, ARGB.redFloat(rgb) * r, ARGB.greenFloat(rgb) * g, ARGB.blueFloat(rgb) * b);
         }
+
+        return rgb;
     }
 }

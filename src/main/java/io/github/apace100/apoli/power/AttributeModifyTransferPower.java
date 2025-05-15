@@ -7,7 +7,7 @@ import io.github.apace100.apoli.util.modifier.ModifierUtil;
 import io.github.apace100.calio.data.ClassDataRegistry;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Holder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -19,10 +19,10 @@ import java.util.List;
 public class AttributeModifyTransferPower extends Power {
 
     private final Class<?> modifyClass;
-    private final Attribute attribute;
+    private final Holder<Attribute> attribute;
     private final double valueMultiplier;
 
-    public AttributeModifyTransferPower(PowerType<?> type, LivingEntity entity, Class<?> modifyClass, Attribute attribute, double valueMultiplier) {
+    public AttributeModifyTransferPower(PowerType<?> type, LivingEntity entity, Class<?> modifyClass, Holder<Attribute> attribute, double valueMultiplier) {
         super(type, entity);
         this.modifyClass = modifyClass;
         this.attribute = attribute;
@@ -35,9 +35,8 @@ public class AttributeModifyTransferPower extends Power {
 
     public void addModifiers(List<Modifier> modifiers) {
         AttributeMap attrContainer = entity.getAttributes();
-        var attributeHolder = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute);
-        if(attrContainer.hasAttribute(attributeHolder)) {
-            AttributeInstance attributeInstance = attrContainer.getInstance(attributeHolder);
+        if(attrContainer.hasAttribute(attribute)) {
+            AttributeInstance attributeInstance = attrContainer.getInstance(attribute);
             attributeInstance.getModifiers().forEach(mod -> {
                 AttributeModifier transferMod =
                     new AttributeModifier(mod.id(), mod.amount() * valueMultiplier, mod.operation());
@@ -48,9 +47,8 @@ public class AttributeModifyTransferPower extends Power {
 
     public void apply(List<AttributeModifier> modifiers) {
         AttributeMap attrContainer = entity.getAttributes();
-        var attributeHolder = BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute);
-        if(attrContainer.hasAttribute(attributeHolder)) {
-            AttributeInstance attributeInstance = attrContainer.getInstance(attributeHolder);
+        if(attrContainer.hasAttribute(attribute)) {
+            AttributeInstance attributeInstance = attrContainer.getInstance(attribute);
             attributeInstance.getModifiers().forEach(mod -> {
                 AttributeModifier transferMod =
                     new AttributeModifier(mod.id(), mod.amount() * valueMultiplier, mod.operation());
@@ -67,8 +65,8 @@ public class AttributeModifyTransferPower extends Power {
                 .add("multiplier", SerializableDataTypes.DOUBLE, 1.0),
             data ->
                 (type, player) -> new AttributeModifyTransferPower(type, player,
-                    (Class<?>)data.get("class"),
-                    (Attribute)data.get("attribute"),
+                    data.get("class"),
+                    data.get("attribute"),
                     data.getDouble("multiplier")))
             .allowCondition();
     }

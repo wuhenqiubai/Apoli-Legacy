@@ -18,8 +18,8 @@ public class AttributedEntityAttributeModifier {
         return modifier;
     }
 
-    public Attribute getAttribute() {
-        return attribute.value();
+    public Holder<Attribute> getAttribute() {
+        return attribute;
     }
 
     public Holder<Attribute> getAttributeHolder() {

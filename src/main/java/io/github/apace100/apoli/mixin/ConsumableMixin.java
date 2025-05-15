@@ -40,8 +40,8 @@ public class ConsumableMixin {
     }
 
     @ModifyVariable(method = "onConsume", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;gameEvent(Lnet/minecraft/core/Holder;)V", shift = At.Shift.AFTER), argsOnly = true)
-    private ItemStack unmodifyEatenItemStack(ItemStack modified) {
-        ModifiableFoodEntity foodEntity = (ModifiableFoodEntity) this;
+    private ItemStack unmodifyEatenItemStack(ItemStack modified, @Local(argsOnly = true) LivingEntity entity) {
+        ModifiableFoodEntity foodEntity = (ModifiableFoodEntity) entity;
         ItemStack original = foodEntity.getOriginalFoodStack();
         if(original != null) {
             foodEntity.setOriginalFoodStack(null);
