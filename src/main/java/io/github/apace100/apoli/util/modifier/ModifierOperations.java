@@ -11,7 +11,7 @@ public final class ModifierOperations {
     public static void registerAll() {
         for(ModifierOperation operation : ModifierOperation.values()) {
             Registry.register(ApoliRegistries.MODIFIER_OPERATION,
-                new ResourceLocation(operation.name().toLowerCase(Locale.ROOT)),
+                ResourceLocation.parse(operation.name().toLowerCase(Locale.ROOT)),
                 operation);
         }
     }

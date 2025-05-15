@@ -1,17 +1,17 @@
 package io.github.apace100.apoli;
 
 import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.networking.ModPackets;
 import io.github.apace100.apoli.networking.ModPacketsS2C;
+import io.github.apace100.apoli.networking.UseActivePowersPacket;
 import io.github.apace100.apoli.power.Active;
 import io.github.apace100.apoli.power.Power;
+import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.factory.condition.EntityConditionsClient;
 import io.github.apace100.apoli.power.factory.condition.ItemConditionsClient;
 import io.github.apace100.apoli.registry.ApoliClassDataClient;
 import io.github.apace100.apoli.screen.GameHudRender;
 import io.github.apace100.apoli.screen.PowerHudRenderer;
 import io.github.apace100.apoli.util.ApoliConfigClient;
-import io.netty.buffer.Unpooled;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.fabricmc.api.ClientModInitializer;
@@ -21,7 +21,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.FriendlyByteBuf;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -84,13 +83,10 @@ public class ApoliClient implements ClientModInitializer {
 
 	@Environment(EnvType.CLIENT)
 	private void performActivePowers(List<Power> powers) {
-		FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
-		buffer.writeInt(powers.size());
 		for(Power power : powers) {
-			buffer.writeResourceLocation(power.getType().getIdentifier());
-			((Active)power).onUse();
+			((Active) power).onUse();
 		}
-		ClientPlayNetworking.send(ModPackets.USE_ACTIVE_POWERS, buffer);
+		ClientPlayNetworking.send(new UseActivePowersPacket((List<PowerType<?>>) (Object) powers.stream().map(p -> p.getType()).toList()));
 	}
 
 	@Environment(EnvType.CLIENT)

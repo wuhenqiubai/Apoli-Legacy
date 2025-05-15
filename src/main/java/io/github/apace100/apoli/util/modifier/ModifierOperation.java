@@ -8,8 +8,8 @@ import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.VariableIntPower;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.data.models.blockstates.PropertyDispatch;
 import net.minecraft.world.entity.Entity;
+import org.apache.commons.lang3.function.TriFunction;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -99,9 +99,9 @@ public enum ModifierOperation implements IModifierOperation {
 
     private final Phase phase;
     private final int order;
-    private final PropertyDispatch.TriFunction<List<Double>, Double, Double, Double> function;
+    private final TriFunction<List<Double>, Double, Double, Double> function;
 
-    ModifierOperation(Phase phase, int order, PropertyDispatch.TriFunction<List<Double>, Double, Double, Double> function) {
+    ModifierOperation(Phase phase, int order, TriFunction<List<Double>, Double, Double, Double> function) {
         this.phase = phase;
         this.order = order;
         this.function = function;

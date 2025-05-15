@@ -10,7 +10,7 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.HiddenEffectStatus;
 import io.github.apace100.apoli.access.ModifiableFoodEntity;
 import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.networking.ModPackets;
+import io.github.apace100.apoli.networking.SetAttackerPacket;
 import io.github.apace100.apoli.power.*;
 import io.github.apace100.apoli.util.InventoryUtil;
 import io.github.apace100.apoli.util.StackPowerUtil;
@@ -19,25 +19,30 @@ import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.world.damagesource.CombatRules;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -46,13 +51,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.function.BiConsumer;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity implements ModifiableFoodEntity {
@@ -82,9 +83,11 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         SyncStatusEffectsUtil.sendStatusEffectUpdatePacket((LivingEntity)(Object)this, SyncStatusEffectsUtil.UpdateType.UPGRADE, effectInstance);
     }
 
-    @Inject(method = "onEffectRemoved", at = @At("TAIL"))
-    private void updateStatusEffectWhenRemoved(MobEffectInstance effectInstance, CallbackInfo ci) {
-        SyncStatusEffectsUtil.sendStatusEffectUpdatePacket((LivingEntity)(Object)this, SyncStatusEffectsUtil.UpdateType.REMOVE, effectInstance);
+    @Inject(method = "onEffectsRemoved", at = @At("TAIL"))
+    private void updateStatusEffectWhenRemoved(Collection<MobEffectInstance> effects, CallbackInfo ci) {
+        for (MobEffectInstance effectInstance : effects) {
+            SyncStatusEffectsUtil.sendStatusEffectUpdatePacket((LivingEntity)(Object)this, SyncStatusEffectsUtil.UpdateType.REMOVE, effectInstance);
+        }
     }
 
     @Inject(method = "removeAllEffects", at = @At("RETURN"))
@@ -94,12 +97,12 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
 
     @ModifyVariable(method = "addEffect(Lnet/minecraft/world/effect/MobEffectInstance;Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"))
     private MobEffectInstance modifyStatusEffect(MobEffectInstance effect) {
-        MobEffect effectType = effect.getEffect();
+        Holder<MobEffect> effectType = effect.getEffect();
         int originalAmp = effect.getAmplifier();
         int originalDur = effect.getDuration();
 
-        int amplifier = Math.round(PowerHolderComponent.modify(this, ModifyStatusEffectAmplifierPower.class, originalAmp, power -> power.doesApply(effectType)));
-        int duration = Math.round(PowerHolderComponent.modify(this, ModifyStatusEffectDurationPower.class, originalDur, power -> power.doesApply(effectType)));
+        int amplifier = Math.round(PowerHolderComponent.modify(this, ModifyStatusEffectAmplifierPower.class, originalAmp, power -> power.doesApply(effectType.value())));
+        int duration = Math.round(PowerHolderComponent.modify(this, ModifyStatusEffectDurationPower.class, originalDur, power -> power.doesApply(effectType.value())));
 
         if (amplifier != originalAmp || duration != originalDur) {
             return new MobEffectInstance(
@@ -109,8 +112,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                     effect.isAmbient(),
                     effect.isVisible(),
                     effect.showIcon(),
-                    ((HiddenEffectStatus) effect).getHiddenEffect(),
-                    Optional.empty()
+                    ((HiddenEffectStatus) effect).getHiddenEffect()
             );
         }
         return effect;
@@ -128,16 +130,16 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                 buf.writeInt(this.lastHurtByMob.getId());
             }
             for (ServerPlayer player : PlayerLookup.tracking(this)) {
-                ServerPlayNetworking.send(player, ModPackets.SET_ATTACKER, buf);
+                ServerPlayNetworking.send(player, new SetAttackerPacket(getId(), this.lastHurtByMob == null ? Optional.empty() : Optional.of(this.lastHurtByMob.getId())));
             }
         }
     }
 
-    @Inject(method = "collectEquipmentChanges", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/attributes/AttributeMap;removeAttributeModifiers(Lcom/google/common/collect/Multimap;)V"))
+    @Inject(method = "collectEquipmentChanges", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;forEachModifier(Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V"))
     private void removeEquipmentPowers(CallbackInfoReturnable<Map> cir, @Local(ordinal = 0) ItemStack stack, @Local EquipmentSlot equipmentSlot) {
         List<StackPowerUtil.StackPower> powers = StackPowerUtil.getPowers(stack, equipmentSlot);
         if(powers.size() > 0) {
-            ResourceLocation source = new ResourceLocation(Apoli.MODID, equipmentSlot.getName());
+            ResourceLocation source = ResourceLocation.fromNamespaceAndPath(Apoli.MODID, equipmentSlot.getName());
             PowerHolderComponent powerHolder = PowerHolderComponent.KEY.get(this);
             powers.forEach(sp -> {
                 if(PowerTypeRegistry.contains(sp.powerId)) {
@@ -148,11 +150,14 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @Inject(method = "collectEquipmentChanges", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/ai/attributes/AttributeMap;addTransientAttributeModifiers(Lcom/google/common/collect/Multimap;)V"), locals = LocalCapture.CAPTURE_FAILHARD)
-    private void addEquipmentPowers(CallbackInfoReturnable<Map> cir, @Local(ordinal = 0) ItemStack stack, @Local(ordinal = 1) ItemStack stack2, @Local EquipmentSlot equipmentSlot) {
+    // O-L: We're not using an inject because otherwise the second ItemStack local isn't captured.
+    @WrapOperation(method = "collectEquipmentChanges", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;forEachModifier(Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V"))
+    private void addEquipmentPowers(ItemStack stack2, EquipmentSlot equipmentSlot, BiConsumer<Holder<Attribute>, AttributeModifier> action, Operation<Void> original, @Local(ordinal = 0) ItemStack stack) {
+        original.call(stack2, equipmentSlot, action);
+
         List<StackPowerUtil.StackPower> powers = StackPowerUtil.getPowers(stack2, equipmentSlot);
         if(powers.size() > 0) {
-            ResourceLocation source = new ResourceLocation(Apoli.MODID, equipmentSlot.getName());
+            ResourceLocation source = ResourceLocation.fromNamespaceAndPath(Apoli.MODID, equipmentSlot.getName());
             PowerHolderComponent powerHolder = PowerHolderComponent.KEY.get(this);
             powers.forEach(sp -> {
                 if(PowerTypeRegistry.contains(sp.powerId)) {
@@ -182,8 +187,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     private Optional<Boolean> apoli$shouldApplyArmor;
     private Optional<Boolean> apoli$shouldDamageArmor;
 
-    @ModifyVariable(method = "hurt", at = @At("HEAD"), argsOnly = true)
-    private float modifyDamageTaken(float originalValue, DamageSource source, float amount) {
+    @ModifyVariable(method = "hurtServer", at = @At("HEAD"), argsOnly = true)
+    private float modifyDamageTaken(float originalValue, @Local(argsOnly = true) DamageSource source) {
         float newValue = originalValue;
         LivingEntity thisAsLiving = (LivingEntity)(Object)this;
         if(source.getEntity() != null) {
@@ -224,7 +229,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                 if(apoli$shouldDamageArmor.isEmpty()) {
                     this.hurtArmor(source, amount);
                 }
-                float damageLeft = CombatRules.getDamageAfterAbsorb(amount, this.getArmorValue(), (float)this.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
+                float damageLeft = CombatRules.getDamageAfterAbsorb((LivingEntity) (Object) this, amount, source, this.getArmorValue(), (float)this.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
                 cir.setReturnValue(damageLeft);
             } else {
                 cir.setReturnValue(amount);
@@ -243,15 +248,15 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         return !apoli$shouldDamageArmor.isPresent() || apoli$shouldDamageArmor.get();
     }
 
-    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"), cancellable = true)
-    private void preventHitIfDamageIsZero(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"), cancellable = true)
+    private void preventHitIfDamageIsZero(ServerLevel level, DamageSource damageSource, float amount, CallbackInfoReturnable<Boolean> cir) {
         if(apoli$hasModifiedDamage && amount <= 0f) {
             cir.setReturnValue(false);
         }
     }
 
-    @Inject(method = "hurt", at = @At("RETURN"))
-    private void invokeHitActions(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At("RETURN"))
+    private void invokeHitActions(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if(cir.getReturnValue()) {
             Entity attacker = source.getEntity();
             if(attacker != null) {
@@ -266,18 +271,18 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;die(Lnet/minecraft/world/damagesource/DamageSource;)V"))
-    private void invokeKillAction(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;die(Lnet/minecraft/world/damagesource/DamageSource;)V"))
+    private void invokeKillAction(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         PowerHolderComponent.getPowers(source.getEntity(), SelfActionOnKillPower.class).forEach(p -> p.onKill((LivingEntity)(Object)this, source, amount));
     }
 
-    @WrapOperation(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isInWaterRainOrBubble()Z"))
+    /*@WrapOperation(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isInWaterRainOrBubble()Z"))
     private boolean preventExtinguishingFromSwimming(LivingEntity livingEntity, Operation<Boolean> original) {
         if(PowerHolderComponent.hasPower(livingEntity, SwimmingPower.class) && livingEntity.isSwimming() && !(getFluidHeight(FluidTags.WATER) > 0)) {
             return false;
         }
         return original.call(livingEntity);
-    }
+    }*/
 
     @Unique
     private boolean prevPowderSnowState = false;
@@ -305,7 +310,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     }
 
     // SetEntityGroupPower
-    @Inject(at = @At("HEAD"), method = "getMobType", cancellable = true)
+    // FIXME O-L: Need to make sure that we return the entity type when it's needed
+    /*@Inject(at = @At("HEAD"), method = "getMobType", cancellable = true)
     public void getGroup(CallbackInfoReturnable<MobType> info) {
         if((Object)this instanceof LivingEntity) {
             PowerHolderComponent component = PowerHolderComponent.KEY.get(this);
@@ -317,7 +323,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                 info.setReturnValue(groups.get(0).group);
             }
         }
-    }
+    }*/
 
     // SPRINT_JUMP
     @ModifyExpressionValue(method = "jumpFromGround", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getJumpPower()F"))
@@ -367,7 +373,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     }
 
     // SLOW_FALLING
-    @ModifyVariable(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getFluidState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/material/FluidState;"), method = "travel", ordinal = 0)
+    @ModifyReturnValue(at = @At("RETURN"), method = "getEffectiveGravity")
     public double modifyFallingVelocity(double in) {
         if(this.getDeltaMovement().y > 0D) {
             return in;
@@ -383,8 +389,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         return in;
     }
 
-    @Inject(method = "getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D", at = @At("RETURN"), cancellable = true)
-    private void modifyAttributeValue(Attribute attribute, CallbackInfoReturnable<Double> cir) {
+    @Inject(method = "getAttributeValue", at = @At("RETURN"), cancellable = true)
+    private void modifyAttributeValue(Holder<Attribute> attribute, CallbackInfoReturnable<Double> cir) {
         double originalValue = this.getAttributes().getValue(attribute);
         double modified = PowerHolderComponent.modify(this, ModifyAttributePower.class, (float)originalValue, p -> p.getAttribute() == attribute);
         if(originalValue != modified) {
@@ -392,7 +398,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @ModifyVariable(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;onGround()Z", opcode = Opcodes.GETFIELD, ordinal = 2))
+    @ModifyExpressionValue(method = "travelInAir", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;getFriction()F", ordinal = 0))
     private float modifySlipperiness(float original) {
         return PowerHolderComponent.modify(this, ModifySlipperinessPower.class, original, p -> p.doesApply(level(), getBlockPosBelowThatAffectsMyMovement()));
     }
@@ -408,8 +414,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     @Unique
     private float cachedDamageAmount;
 
-    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;checkTotemDeathProtection(Lnet/minecraft/world/damagesource/DamageSource;)Z"))
-    private void cacheDamageAmount(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;checkTotemDeathProtection(Lnet/minecraft/world/damagesource/DamageSource;)Z"))
+    private void cacheDamageAmount(ServerLevel level, DamageSource damageSource, float amount, CallbackInfoReturnable<Boolean> cir) {
         this.cachedDamageAmount = amount;
     }
 
@@ -423,52 +429,15 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @ModifyVariable(method = "eat", at = @At("HEAD"), argsOnly = true)
-    private ItemStack modifyEatenItemStack(ItemStack original) {
-        if((Object)this instanceof Player) {
-            return original;
-        }
-        List<ModifyFoodPower> mfps = PowerHolderComponent.getPowers(this, ModifyFoodPower.class);
-        mfps = mfps.stream().filter(mfp -> mfp.doesApply(original)).collect(Collectors.toList());
-        ItemStack newStack = original;
-        for(ModifyFoodPower mfp : mfps) {
-            newStack = mfp.getConsumedItemStack(newStack);
-        }
-        ((ModifiableFoodEntity) this).setCurrentModifyFoodPowers(mfps);
-        ((ModifiableFoodEntity) this).setOriginalFoodStack(original);
-        return newStack;
-    }
-
-    @ModifyVariable(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;addEatEffect(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;)V", shift = At.Shift.AFTER))
-    private ItemStack unmodifyEatenItemStack(ItemStack modified) {
-        ModifiableFoodEntity foodEntity = (ModifiableFoodEntity) this;
-        ItemStack original = foodEntity.getOriginalFoodStack();
-        if(original != null) {
-            foodEntity.setOriginalFoodStack(null);
-            return original;
-        }
-        return modified;
-    }
-
-    @Inject(method = "eat", at = @At("TAIL"))
-    private void removeCurrentModifyFoodPowers(Level world, ItemStack stack, CallbackInfoReturnable<ItemStack> cir) {
-        setCurrentModifyFoodPowers(new LinkedList<>());
-    }
-
-    @WrapWithCondition(method = "eat", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;addEatEffect(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;)V"))
-    private boolean preventApplyingFoodEffects(LivingEntity livingEntity, ItemStack stack, Level world, LivingEntity targetEntity) {
-        return !getCurrentModifyFoodPowers().stream().anyMatch(ModifyFoodPower::doesPreventEffects);
-    }
-
     @Shadow @Nullable private LivingEntity lastHurtByMob;
 
     @Shadow protected abstract void hurtArmor(DamageSource source, float amount);
 
     @Shadow public abstract int getArmorValue();
 
-    @Shadow public abstract double getAttributeValue(Attribute attribute);
-
     @Shadow public abstract AttributeMap getAttributes();
+
+    @Shadow public abstract double getAttributeValue(Holder<Attribute> attribute);
 
     @Inject(method = "getFlyingSpeed", at = @At("RETURN"), cancellable = true)
     private void modifyFlySpeed(CallbackInfoReturnable<Float> cir) {
@@ -504,5 +473,17 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     @Inject(method = "baseTick", at = @At("TAIL"))
     private void updateItemStackHolder(CallbackInfo ci) {
         InventoryUtil.forEachStack(this, stack -> stack.setEntityRepresentation(this));
+    }
+
+    @Inject(method = "canEquipWithDispenser", at = @At("HEAD"), cancellable = true)
+    private void preventArmorDispensing(ItemStack stack, CallbackInfoReturnable<Boolean> info) {
+        Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
+        if (equippable != null && equippable.dispensable()) {
+            var slot = equippable.slot();
+            PowerHolderComponent component = PowerHolderComponent.KEY.get(this);
+            if(component.getPowers(RestrictArmorPower.class).stream().anyMatch(rap -> !rap.canEquip(stack, slot))) {
+                info.setReturnValue(false);
+            }
+        }
     }
 }

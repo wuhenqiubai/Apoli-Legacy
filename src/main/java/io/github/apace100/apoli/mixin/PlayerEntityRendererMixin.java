@@ -8,11 +8,10 @@ import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ModelColorPower;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.util.ARGB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -23,14 +22,14 @@ public class PlayerEntityRendererMixin {
 
     @Environment(EnvType.CLIENT)
     @WrapOperation(method = "renderHand", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/geom/ModelPart;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;II)V"))
-    private void makeArmAndSleeveTranslucent(ModelPart modelPart, PoseStack matrices, VertexConsumer vertices, int light, int overlay, Operation<Void> original, PoseStack matrices2, MultiBufferSource vertexConsumers, int light2, AbstractClientPlayer player) {
-        List<ModelColorPower> modelColorPowers = PowerHolderComponent.KEY.get(player).getPowers(ModelColorPower.class);
+    private void makeArmAndSleeveTranslucent(ModelPart modelPart, PoseStack matrices, VertexConsumer vertices, int light, int overlay, Operation<Void> original) {
+        List<ModelColorPower> modelColorPowers = PowerHolderComponent.KEY.get(Minecraft.getInstance().player).getPowers(ModelColorPower.class);
         if (modelColorPowers.size() > 0) {
             float red = modelColorPowers.stream().map(ModelColorPower::getRed).reduce((a, b) -> a * b).get();
             float green = modelColorPowers.stream().map(ModelColorPower::getGreen).reduce((a, b) -> a * b).get();
             float blue = modelColorPowers.stream().map(ModelColorPower::getBlue).reduce((a, b) -> a * b).get();
             float alpha = modelColorPowers.stream().map(ModelColorPower::getAlpha).min(Float::compare).get();
-            modelPart.render(matrices, vertexConsumers.getBuffer(RenderType.entityTranslucent(player.getSkinTextureLocation())), light, overlay, red, green, blue, alpha);
+            modelPart.render(matrices, vertices, light, overlay, ARGB.colorFromFloat(alpha, red, green, blue));
             return;
         }
 

@@ -17,10 +17,14 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
+import net.minecraft.core.particles.ColorParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -32,11 +36,11 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.level.Level;
-import org.joml.Vector3f;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.util.TriConsumer;
+import org.joml.Vector3f;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -85,7 +89,7 @@ public class EntityActions {
                     } else {
                         category = SoundSource.NEUTRAL;
                     }
-                    entity.level().playSound(null, (entity).getX(), (entity).getY(), (entity).getZ(), data.get("sound"),
+                    entity.level().playSound(null, (entity).getX(), (entity).getY(), (entity).getZ(), (SoundEvent) data.get("sound"),
                         category, data.getFloat("volume"), data.getFloat("pitch"));
                 }));
         register(new ActionFactory<>(Apoli.identifier("exhaust"), new SerializableData()
@@ -121,7 +125,7 @@ public class EntityActions {
             }));
         register(new ActionFactory<>(Apoli.identifier("set_on_fire"), new SerializableData()
             .add("duration", SerializableDataTypes.INT),
-            (data, entity) -> entity.setSecondsOnFire(data.getInt("duration"))));
+            (data, entity) -> entity.setRemainingFireTicks(data.getInt("duration") * 20)));
         register(new ActionFactory<>(Apoli.identifier("add_velocity"), new SerializableData()
             .add("x", SerializableDataTypes.FLOAT, 0F)
             .add("y", SerializableDataTypes.FLOAT, 0F)
@@ -179,7 +183,7 @@ public class EntityActions {
                 if(data.isPresent("effects")) {
                     effects.addAll(data.get("effects"));
                 }
-                areaEffectCloudEntity.setFixedColor(PotionUtils.getColor(effects));
+                areaEffectCloudEntity.setParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, ARGB.opaque(PotionContents.getColorOptional(effects).orElse(PotionContents.BASE_POTION_COLOR))));
                 effects.forEach(areaEffectCloudEntity::addEffect);
 
                 entity.level().addFreshEntity(areaEffectCloudEntity);
@@ -193,7 +197,10 @@ public class EntityActions {
                 if(server != null) {
                     boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
+                        Apoli.config.executeCommand.showOutput && validOutput ?
+                            entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource()
+                                : CommandSource.NULL
+                        : CommandSource.NULL,
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
@@ -281,7 +288,7 @@ public class EntityActions {
                             living.setItemSlot(slot, stack);
                             return;
                         } else
-                        if(ItemStack.isSameItemSameTags(stackInSlot, stack) && stackInSlot.getCount() < stackInSlot.getMaxStackSize()) {
+                        if(ItemStack.isSameItemSameComponents(stackInSlot, stack) && stackInSlot.getCount() < stackInSlot.getMaxStackSize()) {
                             int fit = Math.min(stackInSlot.getMaxStackSize() - stackInSlot.getCount(), stack.getCount());
                             stackInSlot.grow(fit);
                             stack.shrink(fit);

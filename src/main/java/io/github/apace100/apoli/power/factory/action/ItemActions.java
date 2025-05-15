@@ -2,6 +2,7 @@ package io.github.apace100.apoli.power.factory.action;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.serialization.Dynamic;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.MutableItemStack;
 import io.github.apace100.apoli.data.ApoliDataTypes;
@@ -11,32 +12,38 @@ import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Tuple;
+import net.minecraft.util.datafix.DataFixers;
+import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.DigDurabilityEnchantment;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.loot.LootContext;
-import net.minecraft.world.level.storage.loot.LootDataManager;
-import net.minecraft.world.level.storage.loot.LootDataType;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunction;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 public class ItemActions {
 
@@ -64,8 +71,7 @@ public class ItemActions {
                 MinecraftServer server = worldAndStack.getA().getServer();
                 if(server != null) {
                     ResourceLocation id = data.getId("modifier");
-                    LootDataManager lootManager = server.getLootData();
-                    LootItemFunction lootFunction = lootManager.getElement(LootDataType.MODIFIER, id);
+                    LootItemFunction lootFunction = server.registryAccess().get(Registries.ITEM_MODIFIER).orElseThrow().value().getValue(id);
                     if (lootFunction == null) {
                         Apoli.LOGGER.info("Unknown item modifier used in `modify` action: " + id);
                         return;
@@ -73,7 +79,7 @@ public class ItemActions {
                     ServerLevel serverWorld = server.overworld();
                     ItemStack stack = worldAndStack.getB();
                     LootParams lootContextParameterSet = new LootParams.Builder(serverWorld).withParameter(LootContextParams.ORIGIN, new Vec3(0, 0,0)).create(LootContextParamSets.COMMAND);
-                    LootContext lootContext = new LootContext.Builder(lootContextParameterSet).create(null);
+                    LootContext lootContext = new LootContext.Builder(lootContextParameterSet).create(Optional.empty());
                     ItemStack newStack = lootFunction.apply(stack, lootContext);
                     ((MutableItemStack)stack).setFrom(newStack);
                 }
@@ -86,14 +92,8 @@ public class ItemActions {
                     int amount = data.getInt("amount");
                     int i;
                     if (amount > 0 && !data.getBoolean("ignore_unbreaking")) {
-                        i = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.UNBREAKING, worldAndStack.getB());
-                        int j = 0;
-
-                        for(int k = 0; i > 0 && k < amount; ++k) {
-                            if (DigDurabilityEnchantment.shouldIgnoreDurabilityDrop(worldAndStack.getB(), i, worldAndStack.getA().random)) {
-                                ++j;
-                            }
-                        }
+                        i = EnchantmentHelper.getItemEnchantmentLevel(worldAndStack.getA().getServer().registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.UNBREAKING), worldAndStack.getB());
+                        int j = EnchantmentHelper.processDurabilityChange((ServerLevel) worldAndStack.getA(), worldAndStack.getB(), i);
 
                         amount -= j;
                         if (amount <= 0) {
@@ -114,8 +114,15 @@ public class ItemActions {
             (data, worldAndStack) -> {
                 String nbtString = data.get("nbt");
                 try {
-                    CompoundTag nbt = new TagParser(new StringReader(nbtString)).readStruct();
-                    worldAndStack.getB().getOrCreateTag().merge(nbt);
+                    CompoundTag oldTag = TagParser.create(NbtOps.INSTANCE).parseFully(new StringReader(nbtString)).asCompound().get();
+                    CompoundTag recreatedTag = new CompoundTag();
+                    recreatedTag.putString("id", BuiltInRegistries.ITEM.getKey(worldAndStack.getB().getItem()).toString());
+                    recreatedTag.putInt("Count", worldAndStack.getB().getCount());
+                    recreatedTag.put("tag", oldTag);
+
+                    var convertedStackNbt = DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(NbtOps.INSTANCE, recreatedTag), 3465, SharedConstants.WORLD_VERSION);
+                    var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt.getValue()).getOrThrow().getFirst();
+                    worldAndStack.getB().applyComponents(convertedStack.getComponents());
                 } catch (CommandSyntaxException e) {
                     Apoli.LOGGER.error("Failed `merge_nbt` item action due to malformed nbt string: \"" + nbtString + "\"");
                 }
@@ -127,41 +134,45 @@ public class ItemActions {
             .add("reset_repair_cost", SerializableDataTypes.BOOLEAN, false),
             (data, worldAndStack) -> {
                 ItemStack stack = worldAndStack.getB();
-                if(!stack.hasTag()) {
+                if(stack.isEmpty()) {
                     return;
                 }
-                List<Enchantment> enchs = new LinkedList<>();
-                data.<Enchantment>ifPresent("enchantment", enchs::add);
-                data.<List<Enchantment>>ifPresent("enchantments", enchs::addAll);
+                List<ResourceKey<Enchantment>> enchs = new LinkedList<>();
+                data.<ResourceKey<Enchantment>>ifPresent("enchantment", enchs::add);
+                data.<List<ResourceKey<Enchantment>>>ifPresent("enchantments", enchs::addAll);
                 int levels = -1;
                 if(data.isPresent("levels")) {
                     levels = data.getInt("levels");
                 }
-                Map<Enchantment, Integer> enchants = EnchantmentHelper.getEnchantments(stack);
+                if (!stack.has(DataComponents.ENCHANTMENTS))
+                    return;
+
+                var enchantments = stack.get(DataComponents.ENCHANTMENTS);
+                var enchants = enchantments.keySet();
+                var modifiableEnchants = new ItemEnchantments.Mutable(enchantments);
                 if(enchs.size() > 0) {
-                    for(Enchantment ench : enchs) {
-                        if(enchants.containsKey(ench)) {
-                            int newLevel = levels == -1 ? 0 : enchants.get(ench) - data.getInt("levels");
+                    for(ResourceKey<Enchantment> ench : enchs) {
+                        var enchant = worldAndStack.getA().getServer().registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(ench);
+                        if(enchants.contains(enchant)) {
+                            int newLevel = levels == -1 ? 0 : enchantments.getLevel(enchant) - data.getInt("levels");
                             if(newLevel <= 0) {
-                                enchants.remove(ench);
+                                modifiableEnchants.removeIf(e -> e.equals(enchant));
                             } else {
-                                enchants.put(ench, newLevel);
+                                modifiableEnchants.set(enchant, newLevel);
                             }
                         }
                     }
                 } else {
-                    Map<Enchantment, Integer> newEnchants = new LinkedHashMap<>();
-                    for(Enchantment e : enchants.keySet()) {
-                        int newLevel = levels == -1 ? 0 : enchants.get(e) - data.getInt("levels");
+                    for(Holder<Enchantment> e : enchants) {
+                        int newLevel = levels == -1 ? 0 : enchantments.getLevel(e) - data.getInt("levels");
                         if(newLevel > 0) {
-                            newEnchants.put(e, newLevel);
+                            modifiableEnchants.set(e, newLevel);
                         }
                     }
-                    enchants = newEnchants;
                 }
-                EnchantmentHelper.setEnchantments(enchants, stack);
+                EnchantmentHelper.setEnchantments(stack, modifiableEnchants.toImmutable());
                 if(data.getBoolean("reset_repair_cost") && !stack.isEnchanted()) {
-                    stack.setRepairCost(0);
+                    stack.set(DataComponents.REPAIR_COST, 0);
                 }
             }));
         register(HolderAction.getFactory());

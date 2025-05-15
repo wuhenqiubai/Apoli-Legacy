@@ -3,7 +3,7 @@ package io.github.apace100.apoli.power.factory.action;
 
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
-import io.github.apace100.apoli.networking.ModPackets;
+import io.github.apace100.apoli.networking.PlayerMountPacket;
 import io.github.apace100.apoli.power.factory.action.bientity.DamageAction;
 import io.github.apace100.apoli.power.factory.action.meta.*;
 import io.github.apace100.apoli.registry.ApoliRegistries;
@@ -59,7 +59,7 @@ public class BiEntityActions {
                     FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
                     buf.writeInt(entities.getA().getId());
                     buf.writeInt(entities.getB().getId());
-                    ServerPlayNetworking.send((ServerPlayer) entities.getB(), ModPackets.PLAYER_MOUNT, buf);
+                    ServerPlayNetworking.send((ServerPlayer) entities.getB(), new PlayerMountPacket(entities.getA().getId(), entities.getB().getId()));
                 }
             }));
         register(new ActionFactory<>(Apoli.identifier("set_in_love"), new SerializableData(),

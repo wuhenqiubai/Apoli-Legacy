@@ -8,10 +8,12 @@ import io.github.apace100.apoli.mixin.CraftingScreenHandlerAccessor;
 import io.github.apace100.apoli.mixin.PlayerScreenHandlerAccessor;
 import io.github.apace100.apoli.power.ModifyCraftingPower;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -21,43 +23,47 @@ import java.util.Optional;
 
 public class ModifiedCraftingRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<?> SERIALIZER = new SimpleCraftingRecipeSerializer<>(ModifiedCraftingRecipe::new);
+    public static final RecipeSerializer<? extends CustomRecipe> SERIALIZER = new CustomRecipe.Serializer<>(ModifiedCraftingRecipe::new);
 
-    public ModifiedCraftingRecipe(ResourceLocation id, CraftingBookCategory category) {
-        super(id, category);
+    public ModifiedCraftingRecipe(CraftingBookCategory category) {
+        super(category);
     }
 
     @Override
-    public boolean matches(CraftingContainer inventory, Level world)
+    public boolean matches(CraftingInput input, Level world)
     {
+        var inventory = ((CraftingInputContainerHolder) input).apoli$getCraftingContainer();
+
         if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
-            Optional<CraftingRecipe> original = getOriginalMatch(craftingInventory);
+            Optional<RecipeHolder<CraftingRecipe>> original = getOriginalMatch(input);
             if (original.isEmpty())
             {
                 return false;
             }
-            return getRecipes(craftingInventory).stream().anyMatch(r -> r.doesApply(craftingInventory, original.get()));
+            return getRecipes(craftingInventory).stream().anyMatch(r -> r.doesApply(input, original.get()));
         }
 
         return false;
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryManager)
+    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries)
     {
+        var inventory = ((CraftingInputContainerHolder) input).apoli$getCraftingContainer();
+
         if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
             Player player = getPlayerFromInventory(craftingInventory);
             if (player != null)
             {
-                Optional<CraftingRecipe> original = getOriginalMatch(craftingInventory);
+                Optional<RecipeHolder<CraftingRecipe>> original = getOriginalMatch(input);
                 if (original.isPresent())
                 {
-                    Optional<ModifyCraftingPower> optional = getRecipes(craftingInventory).stream().filter(r -> r.doesApply(craftingInventory, original.get())).findFirst();
+                    Optional<ModifyCraftingPower> optional = getRecipes(craftingInventory).stream().filter(r -> r.doesApply(input, original.get())).findFirst();
                     if (optional.isPresent())
                     {
-                        ItemStack result = optional.get().getNewResult(craftingInventory, original.get());
+                        ItemStack result = optional.get().getNewResult(input, original.get().value());
                         ((PowerCraftingInventory) craftingInventory).setPower(optional.get());
                         return result;
                     }
@@ -69,12 +75,7 @@ public class ModifiedCraftingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return true;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<? extends CustomRecipe> getSerializer() {
         return SERIALIZER;
     }
 
@@ -100,15 +101,12 @@ public class ModifiedCraftingRecipe extends CustomRecipe {
         return Lists.newArrayList();
     }
 
-    private Optional<CraftingRecipe> getOriginalMatch(TransientCraftingContainer inv) {
+    private Optional<RecipeHolder<CraftingRecipe>> getOriginalMatch(CraftingInput input) {
+        var inv = ((CraftingInputContainerHolder) input).apoli$getCraftingContainer();
         AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
         Player player = getPlayerFromHandler(handler);
         if(player != null && player.getServer() != null) {
-            List<CraftingRecipe> recipes = player.getServer().getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING);
-            return recipes.stream()
-                .filter(cr -> !(cr instanceof ModifiedCraftingRecipe)
-                    && cr.matches(inv, player.level()))
-                .findFirst();
+            return player.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, player.level());
         }
         return Optional.empty();
     }

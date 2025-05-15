@@ -1,22 +1,23 @@
 package io.github.apace100.apoli.mixin;
 
-import io.github.apace100.apoli.access.ModifiableFoodEntity;
 import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.networking.ModPackets;
+import io.github.apace100.apoli.networking.PlayerDismountPacket;
 import io.github.apace100.apoli.power.*;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.Nameable;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -33,19 +34,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Mixin(Player.class)
 public abstract class PlayerEntityMixin extends LivingEntity implements Nameable, CommandSource {
-
-    @Shadow
-    public abstract boolean hurt(DamageSource source, float amount);
-
-    @Shadow
-    public abstract EntityDimensions getDimensions(Pose pose);
-
-    @Shadow
-    public abstract ItemStack getItemBySlot(EquipmentSlot slot);
 
     @Shadow
     @Final
@@ -53,19 +44,6 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
 
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, Level world) {
         super(entityType, world);
-    }
-
-    @ModifyVariable(method = "eat", at = @At("HEAD"), argsOnly = true)
-    private ItemStack modifyEatenItemStack(ItemStack original) {
-        List<ModifyFoodPower> mfps = PowerHolderComponent.getPowers(this, ModifyFoodPower.class);
-        mfps = mfps.stream().filter(mfp -> mfp.doesApply(original)).collect(Collectors.toList());
-        ItemStack newStack = original;
-        for(ModifyFoodPower mfp : mfps) {
-            newStack = mfp.getConsumedItemStack(newStack);
-        }
-        ((ModifiableFoodEntity)this).setCurrentModifyFoodPowers(mfps);
-        ((ModifiableFoodEntity)this).setOriginalFoodStack(original);
-        return newStack;
     }
 
     @Unique
@@ -110,7 +88,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                 }
                 if(ar.consumesAction() && !result.consumesAction()) {
                     result = ar;
-                } else if(ar.shouldSwing() && !result.shouldSwing()) {
+                } else if((ar instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && (!(result instanceof InteractionResult.Success success1 && success1.swingSource() != InteractionResult.SwingSource.NONE))) {
                     result = ar;
                 }
             }
@@ -119,7 +97,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
             } else {
                 apoli$CachedPriorityZeroResult = InteractionResult.PASS;
                 if(result != InteractionResult.PASS) {
-                    if(result.shouldSwing()) {
+                    if(result instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) {
                         this.swing(hand);
                     }
                     cir.setReturnValue(result);
@@ -129,8 +107,8 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         }
     }
 
-    @Inject(method = "hurt", at = @At(value = "RETURN", ordinal = 3), cancellable = true)
-    private void allowDamageIfModifyingPowersExist(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurtServer", at = @At(value = "RETURN", ordinal = 3), cancellable = true)
+    private void allowDamageIfModifyingPowersExist(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
 
         boolean hasModifyingPower = false;
 
@@ -140,7 +118,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         }
 
         hasModifyingPower |= PowerHolderComponent.hasPower(this, ModifyDamageTakenPower.class, mdtp -> mdtp.doesApply(source, amount));
-        if (hasModifyingPower) cir.setReturnValue(super.hurt(source, amount));
+        if (hasModifyingPower) cir.setReturnValue(super.hurtServer(level, source, amount));
 
     }
 
@@ -170,7 +148,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                     }
                     if(ar.consumesAction() && !result.consumesAction()) {
                         result = ar;
-                    } else if(ar.shouldSwing() && !result.shouldSwing()) {
+                    } else if((ar instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && (!(result instanceof InteractionResult.Success success1 &&  success1.swingSource() != InteractionResult.SwingSource.NONE))) {
                         result = ar;
                     }
                 }
@@ -180,11 +158,11 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                 }
             }
         }
-        if(custom.shouldSwing()) {
+        if((custom instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE)) {
             this.swing(hand);
         }
         if(original.consumesAction() && !custom.consumesAction()) {
-        } else if(original.shouldSwing() && !custom.shouldSwing()) {
+        } else if((original instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && (!(custom instanceof InteractionResult.Success success1 && success1.swingSource() != InteractionResult.SwingSource.NONE))) {
         } else {
             cir.setReturnValue(custom);
         }
@@ -193,9 +171,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
     @Inject(method = "removeVehicle", at = @At("HEAD"))
     private void sendPlayerDismountPacket(CallbackInfo ci) {
         if(!level().isClientSide && getVehicle() instanceof Player) {
-            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-            buf.writeInt(getId());
-            ServerPlayNetworking.send((ServerPlayer) getVehicle(), ModPackets.PLAYER_DISMOUNT, buf);
+            ServerPlayNetworking.send((ServerPlayer) getVehicle(), new PlayerDismountPacket(getId()));
         }
     }
 
@@ -256,12 +232,4 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         });
     }
 
-    @Inject(method = "canTakeItem", at = @At("HEAD"), cancellable = true)
-    private void preventArmorDispensing(ItemStack stack, CallbackInfoReturnable<Boolean> info) {
-        EquipmentSlot slot = Mob.getEquipmentSlotForItem(stack);
-        PowerHolderComponent component = PowerHolderComponent.KEY.get(this);
-        if(component.getPowers(RestrictArmorPower.class).stream().anyMatch(rap -> !rap.canEquip(stack, slot))) {
-            info.setReturnValue(false);
-        }
-    }
 }

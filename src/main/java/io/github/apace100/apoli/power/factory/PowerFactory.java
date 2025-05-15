@@ -6,7 +6,7 @@ import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -53,7 +53,7 @@ public class PowerFactory<P extends Power> implements Factory {
             this.dataInstance = data;
         }
 
-        public void write(FriendlyByteBuf buf) {
+        public void write(RegistryFriendlyByteBuf buf) {
             buf.writeResourceLocation(id);
             data.write(buf, dataInstance);
         }
@@ -81,7 +81,7 @@ public class PowerFactory<P extends Power> implements Factory {
         return new Instance(data.read(json));
     }
 
-    public Instance read(FriendlyByteBuf buffer) {
+    public Instance read(RegistryFriendlyByteBuf buffer) {
         return new Instance(data.read(buffer));
     }
 }

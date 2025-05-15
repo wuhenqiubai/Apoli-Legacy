@@ -7,6 +7,7 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.HudRender;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.LivingEntity;
@@ -56,13 +57,13 @@ public class CooldownPower extends Power implements HudRendered {
     }
 
     @Override
-    public Tag toTag() {
+    public Tag toTag(HolderLookup.Provider provider) {
         return LongTag.valueOf(lastUseTime);
     }
 
     @Override
-    public void fromTag(Tag tag) {
-        lastUseTime = ((LongTag)tag).getAsLong();
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
+        lastUseTime = ((LongTag)tag).value();
     }
 
     @Override

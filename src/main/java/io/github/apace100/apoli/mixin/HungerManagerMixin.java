@@ -1,25 +1,21 @@
 package io.github.apace100.apoli.mixin;
 
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.access.ModifiableFoodEntity;
 import io.github.apace100.apoli.power.ModifyFoodPower;
-import io.github.apace100.apoli.util.modifier.Modifier;
+import io.github.apace100.apoli.util.ApoliSharedMixinValues;
 import io.github.apace100.apoli.util.modifier.ModifierUtil;
 import net.minecraft.network.protocol.game.ClientboundSetHealthPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodData;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.util.List;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 @Mixin(FoodData.class)
 public class HungerManagerMixin {
@@ -32,46 +28,37 @@ public class HungerManagerMixin {
     @Unique
     private boolean apoli$ShouldUpdateManually = false;
 
-    @ModifyExpressionValue(method = "eat(Lnet/minecraft/world/item/Item;Lnet/minecraft/world/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodProperties;getNutrition()I"))
-    private int modifyHunger(int baseValue, @Local(argsOnly = true) ItemStack stack) {
+    @ModifyArgs(method = "eat(IF)V", at = @At("HEAD"))
+    private void modifyHunger(Args args) {
         apoli$ShouldUpdateManually = false;
 
-        if (player == null) return baseValue;
+        if (player == null) return;
+        var stack = ApoliSharedMixinValues.CURRENT_STACK.get();
+        if (stack == null) return;
 
-        List<Modifier> modifiers = ((ModifiableFoodEntity) player).getCurrentModifyFoodPowers()
+        var modifiers = ((ModifiableFoodEntity) player).getCurrentModifyFoodPowers()
             .stream()
-            .filter(p -> p.doesApply(stack))
-            .flatMap(p -> p.getFoodModifiers().stream())
-            .toList();
+            .filter(p -> p.doesApply(stack));
 
-        int newFood = (int) ModifierUtil.applyModifiers(player, modifiers, baseValue);
-        if (newFood != baseValue && newFood == 0) apoli$ShouldUpdateManually = true;
+        var foodModifiers = modifiers.flatMap(p -> p.getFoodModifiers().stream()).toList();
+        var saturationModifiers = modifiers.flatMap(p -> p.getSaturationModifiers().stream()).toList();
 
-        return newFood;
+        int newFood = (int) ModifierUtil.applyModifiers(player, foodModifiers, args.get(0));
+        if (newFood != (int) args.get(0) && newFood == 0) apoli$ShouldUpdateManually = true;
 
+        float newSat = (float) ModifierUtil.applyModifiers(player, saturationModifiers, args.get(1));
+        if (newSat != (float) args.get(1) && newSat == 0) apoli$ShouldUpdateManually = true;
+
+        args.set(0, newFood);
+        args.set(1, newSat);
     }
 
-    @ModifyExpressionValue(method = "eat(Lnet/minecraft/world/item/Item;Lnet/minecraft/world/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodProperties;getSaturationModifier()F"))
-    private float modifySaturation(float baseValue, @Local(argsOnly = true) ItemStack stack) {
-        if (player == null) return baseValue;
-
-        List<Modifier> modifiers = ((ModifiableFoodEntity) player).getCurrentModifyFoodPowers()
-            .stream()
-            .filter(p -> p.doesApply(stack))
-            .flatMap(p -> p.getSaturationModifiers().stream())
-            .toList();
-
-        float newSaturation = (float) ModifierUtil.applyModifiers(player, modifiers, baseValue);
-        if (newSaturation != baseValue && newSaturation == 0) apoli$ShouldUpdateManually = true;
-
-        return newSaturation;
-
-    }
-
-    @Inject(method = "eat(Lnet/minecraft/world/item/Item;Lnet/minecraft/world/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;eat(IF)V", shift = At.Shift.AFTER))
-    private void executeAdditionalEatAction(Item item, ItemStack stack, CallbackInfo ci) {
+    @Inject(method = "eat(IF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;add(IF)V", shift = At.Shift.AFTER))
+    private void executeAdditionalEatAction(int foodLevelModifier, float saturationLevelModifier, CallbackInfo ci) {
 
         if (player == null || player.level().isClientSide) return;
+        var stack = ApoliSharedMixinValues.CURRENT_STACK.get();
+        if (stack == null) return;
 
         ((ModifiableFoodEntity) player).getCurrentModifyFoodPowers()
             .stream()
@@ -83,7 +70,7 @@ public class HungerManagerMixin {
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private void cachePlayer(Player player, CallbackInfo ci) {
+    private void cachePlayer(ServerPlayer player, CallbackInfo ci) {
         this.player = player;
     }
 }

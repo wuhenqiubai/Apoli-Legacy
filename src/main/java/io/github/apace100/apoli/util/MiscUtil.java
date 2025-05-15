@@ -34,8 +34,9 @@ public final class MiscUtil {
         Entity entityToSpawn = EntityType.loadEntityRecursive(
             entityToSpawnNbt,
             serverWorld,
+            EntitySpawnReason.COMMAND,
             entity -> {
-                entity.moveTo(pos.x, pos.y, pos.z, yaw, pitch);
+                entity.snapTo(pos.x, pos.y, pos.z, yaw, pitch);
                 return entity;
             }
         );
@@ -44,8 +45,7 @@ public final class MiscUtil {
         if (entityNbt == null && entityToSpawn instanceof Mob mobToSpawn) mobToSpawn.finalizeSpawn(
             serverWorld,
             serverWorld.getCurrentDifficultyAt(BlockPos.containing(pos)),
-            MobSpawnType.COMMAND,
-            null,
+            EntitySpawnReason.COMMAND,
             null
         );
         return Optional.of(entityToSpawn);

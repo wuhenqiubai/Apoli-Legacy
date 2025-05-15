@@ -2,6 +2,7 @@ package io.github.apace100.apoli.power;
 
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -79,11 +80,11 @@ public class Power {
         return conditions.stream().allMatch(condition -> condition.test(entity));
     }
 
-    public Tag toTag() {
+    public Tag toTag(HolderLookup.Provider provider) {
         return new CompoundTag();
     }
 
-    public void fromTag(Tag tag) {
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
 
     }
 

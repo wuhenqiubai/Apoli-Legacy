@@ -1,13 +1,12 @@
 package io.github.apace100.apoli;
 
-import dev.onyxstudios.cca.api.v3.entity.EntityComponentFactoryRegistry;
-import dev.onyxstudios.cca.api.v3.entity.EntityComponentInitializer;
-import dev.onyxstudios.cca.api.v3.entity.RespawnCopyStrategy;
 import io.github.apace100.apoli.command.PowerCommand;
 import io.github.apace100.apoli.command.ResourceCommand;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.component.PowerHolderComponentImpl;
+import io.github.apace100.apoli.component.StackPowerComponent;
 import io.github.apace100.apoli.global.GlobalPowerSetLoader;
+import io.github.apace100.apoli.networking.ModPackets;
 import io.github.apace100.apoli.networking.ModPacketsC2S;
 import io.github.apace100.apoli.power.PowerTypes;
 import io.github.apace100.apoli.power.factory.PowerFactories;
@@ -19,7 +18,6 @@ import io.github.apace100.apoli.power.factory.condition.*;
 import io.github.apace100.apoli.registry.ApoliClassData;
 import io.github.apace100.apoli.util.*;
 import io.github.apace100.apoli.util.modifier.ModifierOperations;
-import io.github.apace100.calio.mixin.CriteriaRegistryInvoker;
 import io.github.apace100.calio.resource.OrderedResourceListenerInitializer;
 import io.github.apace100.calio.resource.OrderedResourceListenerManager;
 import io.github.ladysnake.pal.AbilitySource;
@@ -38,6 +36,9 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.world.entity.LivingEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ladysnake.cca.api.v3.entity.EntityComponentFactoryRegistry;
+import org.ladysnake.cca.api.v3.entity.EntityComponentInitializer;
+import org.ladysnake.cca.api.v3.entity.RespawnCopyStrategy;
 
 public class Apoli implements ModInitializer, EntityComponentInitializer, OrderedResourceListenerInitializer {
 
@@ -58,6 +59,7 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 
 	@Override
 	public void onInitialize() {
+		ModPackets.init();
 		ServerLifecycleEvents.SERVER_STARTED.register(s -> server = s);
 
 		FabricLoader.getInstance().getModContainer(MODID).ifPresent(modContainer -> {
@@ -84,6 +86,7 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 
 		Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Apoli.identifier("power_restricted"), PowerRestrictedCraftingRecipe.SERIALIZER);
 		Registry.register(BuiltInRegistries.RECIPE_SERIALIZER, Apoli.identifier("modified"), ModifiedCraftingRecipe.SERIALIZER);
+		Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, Apoli.identifier("stack_powers"), StackPowerComponent.TYPE);
 
 		Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Apoli.identifier("add_power"), AddPowerLootFunction.TYPE);
 		Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Apoli.identifier("remove_power"), RemovePowerLootFunction.TYPE);
@@ -108,16 +111,16 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		BiEntityActions.register();
 
 		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new GlobalPowerSetLoader());
-		ResourceConditions.register(ApoliResourceConditions.ANY_NAMESPACE_LOADED, jsonObject -> ApoliResourceConditions.namespacesLoaded(jsonObject, PowerTypes.LOADED_NAMESPACES, false));
-		ResourceConditions.register(ApoliResourceConditions.ALL_NAMESPACES_LOADED, jsonObject -> ApoliResourceConditions.namespacesLoaded(jsonObject, PowerTypes.LOADED_NAMESPACES, true));
+		ResourceConditions.register(ApoliResourceConditions.ANY_NAMESPACE_LOADED);
+		ResourceConditions.register(ApoliResourceConditions.ALL_NAMESPACES_LOADED);
 
-		CriteriaRegistryInvoker.callRegister(GainedPowerCriterion.INSTANCE);
+		Registry.register(BuiltInRegistries.TRIGGER_TYPES, Apoli.identifier("gained_power"), GainedPowerCriterion.INSTANCE);
 
 		LOGGER.info("Apoli " + VERSION + " has initialized. Ready to power up your game!");
 	}
 
 	public static ResourceLocation identifier(String path) {
-		return new ResourceLocation(MODID, path);
+		return ResourceLocation.fromNamespaceAndPath(MODID, path);
 	}
 
 	@Override

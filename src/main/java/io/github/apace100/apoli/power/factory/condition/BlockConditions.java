@@ -160,7 +160,7 @@ public class BlockConditions {
             (data, block) -> {
                 CompoundTag nbt = new CompoundTag();
                 if(block.getEntity() != null) {
-                    nbt = block.getEntity().saveWithFullMetadata();
+                    nbt = block.getEntity().saveWithFullMetadata(block.getLevel().registryAccess());
                 }
                 return NbtUtils.compareNbt((CompoundTag)data.get("nbt"), nbt, true);
             }));

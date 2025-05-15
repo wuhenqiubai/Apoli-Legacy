@@ -7,6 +7,7 @@ import io.github.apace100.apoli.util.HudRender;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.Tag;
@@ -66,7 +67,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
     }
 
     @Override
-    public Tag toTag() {
+    public Tag toTag(HolderLookup.Provider provider) {
         CompoundTag nbt = new CompoundTag();
         nbt.putLong("LastUseTime", lastUseTime);
         nbt.putInt("ShotProjectiles", shotProjectiles);
@@ -76,15 +77,15 @@ public class FireProjectilePower extends ActiveCooldownPower {
     }
 
     @Override
-    public void fromTag(Tag tag) {
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
         if(tag instanceof LongTag) {
-            lastUseTime = ((LongTag)tag).getAsLong();
+            lastUseTime = ((LongTag)tag).value();
         }
         else {
-            lastUseTime = ((CompoundTag)tag).getLong("LastUseTime");
-            shotProjectiles = ((CompoundTag)tag).getInt("ShotProjectiles");
-            finishedStartDelay = ((CompoundTag)tag).getBoolean("FinishedStartDelay");
-            isFiringProjectiles = ((CompoundTag)tag).getBoolean("IsFiringProjectiles");
+            lastUseTime = ((CompoundTag)tag).getLong("LastUseTime").orElseThrow();
+            shotProjectiles = ((CompoundTag)tag).getInt("ShotProjectiles").orElseThrow();
+            finishedStartDelay = ((CompoundTag)tag).getBoolean("FinishedStartDelay").orElseThrow();
+            isFiringProjectiles = ((CompoundTag)tag).getBoolean("IsFiringProjectiles").orElseThrow();
         }
     }
 
@@ -169,9 +170,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
         if (entityToSpawn instanceof Projectile projectileToSpawn) {
 
             if (projectileToSpawn instanceof AbstractHurtingProjectile explosiveProjectileToSpawn) {
-                explosiveProjectileToSpawn.xPower = rotationVector.x * speed;
-                explosiveProjectileToSpawn.yPower = rotationVector.y * speed;
-                explosiveProjectileToSpawn.zPower = rotationVector.z * speed;
+                explosiveProjectileToSpawn.accelerationPower = speed;
             }
 
             projectileToSpawn.setOwner(entity);

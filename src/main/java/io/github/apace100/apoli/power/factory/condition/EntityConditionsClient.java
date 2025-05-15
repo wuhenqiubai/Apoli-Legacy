@@ -10,6 +10,7 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientAdvancements;
@@ -19,6 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+
 import java.util.Map;
 
 public final class EntityConditionsClient {
@@ -58,7 +60,7 @@ public final class EntityConditionsClient {
             .add("advancement", SerializableDataTypes.IDENTIFIER), (data, entity) -> {
             ResourceLocation id = data.getId("advancement");
             if(entity instanceof ServerPlayer) {
-                Advancement advancement = entity.getServer().getAdvancements().getAdvancement(id);
+                AdvancementHolder advancement = entity.getServer().getAdvancements().get(id);
                 if(advancement == null) {
                     Apoli.LOGGER.warn("Advancement \"" + id + "\" did not exist, but was referenced in an \"origins:advancement\" condition.");
                 } else {
@@ -67,11 +69,11 @@ public final class EntityConditionsClient {
             } else
             if(entity instanceof LocalPlayer) {
                 ClientAdvancements advancementManager = Minecraft.getInstance().getConnection().getAdvancements();
-                Advancement advancement = advancementManager.getAdvancements().get(id);
+                AdvancementHolder advancement = advancementManager.get(id);
                 if(advancement != null) {
                     Map<Advancement, AdvancementProgress> progressMap = ((ClientAdvancementManagerAccessor)advancementManager).getProgress();
-                    if(progressMap.containsKey(advancement)) {
-                        return progressMap.get(advancement).isDone();
+                    if(progressMap.containsKey(advancement.value())) {
+                        return progressMap.get(advancement.value()).isDone();
                     }
                 }
                 // We don't want to print an error here if the advancement does not exist,

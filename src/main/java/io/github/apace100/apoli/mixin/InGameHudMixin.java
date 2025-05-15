@@ -6,6 +6,7 @@ import io.github.apace100.apoli.power.OverrideHudTexturePower;
 import io.github.apace100.apoli.screen.GameHudRender;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
@@ -26,8 +27,8 @@ public class InGameHudMixin {
 
     @Shadow @Final private Minecraft minecraft;
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;getPlayerMode()Lnet/minecraft/world/level/GameType;", ordinal = 0))
-    private void renderOnHud(GuiGraphics context, float tickDelta, CallbackInfo ci) {
+    @Inject(method = "renderHotbarAndDecorations", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;getPlayerMode()Lnet/minecraft/world/level/GameType;", ordinal = 0))
+    private void renderOnHud(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         boolean hudHidden = minecraft.options.hideGui;
         boolean thirdPerson = !minecraft.options.getCameraType().isFirstPerson();
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), OverlayPower.class, p -> {
@@ -44,20 +45,21 @@ public class InGameHudMixin {
         }, OverlayPower::render);
 
         for(GameHudRender hudRender : GameHudRender.HUD_RENDERS) {
-            hudRender.render(context, tickDelta);
+            hudRender.render(guiGraphics, deltaTracker.getGameTimeDeltaPartialTick(true));
         }
     }
 
-    @ModifyArg(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"), index = 0)
-    public ResourceLocation changeStatusBarTextures(ResourceLocation original) {
-        Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(this.minecraft.player, OverrideHudTexturePower.class).stream().findFirst();
+    // TODO Origins-Legacy: Map GUI icons correctly
+    @ModifyArg(method = "renderArmor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Ljava/util/function/Function;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 1)
+    private static ResourceLocation changeStatusBarTextures(ResourceLocation original) {
+        Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(Minecraft.getInstance().player, OverrideHudTexturePower.class).stream().findFirst();
         if (power.isPresent()) {
             return power.get().getStatusBarTexture();
         }
         return original;
     }
 
-    @ModifyArg(method = "renderHeart", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"), index = 0)
+    @ModifyArg(method = "renderHeart", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Ljava/util/function/Function;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 1)
     public ResourceLocation changeHearts(ResourceLocation original)
     {
         Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(this.minecraft.player, OverrideHudTexturePower.class).stream().findFirst();
@@ -67,7 +69,7 @@ public class InGameHudMixin {
         return original;
     }
 
-    @ModifyArg(method = "renderExperienceBar", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"), index = 0)
+    @ModifyArg(method = "renderExperienceBar", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Ljava/util/function/Function;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 1)
     public ResourceLocation changeXpBarTextures(ResourceLocation original) {
         Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(this.minecraft.player, OverrideHudTexturePower.class).stream().findFirst();
         if (power.isPresent()) {
@@ -76,7 +78,7 @@ public class InGameHudMixin {
         return original;
     }
 
-    @ModifyArg(method = "renderCrosshair", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"), index = 0)
+    @ModifyArg(method = "renderCrosshair", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Ljava/util/function/Function;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 1)
     public ResourceLocation changeCrosshair(ResourceLocation original) {
         Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(this.minecraft.player, OverrideHudTexturePower.class).stream().findFirst();
         if (power.isPresent()) {
@@ -85,7 +87,7 @@ public class InGameHudMixin {
         return original;
     }
 
-    @ModifyArg(method = "renderJumpMeter", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"), index = 0)
+    @ModifyArg(method = "renderJumpMeter", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Ljava/util/function/Function;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 1)
     public ResourceLocation changeMountJumpBar(ResourceLocation original) {
         Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(this.minecraft.player, OverrideHudTexturePower.class).stream().findFirst();
         if (power.isPresent()) {
@@ -94,7 +96,7 @@ public class InGameHudMixin {
         return original;
     }
 
-    @ModifyArg(method = "renderVehicleHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIII)V"), index = 0)
+    @ModifyArg(method = "renderVehicleHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Ljava/util/function/Function;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 1)
     public ResourceLocation changeMountHealth(ResourceLocation original) {
         Optional<OverrideHudTexturePower> power = PowerHolderComponent.getPowers(this.minecraft.player, OverrideHudTexturePower.class).stream().findFirst();
         if (power.isPresent()) {

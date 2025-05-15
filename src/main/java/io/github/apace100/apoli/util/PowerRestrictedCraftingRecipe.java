@@ -6,10 +6,12 @@ import io.github.apace100.apoli.mixin.CraftingInventoryAccessor;
 import io.github.apace100.apoli.mixin.CraftingScreenHandlerAccessor;
 import io.github.apace100.apoli.mixin.PlayerScreenHandlerAccessor;
 import io.github.apace100.apoli.power.RecipePower;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.*;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
@@ -20,34 +22,36 @@ import java.util.stream.Collectors;
 
 public class PowerRestrictedCraftingRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<?> SERIALIZER = new SimpleCraftingRecipeSerializer<PowerRestrictedCraftingRecipe>(PowerRestrictedCraftingRecipe::new);
+    public static final RecipeSerializer<? extends CustomRecipe> SERIALIZER = new CustomRecipe.Serializer<>(PowerRestrictedCraftingRecipe::new);
 
-    public PowerRestrictedCraftingRecipe(ResourceLocation id, CraftingBookCategory category) {
-        super(id, category);
+    public PowerRestrictedCraftingRecipe(CraftingBookCategory category) {
+        super(category);
     }
 
     @Override
-    public boolean matches(CraftingContainer inventory, Level world) {
+    public boolean matches(CraftingInput input, Level world) {
+        var inventory = ((CraftingInputContainerHolder) input).apoli$getCraftingContainer();
         if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
-            return getRecipes(craftingInventory).stream().anyMatch(r -> r.matches(craftingInventory, world));
+            return getRecipes(craftingInventory).stream().anyMatch(r -> r.matches(input, world));
         }
 
         return false;
     }
 
     @Override
-    public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryManager) {
+    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registryManager) {
+        var inventory = ((CraftingInputContainerHolder) input).apoli$getCraftingContainer();
         if (inventory instanceof TransientCraftingContainer craftingInventory)
         {
             Player player = getPlayerFromInventory(craftingInventory);
             if (player != null)
             {
-                Optional<Recipe<TransientCraftingContainer>> optional = getRecipes(craftingInventory).stream().filter(r -> r.matches(craftingInventory, player.level())).findFirst();
+                Optional<Recipe<CraftingInput>> optional = getRecipes(craftingInventory).stream().filter(r -> r.matches(input, player.level())).findFirst();
                 if (optional.isPresent())
                 {
-                    Recipe<TransientCraftingContainer> recipe = optional.get();
-                    return recipe.assemble(craftingInventory, registryManager);
+                    Recipe<CraftingInput> recipe = optional.get();
+                    return recipe.assemble(input, registryManager);
                 }
             }
         }
@@ -55,12 +59,7 @@ public class PowerRestrictedCraftingRecipe extends CustomRecipe {
     }
 
     @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return true;
-    }
-
-    @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<? extends CustomRecipe> getSerializer() {
         return SERIALIZER;
     }
 
@@ -69,7 +68,7 @@ public class PowerRestrictedCraftingRecipe extends CustomRecipe {
         return getPlayerFromHandler(handler);
     }
 
-    private List<Recipe<TransientCraftingContainer>> getRecipes(TransientCraftingContainer inv) {
+    private List<Recipe<CraftingInput>> getRecipes(TransientCraftingContainer inv) {
         AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
         Player player = getPlayerFromHandler(handler);
         if(player != null) {

@@ -19,7 +19,7 @@ public class ServerPlayNetworkHandlerMixin {
     @Shadow
     public ServerPlayer player;
 
-    @Inject(method = "handleClientCommand", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/players/PlayerList;respawn(Lnet/minecraft/server/level/ServerPlayer;Z)Lnet/minecraft/server/level/ServerPlayer;", ordinal = 0))
+    @Inject(method = "handleClientCommand", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/players/PlayerList;respawn(Lnet/minecraft/server/level/ServerPlayer;ZLnet/minecraft/world/entity/Entity$RemovalReason;)Lnet/minecraft/server/level/ServerPlayer;", ordinal = 0))
     private void saveEndRespawnStatus(ServerboundClientCommandPacket packet, CallbackInfo ci) {
         ((EndRespawningEntity)this.player).setEndRespawning(true);
     }

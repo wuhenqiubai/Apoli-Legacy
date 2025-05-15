@@ -7,6 +7,7 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -110,7 +111,7 @@ public class DamageOverTimePower extends Power {
             int i = 0;
             int items = 0;
             for (ItemStack itemStack : iterable) {
-                int enchLevel = EnchantmentHelper.getItemEnchantmentLevel(protectingEnchantment, itemStack);
+                int enchLevel = EnchantmentHelper.getItemEnchantmentLevel(this.entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).wrapAsHolder(protectingEnchantment), itemStack);
                 i += enchLevel;
                 if(enchLevel > 0)
                     items++;
@@ -120,7 +121,7 @@ public class DamageOverTimePower extends Power {
     }
 
     @Override
-    public Tag toTag() {
+    public Tag toTag(HolderLookup.Provider provider) {
         CompoundTag nbt = new CompoundTag();
         nbt.putInt("InDamage", inDamageTicks);
         nbt.putInt("OutDamage", outOfDamageTicks);
@@ -128,10 +129,10 @@ public class DamageOverTimePower extends Power {
     }
 
     @Override
-    public void fromTag(Tag tag) {
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
         if(tag instanceof CompoundTag nbt) {
-            inDamageTicks = nbt.getInt("InDamage");
-            outOfDamageTicks = nbt.getInt("OutDamage");
+            inDamageTicks = nbt.getInt("InDamage").get();
+            outOfDamageTicks = nbt.getInt("OutDamage").get();
         }
     }
 

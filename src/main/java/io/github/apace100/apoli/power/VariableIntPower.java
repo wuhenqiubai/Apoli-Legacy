@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.power;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.LivingEntity;
@@ -49,12 +50,12 @@ public class VariableIntPower extends Power {
     }
 
     @Override
-    public Tag toTag() {
+    public Tag toTag(HolderLookup.Provider provider) {
         return IntTag.valueOf(currentValue);
     }
 
     @Override
-    public void fromTag(Tag tag) {
-        currentValue = ((IntTag)tag).getAsInt();
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
+        currentValue = ((IntTag)tag).intValue();
     }
 }

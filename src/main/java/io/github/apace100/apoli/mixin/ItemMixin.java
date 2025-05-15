@@ -4,7 +4,7 @@ import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ItemOnItemPower;
 import io.github.apace100.apoli.power.ModifyFoodPower;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickAction;
@@ -23,13 +23,13 @@ import java.util.stream.Collectors;
 @Mixin(Item.class)
 public class ItemMixin {
 
-    @Inject(method = "use", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/InteractionResultHolder;fail(Ljava/lang/Object;)Lnet/minecraft/world/InteractionResultHolder;"), cancellable = true)
-    private void tryItemAlwaysEdible(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
+    @Inject(method = "use", at = @At(value = "FIELD", target = "Lnet/minecraft/world/InteractionResult;PASS:Lnet/minecraft/world/InteractionResult$Pass;"), cancellable = true)
+    private void tryItemAlwaysEdible(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         ItemStack itemStack = user.getItemInHand(hand);
         if (PowerHolderComponent.KEY.get(user).getPowers(ModifyFoodPower.class).stream()
             .anyMatch(p -> p.doesMakeAlwaysEdible() && p.doesApply(itemStack))) {
             user.startUsingItem(hand);
-            cir.setReturnValue(InteractionResultHolder.consume(itemStack));
+            cir.setReturnValue(InteractionResult.CONSUME);
         }
     }
 

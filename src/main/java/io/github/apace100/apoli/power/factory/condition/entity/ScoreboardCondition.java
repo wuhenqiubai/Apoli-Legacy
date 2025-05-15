@@ -9,6 +9,7 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.world.scores.Scoreboard;
 
 public class ScoreboardCondition {
@@ -22,9 +23,12 @@ public class ScoreboardCondition {
         }
 
         Scoreboard scoreboard = entity.level().getScoreboard();
-        Objective scoreboardObjective = scoreboard.getOrCreateObjective(data.getString("objective"));
-        if (scoreboard.hasPlayerScore(name, scoreboardObjective)) {
-            int score = scoreboard.getOrCreatePlayerScore(name, scoreboardObjective).getScore();
+        Objective scoreboardObjective = scoreboard.getObjective(data.getString("objective"));
+        if (scoreboardObjective == null)
+            return false;
+
+        if (scoreboard.listPlayerScores(ScoreHolder.forNameOnly(name)).containsKey(scoreboardObjective)) {
+            int score = scoreboard.getOrCreatePlayerScore(ScoreHolder.forNameOnly(name), scoreboardObjective).get();
             return ((Comparison) data.get("comparison")).compare(score, data.getInt("compare_to"));
         }
 

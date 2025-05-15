@@ -12,43 +12,41 @@ import io.github.apace100.apoli.util.StackPowerUtil;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponentHolder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.component.TooltipDisplay;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 @Environment(EnvType.CLIENT)
 @Mixin(ItemStack.class)
-public abstract class ItemStackMixinClient {
+public abstract class ItemStackMixinClient implements DataComponentHolder {
 
-    @Shadow
-    public abstract UseAnim getUseAnimation();
-
-    @Shadow protected abstract int getHideFlags();
-
-    @Shadow
-    private static boolean shouldShowInTooltip(int flags, ItemStack.TooltipPart tooltipSection) {
-        return (flags & tooltipSection.getMask()) == 0;
-    }
+    @Shadow public abstract ItemUseAnimation getUseAnimation();
 
     @Inject(method = "getTooltipLines", at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z", ordinal = 0, shift = At.Shift.AFTER))
-    private void addUnusableTooltip(@Nullable Player player, TooltipFlag context, CallbackInfoReturnable<List<Component>> cir, @Local List<Component> list) {
+    private void addUnusableTooltip(Item.TooltipContext tooltipContext, @Nullable Player player, TooltipFlag tooltipFlag, CallbackInfoReturnable<List<Component>> cir, @Local List<Component> list) {
         if(player != null) {
             ApoliConfigClient.Tooltips config = ((ApoliConfigClient) Apoli.config).tooltips;
-            if(!config.showUsabilityHints || !shouldShowInTooltip(getHideFlags(), ItemStack.TooltipPart.ADDITIONAL)) {
+            if(!config.showUsabilityHints) {
                 return;
             }
             List<PreventItemUsePower> powers = PowerHolderComponent.getPowers(player, PreventItemUsePower.class).stream().filter(p -> p.doesPrevent((ItemStack)(Object)this)).toList();
@@ -85,26 +83,26 @@ public abstract class ItemStackMixinClient {
         }
     }
 
-    @Inject(method = "getTooltipLines", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/DefaultedRegistry;getKey(Ljava/lang/Object;)Lnet/minecraft/resources/ResourceLocation;", shift = At.Shift.AFTER))
-    private void addEquipmentPowerTooltips(Player player, TooltipFlag context, CallbackInfoReturnable<List<Component>> cir, @Local List<Component> list) {
+    @Inject(method = "addDetailsToTooltip", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/DefaultedRegistry;getKey(Ljava/lang/Object;)Lnet/minecraft/resources/ResourceLocation;", shift = At.Shift.AFTER))
+    private void addEquipmentPowerTooltips(Item.TooltipContext context, TooltipDisplay tooltipDisplay, @Nullable Player player, TooltipFlag tooltipFlag, Consumer<Component> tooltipAdder, CallbackInfo ci, @Local(argsOnly = true) Consumer<Component> list) {
         for(EquipmentSlot slot : EquipmentSlot.values()) {
             List<StackPowerUtil.StackPower> powers = StackPowerUtil.getPowers((ItemStack)(Object)this, slot)
                     .stream()
                     .filter(sp -> !sp.isHidden)
                     .toList();
             if(powers.size() > 0) {
-                list.add(Component.empty());
-                list.add((Component.translatable("item.modifiers." + slot.getName())).withStyle(ChatFormatting.GRAY));
+                list.accept(Component.empty());
+                list.accept((Component.translatable("item.modifiers." + slot.getName())).withStyle(ChatFormatting.GRAY));
                 powers.forEach(sp -> {
 
                     if(PowerTypeRegistry.contains(sp.powerId)) {
                         PowerType<?> powerType = PowerTypeRegistry.get(sp.powerId);
-                        list.add(
+                        list.accept(
                                 Component.literal(" ")
                                         .append(powerType.getName())
                                         .withStyle(sp.isNegative ? ChatFormatting.RED : ChatFormatting.BLUE));
-                        if(context.isAdvanced()) {
-                            list.add(
+                        if(tooltipFlag.isAdvanced()) {
+                            list.accept(
                                     Component.literal("  ")
                                             .append(powerType.getDescription())
                                             .withStyle(ChatFormatting.GRAY));
@@ -116,6 +114,12 @@ public abstract class ItemStackMixinClient {
         PowerHolderComponent.getPowers(player, TooltipPower.class)
                 .stream().filter(t -> t.doesApply((ItemStack) (Object)this))
                 .sorted(Comparator.comparing(TooltipPower::getOrder))
-                .forEachOrdered(t -> t.addToTooltip(list));
+                .forEachOrdered(t -> {
+                    var components = new ArrayList<Component>();
+                    t.addToTooltip(components);
+                    for (Component component : components) {
+                        list.accept(component);
+                    }
+                });
     }
 }

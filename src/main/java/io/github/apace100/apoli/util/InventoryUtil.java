@@ -2,7 +2,6 @@ package io.github.apace100.apoli.util;
 
 import com.google.common.collect.Sets;
 import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.mixin.ItemSlotArgumentTypeAccessor;
 import io.github.apace100.apoli.power.InventoryPower;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
 import io.github.apace100.calio.data.SerializableData;
@@ -14,6 +13,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.SlotRanges;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
@@ -51,7 +51,7 @@ public class InventoryUtil {
         data.<ArgumentWrapper<Integer>>ifPresent("slot", iaw -> slots.add(iaw.get()));
         data.<List<ArgumentWrapper<Integer>>>ifPresent("slots", iaws -> slots.addAll(iaws.stream().map(ArgumentWrapper::get).toList()));
 
-        if (slots.isEmpty()) slots.addAll(ItemSlotArgumentTypeAccessor.getSlotMappings().values());
+        if (slots.isEmpty()) slots.addAll(SlotRanges.allNames().flatMap(s -> SlotRanges.nameToIds(s).slots().stream()).toList());
 
         return slots;
 
@@ -198,9 +198,9 @@ public class InventoryUtil {
                 if (entityAction != null) entityAction.accept(entity);
 
                 ItemStack stackAfterReplacement = replacementStack.copy();
-                if (mergeNbt && itemStack.hasTag()) {
-                    itemStack.getOrCreateTag().merge(stackAfterReplacement.getOrCreateTag());
-                    stackAfterReplacement.setTag(itemStack.getOrCreateTag());
+                if (mergeNbt) {
+                    itemStack.applyComponents(stackAfterReplacement.getComponents());
+                    stackAfterReplacement.applyComponents(itemStack.getComponents());
                 }
 
                 stackReference.set(stackAfterReplacement);
@@ -220,9 +220,9 @@ public class InventoryUtil {
                     if (entityAction != null) entityAction.accept(entity);
 
                     ItemStack stackAfterReplacement = replacementStack.copy();
-                    if (mergeNbt && itemStack.hasTag()) {
-                        itemStack.getOrCreateTag().merge(stackAfterReplacement.getOrCreateTag());
-                        stackAfterReplacement.setTag(itemStack.getOrCreateTag());
+                    if (mergeNbt) {
+                        itemStack.applyComponents(stackAfterReplacement.getComponents());
+                        stackAfterReplacement.applyComponents(itemStack.getComponents());
                     }
 
                     inventoryPower.setItem(slot, stackAfterReplacement);
@@ -329,7 +329,7 @@ public class InventoryUtil {
         float f;
         float g;
 
-        if (retainOwnership) itemEntity.setThrower(thrower.getUUID());
+        if (retainOwnership) itemEntity.setThrower(thrower);
         if (throwRandomly) {
             f = random.nextFloat() * 0.5F;
             g = random.nextFloat() * 6.2831855F;
@@ -355,7 +355,7 @@ public class InventoryUtil {
     }
 
     public static void forEachStack(Entity entity, Consumer<ItemStack> itemStackConsumer) {
-        Set<Integer> slots = Sets.newHashSet(ItemSlotArgumentTypeAccessor.getSlotMappings().values());
+        Set<Integer> slots = Sets.newHashSet(SlotRanges.allNames().flatMapToInt(s -> SlotRanges.nameToIds(s).slots().intStream()).boxed().toList());
         deduplicateSlots(entity, slots);
 
         for(int slot : slots) {
@@ -385,10 +385,10 @@ public class InventoryUtil {
 
     private static void deduplicateSlots(Entity entity, Set<Integer> slots) {
         if(entity instanceof Player player) {
-            int selectedSlot = player.getInventory().selected;
-            Integer hotbarSlot = ItemSlotArgumentTypeAccessor.getSlotMappings().get("hotbar." + selectedSlot);
+            int selectedSlot = player.getInventory().getSelectedSlot();
+            Integer hotbarSlot = SlotRanges.nameToIds("hotbar.").slots().getInt(selectedSlot);
             if(slots.contains(hotbarSlot)) {
-                Integer mainHandSlot = ItemSlotArgumentTypeAccessor.getSlotMappings().get("weapon.mainhand");
+                Integer mainHandSlot = SlotRanges.nameToIds("weapon.mainhand").slots().getInt(0);
                 slots.remove(mainHandSlot);
             }
         }

@@ -1,12 +1,15 @@
 package io.github.apace100.apoli.power.factory.condition;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.MovingEntity;
 import io.github.apace100.apoli.access.SubmergableEntity;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.mixin.EntityAccessor;
-import io.github.apace100.apoli.power.*;
+import io.github.apace100.apoli.power.ClimbingPower;
+import io.github.apace100.apoli.power.PowerType;
+import io.github.apace100.apoli.power.PowerTypeReference;
 import io.github.apace100.apoli.power.factory.condition.entity.*;
 import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.apoli.util.Comparison;
@@ -46,13 +49,14 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.level.storage.loot.LootContext;
-import net.minecraft.world.level.storage.loot.LootDataType;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.phys.AABB;
+
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class EntityConditions {
@@ -84,7 +88,7 @@ public class EntityConditions {
             ((Comparison)data.get("comparison")).compare(entity.level().getDayTime() % 24000L, data.getInt("compare_to"))));
         register(new ConditionFactory<>(Apoli.identifier("fall_flying"), new SerializableData(), (data, entity) -> entity instanceof LivingEntity && ((LivingEntity) entity).isFallFlying()));
         register(new ConditionFactory<>(Apoli.identifier("exposed_to_sun"), new SerializableData(), (data, entity) -> {
-            if (entity.level().isDay() && !((EntityAccessor) entity).callIsInRain()) {
+            if (entity.level().isBrightOutside() && !((EntityAccessor) entity).callIsInRain()) {
                 float f = entity.getLightLevelDependentMagicValue();
                 BlockPos blockPos = entity.getVehicle() instanceof Boat ? (BlockPos.containing(entity.getX(), (double) Math.round(entity.getY()), entity.getZ())).above() : BlockPos.containing(entity.getX(), (double) Math.round(entity.getY()), entity.getZ());
                 return f > 0.5F && entity.level().canSeeSky(blockPos);
@@ -110,9 +114,10 @@ public class EntityConditions {
             .add("max_duration", SerializableDataTypes.INT, Integer.MAX_VALUE),
             (data, entity) -> {
                 MobEffect effect = data.get("effect");
+                var effectHolder = entity.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(effect);
                 if(entity instanceof LivingEntity living) {
-                    if (living.hasEffect(effect)) {
-                        MobEffectInstance instance = living.getEffect(effect);
+                    if (living.hasEffect(effectHolder)) {
+                        MobEffectInstance instance = living.getEffect(effectHolder);
                         return instance.getDuration() <= data.getInt("max_duration") && instance.getDuration() >= data.getInt("min_duration")
                             && instance.getAmplifier() <= data.getInt("max_amplifier") && instance.getAmplifier() >= data.getInt("min_amplifier");
                     }
@@ -254,7 +259,7 @@ public class EntityConditions {
                 Biome biome = biomeEntry.value();
                 ConditionFactory<Holder<Biome>>.Instance condition = data.get("condition");
                 if(data.isPresent("biome") || data.isPresent("biomes")) {
-                    ResourceLocation biomeId = entity.level().registryAccess().registryOrThrow(Registries.BIOME).getKey(biome);
+                    ResourceLocation biomeId = entity.level().registryAccess().lookupOrThrow(Registries.BIOME).getKey(biome);
                     if(data.isPresent("biome") && biomeId.equals(data.getId("biome"))) {
                         return condition == null || condition.test(biomeEntry);
                     }
@@ -278,7 +283,7 @@ public class EntityConditions {
                 if(server != null) {
                     boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
+                        Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
@@ -287,7 +292,12 @@ public class EntityConditions {
                         entity.getDisplayName(),
                         server,
                         entity);
-                    int output = server.getCommands().performPrefixedCommand(source, data.getString("command"));
+                    int output = 0;
+                    try {
+                        output = server.getCommands().getDispatcher().execute(data.getString("command"), source);
+                    } catch (CommandSyntaxException e) {
+                        throw new RuntimeException(e);
+                    }
                     return ((Comparison)data.get("comparison")).compare(output, data.getInt("compare_to"));
                 }
                 return false;
@@ -297,13 +307,13 @@ public class EntityConditions {
             (data, entity) -> {
                 MinecraftServer server = entity.level().getServer();
                 if (server != null) {
-                    LootItemCondition lootCondition = server.getLootData().getElement(LootDataType.PREDICATE, data.get("predicate"));
+                    LootItemCondition lootCondition = server.registryAccess().lookupOrThrow(Registries.PREDICATE).getValue((ResourceLocation) data.get("predicate"));
                     if (lootCondition != null) {
                         LootParams lootContextParameterSet = new LootParams.Builder((ServerLevel) entity.level())
                                 .withParameter(LootContextParams.ORIGIN, entity.position())
                                 .withOptionalParameter(LootContextParams.THIS_ENTITY, entity)
                                 .create(LootContextParamSets.COMMAND);
-                        LootContext lootContext = new LootContext.Builder(lootContextParameterSet).create(null);
+                        LootContext lootContext = new LootContext.Builder(lootContextParameterSet).create(Optional.empty());
                         return lootCondition.test(lootContext);
                     }
                 }
@@ -351,7 +361,7 @@ public class EntityConditions {
                 return comparison.compare(count, compareTo);}));
         register(new ConditionFactory<>(Apoli.identifier("entity_group"), new SerializableData()
             .add("group", SerializableDataTypes.ENTITY_GROUP),
-            (data, entity) -> entity instanceof LivingEntity && ((LivingEntity) entity).getMobType() == data.get("group")));
+            (data, entity) -> entity instanceof LivingEntity && entity.getType().is((TagKey<EntityType<?>>) data.get("group"))));
         register(new ConditionFactory<>(Apoli.identifier("in_tag"), new SerializableData()
             .add("tag", SerializableDataTypes.ENTITY_TAG),
             (data, entity) -> entity.getType().builtInRegistryHolder().is((TagKey<EntityType<?>>) data.get("tag"))));
@@ -397,16 +407,17 @@ public class EntityConditions {
             (data, entity) -> {
                 int value = 0;
                 if(entity instanceof LivingEntity le) {
-                    Enchantment enchantment = data.get("enchantment");
+                    ResourceKey<Enchantment> enchantment = data.get("enchantment");
+                    Holder<Enchantment> enchantmentHolder = entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(enchantment);
                     String calculation = data.getString("calculation");
                     switch(calculation) {
                         case "sum":
-                            for(ItemStack stack : enchantment.getSlotItems(le).values()) {
-                                value += EnchantmentHelper.getItemEnchantmentLevel(enchantment, stack);
+                            for(ItemStack stack : enchantmentHolder.value().getSlotItems(le).values()) {
+                                value += EnchantmentHelper.getItemEnchantmentLevel(enchantmentHolder, stack);
                             }
                             break;
                         case "max":
-                            value = EnchantmentHelper.getEnchantmentLevel(enchantment, le);
+                            value = EnchantmentHelper.getEnchantmentLevel(enchantmentHolder, le);
                             break;
                         default:
                             Apoli.LOGGER.error("Error in \"enchantment\" entity condition, undefined calculation type: \"" + calculation + "\".");

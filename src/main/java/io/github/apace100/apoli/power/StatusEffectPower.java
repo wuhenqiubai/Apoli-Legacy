@@ -1,10 +1,12 @@
 package io.github.apace100.apoli.power;
 
-import java.util.LinkedList;
-import java.util.List;
+import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class StatusEffectPower extends Power {
 
@@ -18,15 +20,15 @@ public class StatusEffectPower extends Power {
         addEffect(effectInstance);
     }
 
-    public StatusEffectPower addEffect(MobEffect effect) {
+    public StatusEffectPower addEffect(Holder<MobEffect> effect) {
         return addEffect(effect, 80);
     }
 
-    public StatusEffectPower addEffect(MobEffect effect, int lingerDuration) {
+    public StatusEffectPower addEffect(Holder<MobEffect> effect, int lingerDuration) {
         return addEffect(effect, lingerDuration, 0);
     }
 
-    public StatusEffectPower addEffect(MobEffect effect, int lingerDuration, int amplifier) {
+    public StatusEffectPower addEffect(Holder<MobEffect> effect, int lingerDuration, int amplifier) {
         return addEffect(new MobEffectInstance(effect, lingerDuration, amplifier));
     }
 

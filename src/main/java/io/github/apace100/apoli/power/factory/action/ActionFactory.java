@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import io.github.apace100.apoli.power.factory.Factory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.BiConsumer;
@@ -31,7 +31,7 @@ public class ActionFactory<T> implements Factory {
             this.dataInstance = data;
         }
 
-        public void write(FriendlyByteBuf buf) {
+        public void write(RegistryFriendlyByteBuf buf) {
             buf.writeResourceLocation(identifier);
             data.write(buf, dataInstance);
         }
@@ -57,7 +57,7 @@ public class ActionFactory<T> implements Factory {
         return new Instance(data.read(json));
     }
 
-    public Instance read(FriendlyByteBuf buffer) {
+    public Instance read(RegistryFriendlyByteBuf buffer) {
         return new Instance(data.read(buffer));
     }
 }

@@ -12,7 +12,7 @@ import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.VariableIntPower;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.scores.Score;
+import net.minecraft.world.scores.ScoreAccess;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -40,33 +40,33 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
             case "=":
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
-                        ((VariableIntPower)power).setValue(score.getScore());
+                        ((VariableIntPower)power).setValue(score.get());
                     } else if(power instanceof CooldownPower) {
-                        ((CooldownPower)power).setCooldown(score.getScore());
+                        ((CooldownPower)power).setCooldown(score.get());
                     }
                 };
             case "+=":
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
-                        ((VariableIntPower) power).setValue(((VariableIntPower) power).getValue() + score.getScore());
+                        ((VariableIntPower) power).setValue(((VariableIntPower) power).getValue() + score.get());
                     } else if(power instanceof CooldownPower) {
-                        ((CooldownPower)power).modify(score.getScore());
+                        ((CooldownPower)power).modify(score.get());
                     }
                 };
             case "-=":
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
-                        ((VariableIntPower) power).setValue(((VariableIntPower) power).getValue() - score.getScore());
+                        ((VariableIntPower) power).setValue(((VariableIntPower) power).getValue() - score.get());
                     } else if(power instanceof CooldownPower) {
-                        ((CooldownPower)power).modify(-score.getScore());
+                        ((CooldownPower)power).modify(-score.get());
                     }
                 };
             case "*=":
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
-                        ((VariableIntPower) power).setValue(((VariableIntPower) power).getValue() * score.getScore());
+                        ((VariableIntPower) power).setValue(((VariableIntPower) power).getValue() * score.get());
                     } else if(power instanceof CooldownPower) {
-                        ((CooldownPower)power).setCooldown(((CooldownPower)power).getRemainingTicks() * score.getScore());
+                        ((CooldownPower)power).setCooldown(((CooldownPower)power).getRemainingTicks() * score.get());
                     }
                 };
             case "/=":
@@ -74,7 +74,7 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
                     if(power instanceof VariableIntPower) {
                         VariableIntPower resource = (VariableIntPower)power;
                         int r = resource.getValue();
-                        int s = score.getScore();
+                        int s = score.get();
                         if (s == 0) {
                             throw DIVISION_ZERO_EXCEPTION.create();
                         } else {
@@ -83,7 +83,7 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
                     } else if(power instanceof CooldownPower) {
                         CooldownPower cooldownPower = (CooldownPower)power;
                         int c = cooldownPower.getRemainingTicks();
-                        int s = score.getScore();
+                        int s = score.get();
                         if (s == 0) {
                             throw DIVISION_ZERO_EXCEPTION.create();
                         } else {
@@ -96,7 +96,7 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
                     if(power instanceof VariableIntPower) {
                         VariableIntPower resource = (VariableIntPower) power;
                         int r = resource.getValue();
-                        int s = score.getScore();
+                        int s = score.get();
                         if (s == 0) {
                             throw DIVISION_ZERO_EXCEPTION.create();
                         } else {
@@ -105,7 +105,7 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
                     } else if(power instanceof CooldownPower) {
                         CooldownPower cooldownPower = (CooldownPower)power;
                         int c = cooldownPower.getRemainingTicks();
-                        int s = score.getScore();
+                        int s = score.get();
                         if (s == 0) {
                             throw DIVISION_ZERO_EXCEPTION.create();
                         } else {
@@ -117,33 +117,33 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
                         VariableIntPower resource = (VariableIntPower) power;
-                        resource.setValue(Math.min(resource.getValue(), score.getScore()));
+                        resource.setValue(Math.min(resource.getValue(), score.get()));
                     } else if(power instanceof CooldownPower) {
                         CooldownPower cooldownPower = (CooldownPower)power;
-                        cooldownPower.setCooldown(Math.min(cooldownPower.getRemainingTicks(), score.getScore()));
+                        cooldownPower.setCooldown(Math.min(cooldownPower.getRemainingTicks(), score.get()));
                     }
                 };
             case ">":
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
                         VariableIntPower resource = (VariableIntPower) power;
-                        resource.setValue(Math.max(resource.getValue(), score.getScore()));
+                        resource.setValue(Math.max(resource.getValue(), score.get()));
                     } else if(power instanceof CooldownPower) {
                         CooldownPower cooldownPower = (CooldownPower)power;
-                        cooldownPower.setCooldown(Math.max(cooldownPower.getRemainingTicks(), score.getScore()));
+                        cooldownPower.setCooldown(Math.max(cooldownPower.getRemainingTicks(), score.get()));
                     }
                 };
             case "><":
                 return (power, score) -> {
                     if(power instanceof VariableIntPower) {
                         VariableIntPower resource = (VariableIntPower) power;
-                        int v = score.getScore();
-                        score.setScore(resource.getValue());
+                        int v = score.get();
+                        score.set(resource.getValue());
                         resource.setValue(v);
                     } else if(power instanceof CooldownPower) {
                         CooldownPower cooldownPower = (CooldownPower)power;
-                        int v = score.getScore();
-                        score.setScore(cooldownPower.getRemainingTicks());
+                        int v = score.get();
+                        score.set(cooldownPower.getRemainingTicks());
                         cooldownPower.setCooldown(v);
                     }
                 };
@@ -153,6 +153,6 @@ public class PowerOperation implements ArgumentType<PowerOperation.Operation> {
     }
 
     public interface Operation {
-        void apply(Power power, Score score) throws CommandSyntaxException;
+        void apply(Power power, ScoreAccess score) throws CommandSyntaxException;
     }
 }

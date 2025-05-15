@@ -3,6 +3,7 @@ package io.github.apace100.apoli.mixin;
 import io.github.apace100.apoli.access.PowerModifiedGrindstone;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ModifyGrindstonePower;
+import io.github.apace100.apoli.util.ApoliSharedMixinValues;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -46,10 +47,16 @@ public abstract class GrindstoneScreenHandlerMixin extends AbstractContainerMenu
         super(type, syncId);
     }
 
+    @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V", at = @At(value = "FIELD", target = "Lnet/minecraft/world/inventory/GrindstoneMenu;access:Lnet/minecraft/world/inventory/ContainerLevelAccess;", ordinal = 0))
+    private void storeCurrentGrindstoneMenu(int containerId, Inventory playerInventory, ContainerLevelAccess access, CallbackInfo ci) {
+        ApoliSharedMixinValues.CURRENT_GRINDSTONE_MENU.set((GrindstoneMenu) (Object) this);
+    }
+
     @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V", at = @At("RETURN"))
     private void cachePlayer(int syncId, Inventory playerInventory, ContainerLevelAccess context, CallbackInfo ci) {
         apoli$cachedPlayer = playerInventory.player;
         apoli$cachedPosition = context.evaluate((w, bp) -> bp);
+        ApoliSharedMixinValues.CURRENT_GRINDSTONE_MENU.remove();
     }
 
     @Inject(method = "createResult", at = @At("RETURN"))

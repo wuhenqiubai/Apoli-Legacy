@@ -7,13 +7,9 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Registry;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.SmeltingRecipe;
+import net.minecraft.world.item.crafting.RecipePropertySet;
 import net.minecraft.world.level.Level;
-
-import java.util.Optional;
 
 @Environment(EnvType.CLIENT)
 public class ItemConditionsClient {
@@ -26,13 +22,7 @@ public class ItemConditionsClient {
                 if(world == null) {
                     return false;
                 }
-                Optional<SmeltingRecipe> optional = world.getRecipeManager()
-                    .getRecipeFor(
-                        RecipeType.SMELTING,
-                        new SimpleContainer(stack),
-                        world
-                    );
-                return optional.isPresent();
+                return world.recipeAccess().propertySet(RecipePropertySet.FURNACE_INPUT).test(stack);
             }));
     }
 

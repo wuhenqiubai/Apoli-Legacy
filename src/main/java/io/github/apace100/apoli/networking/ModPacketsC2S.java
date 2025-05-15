@@ -6,10 +6,7 @@ import io.github.apace100.apoli.power.*;
 import net.fabricmc.fabric.api.networking.v1.*;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerLoginPacketListenerImpl;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -26,22 +23,22 @@ public class ModPacketsC2S {
         ServerPlayNetworking.registerGlobalReceiver(ModPackets.PREVENTED_ENTITY_USE, ModPacketsC2S::interactionPrevented);
     }
 
-    private static void playerLanded(MinecraftServer minecraftServer, ServerPlayer playerEntity, ServerGamePacketListenerImpl serverPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
-        minecraftServer.execute(() -> PowerHolderComponent.getPowers(playerEntity, ActionOnLandPower.class).forEach(ActionOnLandPower::executeAction));
+    private static void playerLanded(PlayerLandedPacket payload, ServerPlayNetworking.Context context) {
+        context.server().execute(() -> PowerHolderComponent.getPowers(context.player(), ActionOnLandPower.class).forEach(ActionOnLandPower::executeAction));
     }
 
-    private static void interactionPrevented(MinecraftServer minecraftServer, ServerPlayer playerEntity, ServerGamePacketListenerImpl serverPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
-        int otherEntityId = packetByteBuf.readInt();
-        int handOrdinal = packetByteBuf.readInt();
-        minecraftServer.execute(() -> {
-            Entity otherEntity = playerEntity.level().getEntity(otherEntityId);
+    private static void interactionPrevented(PreventedEntityUsePacket payload, ServerPlayNetworking.Context context) {
+        int otherEntityId = payload.otherEntityId();
+        int handOrdinal = payload.handOrdinal();
+        context.server().execute(() -> {
+            Entity otherEntity = context.player().level().getEntity(otherEntityId);
             InteractionHand hand = InteractionHand.values()[handOrdinal];
             if(otherEntity == null) {
                 Apoli.LOGGER.warn("Received unknown entity for prevented interaction");
             } else {
                 boolean prevented = false;
-                for(PreventEntityUsePower peup : PowerHolderComponent.getPowers(playerEntity, PreventEntityUsePower.class)) {
-                    if(peup.doesApply(otherEntity, hand, playerEntity.getItemInHand(hand))) {
+                for(PreventEntityUsePower peup : PowerHolderComponent.getPowers(context.player(), PreventEntityUsePower.class)) {
+                    if(peup.doesApply(otherEntity, hand, context.player().getItemInHand(hand))) {
                         peup.executeAction(otherEntity, hand);
                         prevented = true;
                         break;
@@ -49,8 +46,8 @@ public class ModPacketsC2S {
                 }
                 if(!prevented) {
                     for(PreventBeingUsedPower pbup : PowerHolderComponent.getPowers(otherEntity, PreventBeingUsedPower.class)) {
-                        if(pbup.doesApply(playerEntity, hand, playerEntity.getItemInHand(hand))) {
-                            pbup.executeAction(playerEntity, hand);
+                        if(pbup.doesApply(context.player(), hand, context.player().getItemInHand(hand))) {
+                            pbup.executeAction(context.player(), hand);
                             prevented = true;
                             break;
                         }
@@ -63,19 +60,14 @@ public class ModPacketsC2S {
         });
     }
 
-    private static void useActivePowers(MinecraftServer minecraftServer, ServerPlayer playerEntity, ServerGamePacketListenerImpl serverPlayNetworkHandler, FriendlyByteBuf packetByteBuf, PacketSender packetSender) {
-        int count = packetByteBuf.readInt();
-        ResourceLocation[] powerIds = new ResourceLocation[count];
-        for(int i = 0; i < count; i++) {
-            powerIds[i] = packetByteBuf.readResourceLocation();
-        }
-        minecraftServer.execute(() -> {
-            PowerHolderComponent component = PowerHolderComponent.KEY.get(playerEntity);
-            for(ResourceLocation id : powerIds) {
-                PowerType<?> type = PowerTypeRegistry.get(id);
+    private static void useActivePowers(UseActivePowersPacket payload, ServerPlayNetworking.Context context) {
+        var powerTypes = payload.powers();
+        context.server().execute(() -> {
+            PowerHolderComponent component = PowerHolderComponent.KEY.get(context.player());
+            for(PowerType<?> type : powerTypes) {
                 Power power = component.getPower(type);
                 if(power instanceof Active) {
-                    ((Active)power).onUse();
+                    ((Active) power).onUse();
                 }
             }
         });
@@ -107,7 +99,7 @@ public class ModPacketsC2S {
         }
     }
 
-    private static void handshake(ServerLoginPacketListenerImpl serverLoginNetworkHandler, MinecraftServer minecraftServer, PacketSender packetSender, ServerLoginNetworking.LoginSynchronizer loginSynchronizer) {
+    private static void handshake(ServerLoginPacketListenerImpl serverLoginNetworkHandler, MinecraftServer minecraftServer, LoginPacketSender packetSender, ServerLoginNetworking.LoginSynchronizer loginSynchronizer) {
         packetSender.sendPacket(ModPackets.HANDSHAKE, PacketByteBufs.empty());
     }
 }

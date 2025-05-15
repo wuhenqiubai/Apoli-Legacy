@@ -50,10 +50,10 @@ public class ConditionedAttributePower extends Power {
         float previousMaxHealth = entity.getMaxHealth();
         float previousHealthPercent = entity.getHealth() / previousMaxHealth;
         modifiers.forEach(mod -> {
-            if(entity.getAttributes().hasAttribute(mod.getAttribute())) {
-                AttributeInstance instance = entity.getAttribute(mod.getAttribute());
+            if(entity.getAttributes().hasAttribute(mod.getAttributeHolder())) {
+                AttributeInstance instance = entity.getAttribute(mod.getAttributeHolder());
                 if(instance != null) {
-                    if(!instance.hasModifier(mod.getModifier())) {
+                    if(!instance.hasModifier(mod.getModifier().id())) {
                         instance.addTransientModifier(mod.getModifier());
                     }
                 }
@@ -69,10 +69,10 @@ public class ConditionedAttributePower extends Power {
         float previousMaxHealth = entity.getMaxHealth();
         float previousHealthPercent = entity.getHealth() / previousMaxHealth;
         modifiers.forEach(mod -> {
-            if (entity.getAttributes().hasAttribute(mod.getAttribute())) {
-                AttributeInstance instance = entity.getAttribute(mod.getAttribute());
+            if (entity.getAttributes().hasAttribute(mod.getAttributeHolder())) {
+                AttributeInstance instance = entity.getAttribute(mod.getAttributeHolder());
                 if(instance != null) {
-                    if(instance.hasModifier(mod.getModifier())) {
+                    if(instance.hasModifier(mod.getModifier().id())) {
                         instance.removeModifier(mod.getModifier());
                     }
                 }

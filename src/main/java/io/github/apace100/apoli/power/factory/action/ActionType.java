@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.github.apace100.apoli.util.NamespaceAlias;
 import net.minecraft.core.Registry;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
@@ -21,13 +21,13 @@ public class ActionType<T> {
         this.actionFactoryRegistry = actionFactoryRegistry;
     }
 
-    public void write(FriendlyByteBuf buf, ActionFactory.Instance actionInstance) {
+    public void write(RegistryFriendlyByteBuf buf, ActionFactory.Instance actionInstance) {
         actionInstance.write(buf);
     }
 
-    public ActionFactory<T>.Instance read(FriendlyByteBuf buf) {
+    public ActionFactory<T>.Instance read(RegistryFriendlyByteBuf buf) {
         ResourceLocation type = buf.readResourceLocation();
-        ActionFactory<T> actionFactory = actionFactoryRegistry.get(type);
+        ActionFactory<T> actionFactory = actionFactoryRegistry.getValue(type);
         if(actionFactory == null) {
             throw new JsonSyntaxException(actionTypeName + " \"" + type + "\" was not registered.");
         }

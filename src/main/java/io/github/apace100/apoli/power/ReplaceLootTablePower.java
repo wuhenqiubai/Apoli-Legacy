@@ -12,11 +12,6 @@ import io.github.apace100.calio.ClassUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
@@ -28,9 +23,15 @@ import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.function.Predicate;
+
 public class ReplaceLootTablePower extends Power {
 
-    public static final ResourceLocation REPLACED_TABLE_UTIL_ID = new ResourceLocation(Apoli.MODID, "replaced_loot_table");
+    public static final ResourceLocation REPLACED_TABLE_UTIL_ID = ResourceLocation.fromNamespaceAndPath(Apoli.MODID, "replaced_loot_table");
     public static ResourceLocation LAST_REPLACED_TABLE_ID;
 
     private static Stack<LootTable> REPLACEMENT_STACK = new Stack<>();
@@ -63,16 +64,16 @@ public class ReplaceLootTablePower extends Power {
 
     public boolean doesApply(LootContext lootContext) {
         if(biEntityCondition != null
-            && !biEntityCondition.test(new Tuple<>(entity, lootContext.getParamOrNull(LootContextParams.THIS_ENTITY)))) {
+            && !biEntityCondition.test(new Tuple<>(entity, lootContext.getOptionalParameter(LootContextParams.THIS_ENTITY)))) {
             return false;
         }
         if(itemCondition != null
-            && lootContext.hasParam(LootContextParams.TOOL)
-            && !itemCondition.test(lootContext.getParamOrNull(LootContextParams.TOOL))) {
+            && lootContext.hasParameter(LootContextParams.TOOL)
+            && !itemCondition.test(lootContext.getOptionalParameter(LootContextParams.TOOL))) {
             return false;
         }
-        if(blockCondition != null && lootContext.hasParam(LootContextParams.ORIGIN)) {
-            BlockPos blockPos = BlockPos.containing(lootContext.getParamOrNull(LootContextParams.ORIGIN));
+        if(blockCondition != null && lootContext.hasParameter(LootContextParams.ORIGIN)) {
+            BlockPos blockPos = BlockPos.containing(lootContext.getOptionalParameter(LootContextParams.ORIGIN));
             BlockInWorld cbp = new BlockInWorld(lootContext.getLevel(), blockPos, true);
             if(!blockCondition.test(cbp)) {
                 return false;
@@ -168,7 +169,7 @@ public class ReplaceLootTablePower extends Power {
 
     public static PowerFactory createFactory() {
         return new PowerFactory<>(
-            new ResourceLocation(Apoli.MODID, "replace_loot_table"),
+            ResourceLocation.fromNamespaceAndPath(Apoli.MODID, "replace_loot_table"),
             new SerializableData()
                 .add("replace", REPLACEMENTS_DATA_TYPE)
                 .add("priority", SerializableDataTypes.INT, 0)
@@ -213,7 +214,7 @@ public class ReplaceLootTablePower extends Power {
                     if(!jp.isString()) {
                         continue;
                     }
-                    ResourceLocation id = new ResourceLocation(jp.getAsString());
+                    ResourceLocation id = ResourceLocation.parse(jp.getAsString());
                     map.put(s, id);
                 }
                 return map;

@@ -7,6 +7,7 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.LivingEntity;
@@ -34,14 +35,14 @@ public class ToggleNightVisionPower extends NightVisionPower implements Active {
     }
 
     @Override
-    public Tag toTag() {
+    public Tag toTag(HolderLookup.Provider provider) {
         return ByteTag.valueOf(isActive);
     }
 
     @Override
-    public void fromTag(Tag tag) {
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
         if(tag instanceof ByteTag) {
-            isActive = ((ByteTag)tag).getAsByte() > 0;
+            isActive = ((ByteTag)tag).value() > 0;
         }
     }
 

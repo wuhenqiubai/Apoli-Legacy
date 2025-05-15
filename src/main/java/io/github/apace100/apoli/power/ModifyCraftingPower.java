@@ -11,9 +11,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -43,14 +44,14 @@ public class ModifyCraftingPower extends ValueModifyingPower {
         this.blockAction = blockAction;
     }
 
-    public boolean doesApply(TransientCraftingContainer inventory, CraftingRecipe recipe) {
+    public boolean doesApply(CraftingInput inventory, RecipeHolder<CraftingRecipe> recipe) {
         if(recipeIdentifier != null) {
-            if(!recipe.getId().equals(recipeIdentifier)) {
+            if(!recipe.id().location().equals(recipeIdentifier)) {
                 return false;
             }
         }
         if(itemCondition != null) {
-            if(!itemCondition.test(recipe.assemble(inventory, entity.level().registryAccess()))) {
+            if(!itemCondition.test(recipe.value().assemble(inventory, entity.level().registryAccess()))) {
                 return false;
             }
         }
@@ -64,12 +65,12 @@ public class ModifyCraftingPower extends ValueModifyingPower {
         lateItemAction.accept(new Tuple<>(entity.level(), output));
     }
 
-    public ItemStack getNewResult(TransientCraftingContainer inventory, CraftingRecipe recipe) {
+    public ItemStack getNewResult(CraftingInput input, CraftingRecipe recipe) {
         ItemStack stack;
         if(newStack != null) {
             stack = newStack.copy();
         } else {
-            stack = recipe.assemble(inventory, entity.level().registryAccess());
+            stack = recipe.assemble(input, entity.level().registryAccess());
         }
         if(itemAction != null) {
             itemAction.accept(new Tuple<>(entity.level(), stack));

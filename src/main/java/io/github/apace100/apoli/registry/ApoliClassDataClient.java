@@ -14,17 +14,17 @@ public class ApoliClassDataClient {
         featureRenderer.addMapping("snowman_pumpkin", SnowGolemHeadLayer.class);
         featureRenderer.addMapping("fox_held_item", FoxHeldItemLayer.class);
         featureRenderer.addMapping("llama_decor", LlamaDecorLayer.class);
-        featureRenderer.addMapping("elytra", ElytraLayer.class);
+        featureRenderer.addMapping("elytra", WingsLayer.class);
         featureRenderer.addMapping("villager_clothing", VillagerProfessionLayer.class);
         featureRenderer.addMapping("panda_held_item", PandaHoldsItemLayer.class);
         featureRenderer.addMapping("drowned_overlay", DrownedOuterLayer.class);
-        featureRenderer.addMapping("saddle", SaddleLayer.class);
+        featureRenderer.addMapping("saddle", SimpleEquipmentLayer.class); // TODO O-L: map this correctly somehow
         featureRenderer.addMapping("shoulder_parrot", ParrotOnShoulderLayer.class);
-        featureRenderer.addMapping("horse_armor", HorseArmorLayer.class);
+        featureRenderer.addMapping("horse_armor", SimpleEquipmentLayer.class); // TODO O-L: map this correctly somehow
         featureRenderer.addMapping("wolf_collar", WolfCollarLayer.class);
         featureRenderer.addMapping("energy_swirl_overlay", EnergySwirlLayer.class);
         featureRenderer.addMapping("held_item", ItemInHandLayer.class);
-        featureRenderer.addMapping("sheep_wool", SheepFurLayer.class);
+        featureRenderer.addMapping("sheep_wool", SheepWoolLayer.class);
         featureRenderer.addMapping("iron_golem_flower", IronGolemFlowerLayer.class);
         featureRenderer.addMapping("cape", CapeLayer.class);
         featureRenderer.addMapping("eyes", EyesLayer.class);
@@ -32,7 +32,7 @@ public class ApoliClassDataClient {
         featureRenderer.addMapping("horse_marking", HorseMarkingLayer.class);
         featureRenderer.addMapping("deadmau5", Deadmau5EarsLayer.class);
         featureRenderer.addMapping("armor", HumanoidArmorLayer.class);
-        featureRenderer.addMapping("stray_overlay", StrayClothingLayer.class);
+        featureRenderer.addMapping("stray_overlay", SkeletonClothingLayer.class);
         featureRenderer.addMapping("enderman_block", CarriedBlockLayer.class);
         featureRenderer.addMapping("mooshroom_mushroom", MushroomCowMushroomLayer.class);
         featureRenderer.addMapping("iron_golem_crack", IronGolemCrackinessLayer.class);
@@ -41,7 +41,7 @@ public class ApoliClassDataClient {
         featureRenderer.addMapping("head", CustomHeadLayer.class);
         featureRenderer.addMapping("cat_collar", CatCollarLayer.class);
         featureRenderer.addMapping("tropical_fish_color", TropicalFishPatternLayer.class);
-        featureRenderer.addMapping("shulker_head", ShulkerHeadLayer.class);
+        //featureRenderer.addMapping("shulker_head", ShulkerHeadLayer.class); // TODO O-L: this doesn't exist anymore
         featureRenderer.addMapping("stuck_objects", StuckInBodyLayer.class);
         featureRenderer.addMapping("stuck_stingers", BeeStingerLayer.class);
         featureRenderer.addMapping("stuck_arrows", ArrowLayer.class);

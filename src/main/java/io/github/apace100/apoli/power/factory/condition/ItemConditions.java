@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.power.factory.condition;
 
+import com.mojang.serialization.Dynamic;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.condition.item.EnchantmentCondition;
@@ -8,15 +9,26 @@ import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.apoli.util.StackPowerUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.SharedConstants;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
-import net.minecraft.nbt.NbtUtils;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.util.datafix.DataFixers;
+import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
+import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.block.Block;
 
 import java.util.List;
 
@@ -38,7 +50,7 @@ public class ItemConditions {
                 condition -> condition.test(stack)
             )));
         register(new ConditionFactory<>(Apoli.identifier("food"), new SerializableData(),
-            (data, stack) -> stack.isEdible()));
+            (data, stack) -> stack.has(DataComponents.CONSUMABLE) && stack.has(DataComponents.FOOD)));
         register(new ConditionFactory<>(Apoli.identifier("ingredient"), new SerializableData()
             .add("ingredient", SerializableDataTypes.INGREDIENT),
             (data, stack) -> ((Ingredient)data.get("ingredient")).test(stack)));
@@ -46,31 +58,64 @@ public class ItemConditions {
             .add("comparison", ApoliDataTypes.COMPARISON)
             .add("compare_to", SerializableDataTypes.INT),
             (data, stack) -> {
-                int armor = 0;
-                if(stack.getItem() instanceof ArmorItem) {
-                    ArmorItem item = (ArmorItem)stack.getItem();
-                    armor = item.getDefense();
+                double armor = 0;
+                if(stack.has(DataComponents.ATTRIBUTE_MODIFIERS)) {
+                    var modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
+                    for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
+                        if (entry.attribute() == Attributes.ARMOR) {
+                            double modifier = entry.modifier().amount();
+
+                            armor += switch (entry.modifier().operation()) {
+                                case ADD_VALUE -> modifier;
+                                case ADD_MULTIPLIED_BASE -> modifier * 0.0;
+                                case ADD_MULTIPLIED_TOTAL -> modifier * armor;
+                            };
+                        }
+                    }
                 }
-                return ((Comparison)data.get("comparison")).compare(armor, data.getInt("compare_to"));
+                return ((Comparison)data.get("comparison")).compare((int) armor, data.getInt("compare_to"));
             }));
         register(new ConditionFactory<>(Apoli.identifier("harvest_level"), new SerializableData()
             .add("comparison", ApoliDataTypes.COMPARISON)
             .add("compare_to", SerializableDataTypes.INT),
             (data, stack) -> {
                 int harvestLevel = 0;
-                if(stack.getItem() instanceof TieredItem) {
-                    TieredItem item = (TieredItem)stack.getItem();
-                    harvestLevel = item.getTier().getLevel();
+                if(stack.has(DataComponents.TOOL)) {
+                    var tool = stack.get(DataComponents.TOOL);
+                    for (Tool.Rule rule : tool.rules()) {
+                        if (rule.blocks() instanceof HolderSet.Named<Block> named) {
+                            var tag = named.key();
+
+                            if (harvestLevel < 4 && tag.equals(BlockTags.NEEDS_DIAMOND_TOOL)) {
+                                harvestLevel = 4;
+                            } else if (harvestLevel < 3 && tag.equals(BlockTags.NEEDS_IRON_TOOL)) {
+                                harvestLevel = 3;
+                            } else if (harvestLevel < 1 && tag.equals(BlockTags.NEEDS_STONE_TOOL)) {
+                                harvestLevel = 1;
+                            }
+                        }
+                    }
                 }
                 return ((Comparison)data.get("comparison")).compare(harvestLevel, data.getInt("compare_to"));
             }));
         register(EnchantmentCondition.getFactory());
         register(new ConditionFactory<>(Apoli.identifier("meat"), new SerializableData(),
-            (data, stack) -> stack.isEdible() && stack.getItem().getFoodProperties().isMeat()));
+            (data, stack) -> stack.has(DataComponents.CONSUMABLE) && stack.is(ItemTags.MEAT)));
         register(new ConditionFactory<>(Apoli.identifier("nbt"), new SerializableData()
-            .add("nbt", SerializableDataTypes.NBT), (data, stack) -> NbtUtils.compareNbt(data.get("nbt"), stack.getTag(), true)));
+            .add("nbt", SerializableDataTypes.NBT), (data, stack) -> {
+            CompoundTag oldTag = data.get("nbt");
+            CompoundTag recreatedTag = new CompoundTag();
+            recreatedTag.putString("id", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+            recreatedTag.putInt("Count", stack.getCount());
+            recreatedTag.put("tag", oldTag);
+
+            var convertedStackNbt = DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(NbtOps.INSTANCE, recreatedTag), 3465, SharedConstants.WORLD_VERSION);
+            var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt.getValue()).getOrThrow().getFirst();
+
+            return convertedStack.getComponentsPatch().equals(stack.getComponentsPatch());
+        }));
         register(new ConditionFactory<>(Apoli.identifier("fireproof"), new SerializableData(),
-            (data, stack) -> stack.getItem().isFireResistant()));
+            (data, stack) -> stack.has(DataComponents.DAMAGE_RESISTANT) && stack.get(DataComponents.DAMAGE_RESISTANT).types().equals(DamageTypeTags.IS_FIRE)));
         register(new ConditionFactory<>(Apoli.identifier("enchantable"), new SerializableData(),
             (data, stack) -> !stack.isEnchantable()));
         register(new ConditionFactory<>(Apoli.identifier("power_count"), new SerializableData()
@@ -124,7 +169,12 @@ public class ItemConditions {
             (data, stack) -> ((Comparison)data.get("comparison")).compare((float)(stack.getMaxDamage() - stack.getDamageValue()) / stack.getMaxDamage(), data.getFloat("compare_to"))));
         register(new ConditionFactory<>(Apoli.identifier("is_equippable"), new SerializableData()
             .add("equipment_slot", SerializableDataTypes.EQUIPMENT_SLOT),
-            (data, stack) -> Mob.getEquipmentSlotForItem(stack) == data.get("equipment_slot")));
+            (data, stack) -> {
+                if (!stack.has(DataComponents.EQUIPPABLE))
+                    return false;
+                var equippable = stack.get(DataComponents.EQUIPPABLE);
+                return equippable.slot() == data.get("equipment_slot");
+            }));
     }
 
     private static void register(ConditionFactory<ItemStack> conditionFactory) {

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.github.apace100.apoli.util.NamespaceAlias;
 import net.minecraft.core.Registry;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 
@@ -21,13 +21,13 @@ public class ConditionType<T> {
         this.conditionRegistry = conditionRegistry;
     }
 
-    public void write(FriendlyByteBuf buf, ConditionFactory.Instance conditionInstance) {
+    public void write(RegistryFriendlyByteBuf buf, ConditionFactory.Instance conditionInstance) {
         conditionInstance.write(buf);
     }
 
-    public ConditionFactory<T>.Instance read(FriendlyByteBuf buf) {
+    public ConditionFactory<T>.Instance read(RegistryFriendlyByteBuf buf) {
         ResourceLocation type = ResourceLocation.tryParse(buf.readUtf(32767));
-        ConditionFactory<T> conditionFactory = conditionRegistry.get(type);
+        ConditionFactory<T> conditionFactory = conditionRegistry.getValue(type);
         return conditionFactory.read(buf);
     }
 

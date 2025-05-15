@@ -45,7 +45,6 @@ public class FireProjectileAction {
             );
             if (opt$entityToSpawn.isEmpty()) return;
 
-            Vec3 rotationVector = entity.getLookAngle();
             Vec3 velocity = entity.getDeltaMovement();
             Entity entityToSpawn = opt$entityToSpawn.get();
             RandomSource random = serverWorld.getRandom();
@@ -56,9 +55,7 @@ public class FireProjectileAction {
             if (entityToSpawn instanceof Projectile projectileToSpawn) {
 
                 if (projectileToSpawn instanceof AbstractHurtingProjectile explosiveProjectileToSpawn) {
-                    explosiveProjectileToSpawn.xPower = rotationVector.x * speed;
-                    explosiveProjectileToSpawn.yPower = rotationVector.y * speed;
-                    explosiveProjectileToSpawn.zPower = rotationVector.z * speed;
+                    explosiveProjectileToSpawn.accelerationPower = speed;
                 }
 
                 projectileToSpawn.setOwner(entity);

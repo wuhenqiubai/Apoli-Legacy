@@ -2,10 +2,12 @@ package io.github.apace100.apoli.mixin;
 
 import io.github.apace100.apoli.access.PowerCraftingInventory;
 import io.github.apace100.apoli.power.ModifyCraftingPower;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -16,15 +18,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 @Mixin(CraftingMenu.class)
-public class CraftingScreenHandlerMixin {
+public abstract class CraftingScreenHandlerMixin extends AbstractCraftingMenu {
 
     @Shadow @Final private ContainerLevelAccess access;
 
-    @Shadow @Final private CraftingContainer craftSlots;
+    public CraftingScreenHandlerMixin(MenuType<?> menuType, int containerId, int width, int height) {
+        super(menuType, containerId, width, height);
+    }
 
-    @Inject(method = "slotChangedCraftingGrid", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/crafting/RecipeManager;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/Container;Lnet/minecraft/world/level/Level;)Ljava/util/Optional;"))
-    private static void clearPowerCraftingInventory(AbstractContainerMenu handler, Level world, Player player, CraftingContainer inventory, ResultContainer resultInventory, CallbackInfo ci) {
-        if (inventory instanceof TransientCraftingContainer craftingInventory) ((PowerCraftingInventory)craftingInventory).setPower(null);
+    @Inject(method = "slotChangedCraftingGrid", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/crafting/RecipeManager;getRecipeFor(Lnet/minecraft/world/item/crafting/RecipeType;Lnet/minecraft/world/item/crafting/RecipeInput;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/crafting/RecipeHolder;)Ljava/util/Optional;"))
+    private static void clearPowerCraftingInventory(AbstractContainerMenu menu, ServerLevel level, Player player, CraftingContainer craftSlots, ResultContainer resultSlots, RecipeHolder<CraftingRecipe> recipe, CallbackInfo ci) {
+        if (craftSlots instanceof TransientCraftingContainer craftingInventory) ((PowerCraftingInventory)craftingInventory).setPower(null);
     }
 
     @Inject(method = "stillValid", at = @At("HEAD"), cancellable = true)

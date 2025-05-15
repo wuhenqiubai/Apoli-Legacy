@@ -19,11 +19,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.*;
 import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.function.Consumer;
@@ -111,7 +107,7 @@ public class RaycastAction {
             for(double current = 0; current < length; current += step) {
                 boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                 CommandSourceStack source = new CommandSourceStack(
-                    Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
+                    Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
                     origin.add(direction.scale(current)),
                     entity.getRotationVector(),
                     entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
@@ -130,7 +126,7 @@ public class RaycastAction {
         if(server != null) {
             boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
             CommandSourceStack source = new CommandSourceStack(
-                Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
+                Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
                 hitPosition,
                 entity.getRotationVector(),
                 entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,

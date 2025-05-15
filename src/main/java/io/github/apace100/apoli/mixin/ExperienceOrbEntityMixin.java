@@ -13,11 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ExperienceOrb.class)
 public class ExperienceOrbEntityMixin {
 
-    @Shadow
-    private int value;
+    @Shadow private int count;
 
     @Inject(method = "playerTouch", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Player;takeXpDelay:I", ordinal = 1))
     private void modifyXpAmount(Player player, CallbackInfo ci) {
-        this.value = (int) PowerHolderComponent.modify(player, ModifyExperiencePower.class, this.value);
+        this.count = (int) PowerHolderComponent.modify(player, ModifyExperiencePower.class, this.count);
     }
 }

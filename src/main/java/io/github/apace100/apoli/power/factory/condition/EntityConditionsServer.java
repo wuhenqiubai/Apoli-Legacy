@@ -5,7 +5,7 @@ import io.github.apace100.apoli.mixin.ServerPlayerInteractionManagerAccessor;
 import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,7 +38,7 @@ public final class EntityConditionsServer {
             .add("advancement", SerializableDataTypes.IDENTIFIER), (data, entity) -> {
             ResourceLocation id = data.getId("advancement");
             if(entity instanceof ServerPlayer) {
-                Advancement advancement = entity.getServer().getAdvancements().getAdvancement(id);
+                AdvancementHolder advancement = entity.getServer().getAdvancements().get(id);
                 if(advancement == null) {
                     Apoli.LOGGER.warn("Advancement \"" + id + "\" did not exist, but was referenced in an \"origins:advancement\" condition.");
                 } else {

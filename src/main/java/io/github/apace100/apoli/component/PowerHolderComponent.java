@@ -1,26 +1,28 @@
 package io.github.apace100.apoli.component;
 
 import com.google.common.collect.Lists;
-import dev.onyxstudios.cca.api.v3.component.ComponentKey;
-import dev.onyxstudios.cca.api.v3.component.ComponentRegistry;
-import dev.onyxstudios.cca.api.v3.component.sync.AutoSyncedComponent;
-import dev.onyxstudios.cca.api.v3.component.tick.ServerTickingComponent;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.integration.ModifyValueCallback;
-import io.github.apace100.apoli.networking.ModPackets;
+import io.github.apace100.apoli.networking.SyncPowerPacket;
 import io.github.apace100.apoli.power.*;
+import io.github.apace100.apoli.util.ApoliLivingEntityRenderState;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.apoli.util.modifier.ModifierUtil;
-import io.netty.buffer.Unpooled;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import org.ladysnake.cca.api.v3.component.ComponentKey;
+import org.ladysnake.cca.api.v3.component.ComponentRegistry;
+import org.ladysnake.cca.api.v3.component.sync.AutoSyncedComponent;
+import org.ladysnake.cca.api.v3.component.tick.ServerTickingComponent;
 
 import java.util.List;
 import java.util.Optional;
@@ -77,18 +79,15 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
         KEY.maybeGet(entity).ifPresent(phc -> {
             if(phc.hasPower(finalPowerType)) {
                 Power power = phc.getPower(finalPowerType);
-                Tag elem = power.toTag();
-                FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-                buf.writeInt(entity.getId());
-                buf.writeResourceLocation(finalPowerType.getIdentifier());
+                Tag elem = power.toTag(entity.registryAccess());
                 CompoundTag compound = new CompoundTag();
                 compound.put("Data", elem);
-                buf.writeNbt(compound);
+                var packet = new SyncPowerPacket(entity.getId(), finalPowerType.getIdentifier(), compound);
                 for(ServerPlayer player : PlayerLookup.tracking(entity)) {
-                    ServerPlayNetworking.send(player, ModPackets.SYNC_POWER, buf);
+                    ServerPlayNetworking.send(player, packet);
                 }
                 if(entity instanceof ServerPlayer self) {
-                    ServerPlayNetworking.send(self, ModPackets.SYNC_POWER, buf);
+                    ServerPlayNetworking.send(self, packet);
                 }
             }
         });
@@ -114,8 +113,21 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
         return Lists.newArrayList();
     }
 
+    @Environment(EnvType.CLIENT)
+    static <T extends Power> List<T> getPowers(LivingEntityRenderState state, Class<T> powerClass) {
+        if (((ApoliLivingEntityRenderState) state).apoli$getPowerHolder() == null)
+            return Lists.newArrayList();
+
+        return ((ApoliLivingEntityRenderState) state).apoli$getPowerHolder().getPowers(powerClass);
+    }
+
     static <T extends Power> boolean hasPower(Entity entity, Class<T> powerClass) {
         return hasPower(entity, powerClass, null);
+    }
+
+    @Environment(EnvType.CLIENT)
+    static <T extends Power> boolean hasPower(LivingEntityRenderState state, Class<T> powerClass) {
+        return hasPower(state, powerClass, null);
     }
 
     static <T extends Power> boolean hasPower(Entity entity, Class<T> powerClass, Predicate<T> powerFilter) {
@@ -125,6 +137,16 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
                     (powerFilter == null || powerFilter.test((T)p)));
         }
         return false;
+    }
+
+    @Environment(EnvType.CLIENT)
+    static <T extends Power> boolean hasPower(LivingEntityRenderState state, Class<T> powerClass, Predicate<T> powerFilter) {
+        if (((ApoliLivingEntityRenderState) state).apoli$getPowerHolder() == null)
+            return false;
+
+        return ((ApoliLivingEntityRenderState) state).apoli$getPowerHolder().getPowers().stream()
+            .anyMatch(p -> powerClass.isAssignableFrom(p.getClass()) && p.isActive() &&
+                (powerFilter == null || powerFilter.test((T) p)));
     }
 
     static <T extends ValueModifyingPower> float modify(Entity entity, Class<T> powerClass, float baseValue) {

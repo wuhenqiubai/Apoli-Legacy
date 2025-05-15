@@ -1,10 +1,12 @@
 package io.github.apace100.apoli.power;
 
+import com.mojang.serialization.Codec;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 
 public class PowerTypeReference<T extends Power> extends PowerType<T> {
+    public static final Codec<PowerType<?>> CODEC = ResourceLocation.CODEC.xmap(PowerTypeReference::new, PowerType::getIdentifier);
 
     private PowerType<T> referencedPowerType;
 

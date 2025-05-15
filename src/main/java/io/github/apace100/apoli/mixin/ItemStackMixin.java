@@ -5,10 +5,9 @@ import io.github.apace100.apoli.access.MutableItemStack;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ActionOnItemUsePower;
 import io.github.apace100.apoli.power.PreventItemUsePower;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.PatchedDataComponentMap;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -16,9 +15,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -30,13 +27,14 @@ public abstract class ItemStackMixin implements MutableItemStack, EntityLinkedIt
 
     @Shadow @Deprecated private Item item;
 
-    @Shadow private CompoundTag tag;
-
     @Shadow private int count;
 
-    @Shadow public abstract int getUseDuration();
-
     @Shadow public abstract @Nullable Entity getEntityRepresentation();
+
+    @Shadow public abstract int getUseDuration(LivingEntity entity);
+
+    @Shadow @Final @Mutable
+    private PatchedDataComponentMap components;
 
     @Unique
     private ItemStack apoli$usedItemStack;
@@ -83,18 +81,18 @@ public abstract class ItemStackMixin implements MutableItemStack, EntityLinkedIt
     }
 
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)
-    private void callActionOnUseInstantBefore(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
+    private void callActionOnUseInstantBefore(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
         if(user != null) {
             PowerHolderComponent component = PowerHolderComponent.KEY.get(user);
             ItemStack stackInHand = user.getItemInHand(hand);
             for(PreventItemUsePower piup : component.getPowers(PreventItemUsePower.class)) {
                 if(piup.doesPrevent(stackInHand)) {
-                    cir.setReturnValue(InteractionResultHolder.fail(stackInHand));
+                    cir.setReturnValue(InteractionResult.FAIL);
                     return;
                 }
             }
 
-            if(getUseDuration() == 0) {
+            if(getUseDuration(user) == 0) {
                 ActionOnItemUsePower.executeActions(user, (ItemStack)(Object)this, (ItemStack)(Object)this,
                         ActionOnItemUsePower.TriggerType.INSTANT, ActionOnItemUsePower.PriorityPhase.BEFORE);
             } else {
@@ -105,17 +103,18 @@ public abstract class ItemStackMixin implements MutableItemStack, EntityLinkedIt
     }
 
     @Inject(method = "use", at = @At("RETURN"))
-    private void callActionOnUseInstantAfter(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
+    private void callActionOnUseInstantAfter(Level world, Player user, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
+        var stack = (ItemStack) (Object) this;
         if(user != null) {
-            InteractionResult ar = cir.getReturnValue().getResult();
+            InteractionResult ar = cir.getReturnValue();
             if(!ar.consumesAction()) {
                 return;
             }
-            if(getUseDuration() == 0) {
-                ActionOnItemUsePower.executeActions(user, cir.getReturnValue().getObject(), cir.getReturnValue().getObject(),
+            if(getUseDuration(user) == 0) {
+                ActionOnItemUsePower.executeActions(user, stack, stack,
                         ActionOnItemUsePower.TriggerType.INSTANT, ActionOnItemUsePower.PriorityPhase.AFTER);
             } else {
-                ActionOnItemUsePower.executeActions(user, cir.getReturnValue().getObject(), cir.getReturnValue().getObject(),
+                ActionOnItemUsePower.executeActions(user, stack, stack,
                         ActionOnItemUsePower.TriggerType.START, ActionOnItemUsePower.PriorityPhase.AFTER);
             }
         }
@@ -161,7 +160,8 @@ public abstract class ItemStackMixin implements MutableItemStack, EntityLinkedIt
     @Override
     public void setFrom(ItemStack stack) {
         setItem(stack.getItem());
-        tag = stack.getTag();
+        if (stack.getComponents() instanceof PatchedDataComponentMap map)
+            components = map;
         count = stack.getCount();
     }
 }

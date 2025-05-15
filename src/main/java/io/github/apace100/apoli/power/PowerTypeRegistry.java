@@ -11,8 +11,12 @@ import java.util.stream.Stream;
 
 public class PowerTypeRegistry {
 
-    private static final HashMap<ResourceLocation, PowerType> idToPower = new HashMap<>();
+    private static final HashMap<ResourceLocation, PowerType<?>> idToPower = new HashMap<>();
     private static final Set<ResourceLocation> disabledPowers = new HashSet<>();
+
+    public static Map<ResourceLocation, PowerType<?>> get() {
+        return idToPower;
+    }
 
     public static PowerType register(ResourceLocation id, PowerType powerType) {
         if(idToPower.containsKey(id)) {
@@ -52,11 +56,11 @@ public class PowerTypeRegistry {
         return idToPower.keySet().stream();
     }
 
-    public static Iterable<Map.Entry<ResourceLocation, PowerType>> entries() {
+    public static Iterable<Map.Entry<ResourceLocation, PowerType<?>>> entries() {
         return idToPower.entrySet();
     }
 
-    public static Iterable<PowerType> values() {
+    public static Iterable<PowerType<?>> values() {
         return idToPower.values();
     }
 

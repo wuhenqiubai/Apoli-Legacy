@@ -1,7 +1,10 @@
 package io.github.apace100.apoli.global;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.PowerType;
+import io.github.apace100.apoli.power.PowerTypeReference;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
@@ -9,6 +12,7 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import io.github.apace100.calio.registry.DataObject;
 import io.github.apace100.calio.registry.DataObjectFactory;
 import io.github.apace100.calio.util.TagLike;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.NotNull;
@@ -17,6 +21,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class GlobalPowerSet implements Comparable<GlobalPowerSet>, DataObject<GlobalPowerSet> {
+    public static final Codec<GlobalPowerSet> CODEC = RecordCodecBuilder.create(instance ->
+        instance.group(
+                Codec.INT
+                    .optionalFieldOf("order", 0)
+                    .forGetter(GlobalPowerSet::getOrder),
+                TagLike.codec(BuiltInRegistries.ENTITY_TYPE)
+                    .optionalFieldOf("entity_types", null)
+                    .forGetter(set -> set.entityTypes),
+                PowerTypeReference.CODEC.listOf()
+                    .fieldOf("powers")
+                    .forGetter(GlobalPowerSet::getPowerTypes)
+            )
+            .apply(instance, GlobalPowerSet::new)
+    );
 
     private final int order;
     private final TagLike<EntityType<?>> entityTypes;

@@ -2,9 +2,9 @@ package io.github.apace100.apoli.mixin;
 
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.RestrictArmorPower;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(targets = "net/minecraft/world/inventory/InventoryMenu$1")
+@Mixin(targets = "net.minecraft.world.inventory.ArmorSlot")
 public abstract class PlayerScreenHandlerMixin extends Slot {
 
     public PlayerScreenHandlerMixin(Container inventory, int index, int x, int y) {
@@ -25,7 +25,7 @@ public abstract class PlayerScreenHandlerMixin extends Slot {
     private void preventArmorInsertion(ItemStack stack, CallbackInfoReturnable<Boolean> info) {
         Player player = ((Inventory)container).player;
         PowerHolderComponent component = PowerHolderComponent.KEY.get(player);
-        EquipmentSlot slot = Mob.getEquipmentSlotForItem(stack);
+        EquipmentSlot slot = Minecraft.getInstance().player.getEquipmentSlotForItem(stack);
         if(component.getPowers(RestrictArmorPower.class).stream().anyMatch(rap -> !rap.canEquip(stack, slot))) {
             info.setReturnValue(false);
         }

@@ -4,14 +4,15 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
 
 public class SetEntityGroupPower extends Power {
 
-    public final MobType group;
+    public final TagKey<EntityType<?>> group;
 
-    public SetEntityGroupPower(PowerType<?> type, LivingEntity entity, MobType group) {
+    public SetEntityGroupPower(PowerType<?> type, LivingEntity entity, TagKey<EntityType<?>> group) {
         super(type, entity);
         this.group = group;
     }
@@ -21,7 +22,7 @@ public class SetEntityGroupPower extends Power {
             new SerializableData()
                 .add("group", SerializableDataTypes.ENTITY_GROUP),
             data ->
-                (type, player) -> new SetEntityGroupPower(type, player, (MobType)data.get("group")))
+                (type, player) -> new SetEntityGroupPower(type, player, data.get("group")))
             .allowCondition();
     }
 }

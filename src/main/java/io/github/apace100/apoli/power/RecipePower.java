@@ -5,19 +5,19 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.inventory.TransientCraftingContainer;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.Recipe;
 
 public class RecipePower extends Power {
 
-    private final Recipe<TransientCraftingContainer> recipe;
+    private final Recipe<CraftingInput> recipe;
 
-    public RecipePower(PowerType<?> type, LivingEntity entity, Recipe<TransientCraftingContainer> recipe) {
+    public RecipePower(PowerType<?> type, LivingEntity entity, Recipe<CraftingInput> recipe) {
         super(type, entity);
         this.recipe = recipe;
     }
 
-    public Recipe<TransientCraftingContainer> getRecipe() {
+    public Recipe<CraftingInput> getRecipe() {
         return recipe;
     }
 
@@ -27,7 +27,7 @@ public class RecipePower extends Power {
                 .add("recipe", SerializableDataTypes.RECIPE),
             data ->
                 (type, player) -> {
-                    Recipe<TransientCraftingContainer> recipe = (Recipe<TransientCraftingContainer>)data.get("recipe");
+                    Recipe<CraftingInput> recipe = data.get("recipe");
                     return new RecipePower(type, player, recipe);
                 })
             .allowCondition();

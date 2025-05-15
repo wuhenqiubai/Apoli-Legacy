@@ -27,7 +27,7 @@ public class EffectImmunityPower extends Power {
     }
 
     public boolean doesApply(MobEffectInstance instance) {
-        return doesApply(instance.getEffect());
+        return doesApply(instance.getEffect().value());
     }
 
     public boolean doesApply(MobEffect effect) {

@@ -21,7 +21,7 @@ public class BurnPower extends Power {
 
     public void tick() {
         if(entity.tickCount % refreshInterval == 0) {
-            entity.setSecondsOnFire(burnDuration);
+            entity.setRemainingFireTicks(burnDuration * 20);
         }
     }
 

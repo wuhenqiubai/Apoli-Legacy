@@ -1,5 +1,5 @@
 plugins {
-	id("fabric-loom") version "1.9-SNAPSHOT"
+	id("fabric-loom") version "1.10-SNAPSHOT"
 	`maven-publish`
 }
 
@@ -88,8 +88,7 @@ dependencies {
 
 	modImplementation("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
 
-	modApi("com.github.DaFuqs:AdditionalEntityAttributes:${project.property("aea_version")}")
-	include("com.github.DaFuqs:AdditionalEntityAttributes:${project.property("aea_version")}")
+	include(modApi("de.dafuqs:additionalentityattributes:${project.property("aea_version")}")!!)
 	// modImplementation "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 	// include "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 }

@@ -1,19 +1,18 @@
 package io.github.apace100.apoli.util;
 
-import io.github.apace100.apoli.Apoli;
-import io.github.apace100.apoli.power.PowerType;
-import io.github.apace100.apoli.power.PowerTypeRegistry;
-import net.fabricmc.fabric.api.util.NbtType;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.github.apace100.apoli.component.StackPowerComponent;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
-import java.util.LinkedList;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
 
 public final class StackPowerUtil {
 
@@ -31,83 +30,64 @@ public final class StackPowerUtil {
     }
 
     public static void addPower(ItemStack stack, StackPower stackPower) {
-        CompoundTag nbt = stack.getOrCreateTag();
-        ListTag list;
-        if(nbt.contains("Powers")) {
-            Tag elem = nbt.get("Powers");
-            if(elem.getId() != NbtType.LIST) {
-                Apoli.LOGGER.warn("Can't add power " + stackPower.powerId + " to item stack "
-                    + stack + ", as it contains conflicting NBT data.");
-                return;
-            }
-            list = (ListTag)elem;
-        } else {
-            list = new ListTag();
-            nbt.put("Powers", list);
-        }
-        list.add(stackPower.toNbt());
+        var powers = new ArrayList<>(stack.getOrDefault(StackPowerComponent.TYPE, new StackPowerComponent(List.of())).powers());
+        powers.add(stackPower);
+
+        stack.set(StackPowerComponent.TYPE, new StackPowerComponent(powers));
     }
 
     public static void removePower(ItemStack stack, EquipmentSlot slot, ResourceLocation powerId) {
-        CompoundTag nbt = stack.getOrCreateTag();
-        ListTag list;
-        if(nbt.contains("Powers")) {
-            Tag elem = nbt.get("Powers");
-            if(elem.getId() != NbtType.LIST) {
-                Apoli.LOGGER.warn("Can't remove power " + powerId + " from item stack "
-                    + stack + ", as it contains conflicting NBT data.");
-                return;
-            }
-            list = (ListTag)elem;
-            int found = -1;
-            while(list.size() > 0) {
-                for(int i = 0; i < list.size(); i++) {
-                    StackPower sp = StackPower.fromNbt(list.getCompound(i));
-                    if(sp.powerId.equals(powerId) && sp.slot == slot) {
-                        found = i;
-                        break;
-                    }
-                }
-                if(found >= 0) {
-                    list.remove(found);
-                    found = -1;
-                } else {
-                    break;
-                }
-            }
+        if (stack.has(StackPowerComponent.TYPE)) {
+            var powers = new ArrayList<>(stack.getOrDefault(StackPowerComponent.TYPE, new StackPowerComponent(List.of())).powers());
+            powers.removeIf(power -> power.powerId.equals(powerId) && power.slot.equals(slot));
+
+            stack.set(StackPowerComponent.TYPE, new StackPowerComponent(powers));
         }
     }
 
     public static List<StackPower> getPowers(ItemStack stack, EquipmentSlot slot) {
-        CompoundTag nbt = stack.getTag();
-        ListTag list;
-        List<StackPower> powers = new LinkedList<>();
-        if(stack.getItem() instanceof PowerGrantingItem pgi) {
-            powers.addAll(pgi.getPowers(stack, slot));
-        }
-        if(nbt != null && nbt.contains("Powers")) {
-            Tag elem = nbt.get("Powers");
-            if(elem.getId() != NbtType.LIST) {
-                return List.of();
-            }
-            list = (ListTag)elem;
-            list.stream().map(p -> {
-                if(p.getId() == NbtType.COMPOUND) {
-                    return StackPower.fromNbt((CompoundTag)p);
-                } else {
-                    Apoli.LOGGER.warn("Invalid power format on stack nbt, stack = " + stack + ", nbt = " + p);
-                }
-                return null;
-            }).filter(sp -> sp != null && sp.slot == slot).forEach(powers::add);
-        }
-        return powers;
+        return stack.getOrDefault(StackPowerComponent.TYPE, new StackPowerComponent(List.of())).powers().stream().filter(power -> power.slot.equals(slot)).toList();
     }
 
     public static class StackPower {
+        public static final Codec<StackPower> CODEC = RecordCodecBuilder.create(instance ->
+            instance.group(
+                EquipmentSlot.CODEC
+                    .fieldOf("Slot")
+                    .forGetter(power -> power.slot),
+                ResourceLocation.CODEC
+                    .fieldOf("Power")
+                    .forGetter(power -> power.powerId),
+                Codec.BOOL
+                    .optionalFieldOf("Hidden", false)
+                    .forGetter(power -> power.isHidden),
+                Codec.BOOL
+                    .optionalFieldOf("Negative", false)
+                    .forGetter(power -> power.isNegative)
+            )
+                .apply(instance, StackPower::new)
+        );
+
+        public static final StreamCodec<FriendlyByteBuf, StackPower> STREAM_CODEC = StreamCodec.composite(
+            EquipmentSlot.STREAM_CODEC, power -> power.slot,
+            ResourceLocation.STREAM_CODEC, power -> power.powerId,
+            ByteBufCodecs.BOOL, power -> power.isHidden,
+            ByteBufCodecs.BOOL, power -> power.isNegative,
+            StackPower::new
+        );
+
         public EquipmentSlot slot;
         public ResourceLocation powerId;
         public boolean isHidden;
         public boolean isNegative;
+
+        public StackPower() {}
+        public StackPower(EquipmentSlot slot, ResourceLocation powerId, boolean isHidden, boolean isNegative) {
+            this.slot = slot;
+            this.powerId = powerId;
+            this.isHidden = isHidden;
+            this.isNegative = isNegative;
+        }
 
         public CompoundTag toNbt() {
             CompoundTag nbt = new CompoundTag();
@@ -120,10 +100,10 @@ public final class StackPowerUtil {
 
         public static StackPower fromNbt(CompoundTag nbt) {
             StackPower stackPower = new StackPower();
-            stackPower.slot = EquipmentSlot.byName(nbt.getString("Slot"));
-            stackPower.powerId = new ResourceLocation(nbt.getString("Power"));
-            stackPower.isHidden = nbt.contains("Hidden") && nbt.getBoolean("Hidden");
-            stackPower.isNegative = nbt.contains("Negative") && nbt.getBoolean("Negative");
+            stackPower.slot = EquipmentSlot.byName(nbt.getString("Slot").get());
+            stackPower.powerId = ResourceLocation.parse(nbt.getString("Power").get());
+            stackPower.isHidden = nbt.contains("Hidden") && nbt.getBoolean("Hidden").orElseThrow();
+            stackPower.isNegative = nbt.contains("Negative") && nbt.getBoolean("Negative").orElseThrow();
             return stackPower;
         }
     }

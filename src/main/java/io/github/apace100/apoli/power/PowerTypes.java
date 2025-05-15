@@ -71,7 +71,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                                 || entry.getKey().equals(ResourceConditions.CONDITIONS_KEY)) {
                                 continue;
                             }
-                            ResourceLocation subId = new ResourceLocation(id + "_" + entry.getKey());
+                            ResourceLocation subId = ResourceLocation.parse(id + "_" + entry.getKey());
                             try {
                                 PowerType<?> subPower = readPower(subId, entry.getValue(), true);
                                 if (subPower != null) {
@@ -119,7 +119,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
     private PowerType readPower(ResourceLocation id, JsonElement je, boolean isSubPower,
                                 BiFunction<ResourceLocation, PowerFactory.Instance, PowerType> powerTypeFactory) {
         JsonObject jo = je.getAsJsonObject();
-        ResourceLocation factoryId = new ResourceLocation(GsonHelper.getAsString(jo, "type"));
+        ResourceLocation factoryId = ResourceLocation.parse(GsonHelper.getAsString(jo, "type"));
         int priority = GsonHelper.getAsInt(jo, "loading_priority", 0);
 
         if (!isResourceConditionValid(id, jo)) {
@@ -194,7 +194,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
 
     @Override
     public ResourceLocation getFabricId() {
-        return new ResourceLocation(Apoli.MODID, "powers");
+        return ResourceLocation.fromNamespaceAndPath(Apoli.MODID, "powers");
     }
 
     public static void registerAdditionalData(String data, AdditionalPowerDataCallback callback) {

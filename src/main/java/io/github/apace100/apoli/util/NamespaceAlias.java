@@ -24,6 +24,6 @@ public final class NamespaceAlias {
         if(!aliasedNamespaces.containsKey(original.getNamespace())) {
             throw new RuntimeException("Tried to resolve a namespace alias for a namespace which didn't have an alias.");
         }
-        return new ResourceLocation(aliasedNamespaces.get(original.getNamespace()), original.getPath());
+        return ResourceLocation.fromNamespaceAndPath(aliasedNamespaces.get(original.getNamespace()), original.getPath());
     }
 }

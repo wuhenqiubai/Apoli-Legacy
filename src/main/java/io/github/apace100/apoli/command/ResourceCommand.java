@@ -9,7 +9,6 @@ import io.github.apace100.apoli.power.CooldownPower;
 import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.VariableIntPower;
-import java.util.Optional;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ObjectiveArgument;
@@ -17,7 +16,9 @@ import net.minecraft.commands.arguments.ScoreHolderArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.scores.Score;
+import net.minecraft.world.scores.ScoreAccess;
+
+import java.util.Optional;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -110,7 +111,7 @@ public class ResourceCommand {
                 }
                 case OPERATION ->
                 {
-                    Score score = command.getSource().getServer().getScoreboard().getOrCreatePlayerScore(ScoreHolderArgument.getName(command, "entity"), ObjectiveArgument.getObjective(command, "objective"));
+                    ScoreAccess score = command.getSource().getServer().getScoreboard().getOrCreatePlayerScore(ScoreHolderArgument.getName(command, "entity"), ObjectiveArgument.getObjective(command, "objective"));
                     command.getArgument("operation", PowerOperation.Operation.class).apply(vIntPower, score);
                     PowerHolderComponent.syncPower(player, powerType);
                     command.getSource().sendSuccess(() -> Component.translatable("commands.scoreboard.players.operation.success.single", powerType.getIdentifier(), player.getScoreboardName(), vIntPower.getValue()), true);
@@ -149,7 +150,7 @@ public class ResourceCommand {
                 }
                 case OPERATION ->
                 {
-                    Score score = command.getSource().getServer().getScoreboard().getOrCreatePlayerScore(ScoreHolderArgument.getName(command, "entity"), ObjectiveArgument.getObjective(command, "objective"));
+                    ScoreAccess score = command.getSource().getServer().getScoreboard().getOrCreatePlayerScore(ScoreHolderArgument.getName(command, "entity"), ObjectiveArgument.getObjective(command, "objective"));
                     command.getArgument("operation", PowerOperation.Operation.class).apply(cooldownPower, score);
                     PowerHolderComponent.syncPower(player, powerType);
                     command.getSource().sendSuccess(() -> Component.translatable("commands.scoreboard.players.operation.success.single", powerType.getIdentifier(), player.getScoreboardName(), cooldownPower.getRemainingTicks()), true);

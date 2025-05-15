@@ -6,7 +6,9 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -19,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
 
 import java.util.function.Predicate;
 
@@ -87,15 +90,15 @@ public class InventoryPower extends Power implements Active, Container {
     }
 
     @Override
-    public CompoundTag toTag() {
+    public CompoundTag toTag(HolderLookup.Provider provider) {
         CompoundTag tag = new CompoundTag();
-        ContainerHelper.saveAllItems(tag, container);
+        ContainerHelper.saveAllItems(tag, container, provider);
         return tag;
     }
 
     @Override
-    public void fromTag(Tag tag) {
-        ContainerHelper.loadAllItems((CompoundTag)tag, container);
+    public void fromTag(Tag tag, HolderLookup.Provider provider) {
+        ContainerHelper.loadAllItems((CompoundTag)tag, container, provider);
     }
 
     @Override
@@ -170,7 +173,7 @@ public class InventoryPower extends Power implements Active, Container {
         for (int i = 0; i < containerSize; ++i) {
             ItemStack currentItemStack = getItem(i);
             if (shouldDropOnDeath(currentItemStack)) {
-                if (!currentItemStack.isEmpty() && EnchantmentHelper.hasVanishingCurse(currentItemStack)) removeItemNoUpdate(i);
+                if (!currentItemStack.isEmpty() && EnchantmentHelper.getItemEnchantmentLevel(playerEntity.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.VANISHING_CURSE), currentItemStack) > 0) removeItemNoUpdate(i);
                 else {
                     playerEntity.drop(currentItemStack, true, false);
                     setItem(i, ItemStack.EMPTY);

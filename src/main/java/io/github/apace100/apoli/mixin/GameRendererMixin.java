@@ -7,9 +7,9 @@ import io.github.apace100.apoli.power.*;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.PostChain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -48,13 +48,13 @@ public abstract class GameRendererMixin {
     private Minecraft minecraft;
 
     @Shadow
-    protected abstract void loadEffect(ResourceLocation identifier);
-
-    @Shadow
-    private PostChain postEffect;
-    @Shadow
     private boolean effectActive;
     @Shadow @Final private ResourceManager resourceManager;
+
+    @Shadow protected abstract void setPostEffect(ResourceLocation postEffectId);
+
+    @Shadow public abstract void clearPostEffect();
+
     @Unique
     private ResourceLocation currentlyLoadedShader;
 
@@ -63,35 +63,32 @@ public abstract class GameRendererMixin {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
             ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(this.resourceManager.getResource(shaderLoc).isPresent()) {
-                loadEffect(shaderLoc);
+                this.setPostEffect(shaderLoc);
                 currentlyLoadedShader = shaderLoc;
             }
         });
     }
 
     @Inject(at = @At("HEAD"), method = "render")
-    private void loadShaderFromPower(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
+    private void loadShaderFromPower(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
             ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(currentlyLoadedShader != shaderLoc) {
                 if(this.resourceManager.getResource(shaderLoc).isPresent()) {
-                    loadEffect(shaderLoc);
+                    this.setPostEffect(shaderLoc);
                     currentlyLoadedShader = shaderLoc;
                 }
             }
         });
         if(!PowerHolderComponent.hasPower(minecraft.getCameraEntity(), ShaderPower.class) && currentlyLoadedShader != null) {
-            if(this.postEffect != null) {
-                this.postEffect.close();
-                this.postEffect = null;
-            }
+            this.clearPostEffect();
             this.effectActive = false;
             currentlyLoadedShader = null;
         }
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V"))
-    private void renderOverlayPowers(float tickDelta, long startTime, boolean tick, CallbackInfo ci) {
+    private void renderOverlayPowers(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         boolean hudHidden = this.minecraft.options.hideGui;
         boolean thirdPerson = !minecraft.options.getCameraType().isFirstPerson();
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), OverlayPower.class, p -> {
@@ -145,7 +142,7 @@ public abstract class GameRendererMixin {
 
     // PHASING: remove_blocks
     @Inject(at = @At(value = "HEAD"), method = "render")
-    private void beforeRender(float tickDelta, long startTime, boolean tick, CallbackInfo info) {
+    private void beforeRender(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         List<PhasingPower> phasings = PowerHolderComponent.getPowers(mainCamera.getEntity(), PhasingPower.class);
         if (phasings.stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
             float view = phasings.stream().filter(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS).map(PhasingPower::getViewDistance).min(Float::compareTo).get();

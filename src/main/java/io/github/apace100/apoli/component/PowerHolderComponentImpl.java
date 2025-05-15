@@ -4,11 +4,12 @@ import com.google.common.collect.ImmutableList;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.*;
 import io.github.apace100.apoli.util.GainedPowerCriterion;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -173,11 +174,11 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     }
 
     @Override
-    public void readFromNbt(CompoundTag compoundTag) {
-        this.fromTag(compoundTag, true);
+    public void readFromNbt(CompoundTag compoundTag, HolderLookup.Provider provider) {
+        this.fromTag(compoundTag, true, provider);
     }
 
-    private void fromTag(CompoundTag compoundTag, boolean callPowerOnAdd) {
+    private void fromTag(CompoundTag compoundTag, boolean callPowerOnAdd, HolderLookup.Provider provider) {
         try {
             if (owner == null) {
                 Apoli.LOGGER.error("Owner was null in PowerHolderComponent#fromTag!");
@@ -192,15 +193,15 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
             ListTag powerList = (ListTag) compoundTag.get("Powers");
             if(powerList != null) {
                 for (int i = 0; i < powerList.size(); i++) {
-                    CompoundTag powerTag = powerList.getCompound(i);
-                    ResourceLocation powerTypeId = ResourceLocation.tryParse(powerTag.getString("Type"));
+                    CompoundTag powerTag = powerList.getCompound(i).orElseThrow();
+                    ResourceLocation powerTypeId = ResourceLocation.tryParse(powerTag.getString("Type").orElseThrow());
                     if(callPowerOnAdd && PowerTypeRegistry.isDisabled(powerTypeId)) {
                         continue;
                     }
                     ListTag sources = (ListTag) powerTag.get("Sources");
                     List<ResourceLocation> list = new LinkedList<>();
                     if(sources != null) {
-                        sources.forEach(nbtElement -> list.add(ResourceLocation.tryParse(nbtElement.getAsString())));
+                        sources.forEach(nbtElement -> list.add(ResourceLocation.tryParse(nbtElement.asString().orElseThrow())));
                     }
                     PowerType<?> type = PowerTypeRegistry.get(powerTypeId);
                     powerSources.put(type, list);
@@ -208,7 +209,7 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
                         Tag data = powerTag.get("Data");
                         Power power = type.create(owner);
                         try {
-                            power.fromTag(data);
+                            power.fromTag(data, provider);
                         } catch (ClassCastException e) {
                             // Occurs when power was overriden by data pack since last world load
                             // to be a power type which uses different data class.
@@ -251,12 +252,12 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     }
 
     @Override
-    public void writeToNbt(CompoundTag compoundTag) {
+    public void writeToNbt(CompoundTag compoundTag, HolderLookup.Provider provider) {
         ListTag powerList = new ListTag();
         for(Map.Entry<PowerType<?>, Power> powerEntry : powers.entrySet()) {
             CompoundTag powerTag = new CompoundTag();
             powerTag.putString("Type", PowerTypeRegistry.getId(powerEntry.getKey()).toString());
-            powerTag.put("Data", powerEntry.getValue().toTag());
+            powerTag.put("Data", powerEntry.getValue().toTag(provider));
             ListTag sources = new ListTag();
             powerSources.get(powerEntry.getKey()).forEach(id -> sources.add(StringTag.valueOf(id.toString())));
             powerTag.put("Sources", sources);
@@ -266,10 +267,10 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     }
 
     @Override
-    public void applySyncPacket(FriendlyByteBuf buf) {
+    public void applySyncPacket(RegistryFriendlyByteBuf buf) {
         CompoundTag compoundTag = buf.readNbt();
         if(compoundTag != null) {
-            this.fromTag(compoundTag, false);
+            this.fromTag(compoundTag, false, buf.registryAccess());
         }
     }
 
@@ -282,7 +283,7 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     public String toString() {
         StringBuilder str = new StringBuilder("PowerHolderComponent[\n");
         for (Map.Entry<PowerType<?>, Power> powerEntry : powers.entrySet()) {
-            str.append("\t").append(PowerTypeRegistry.getId(powerEntry.getKey())).append(": ").append(powerEntry.getValue().toTag().toString()).append("\n");
+            str.append("\t").append(PowerTypeRegistry.getId(powerEntry.getKey())).append(": ").append(powerEntry.getValue().toTag(this.owner.level().registryAccess()).toString()).append("\n");
         }
         str.append("]");
         return str.toString();

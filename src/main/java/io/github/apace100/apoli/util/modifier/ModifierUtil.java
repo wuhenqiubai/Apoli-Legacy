@@ -21,17 +21,17 @@ public class ModifierUtil {
 
     public static Modifier fromAttributeModifier(AttributeModifier attributeModifier) {
         IModifierOperation operation = null;
-        switch(attributeModifier.getOperation()) {
-            case ADDITION -> operation = ModifierOperation.ADD_BASE_EARLY;
-            case MULTIPLY_BASE -> operation = ModifierOperation.MULTIPLY_BASE_ADDITIVE;
-            case MULTIPLY_TOTAL -> operation = ModifierOperation.MULTIPLY_TOTAL_MULTIPLICATIVE;
+        switch(attributeModifier.operation()) {
+            case ADD_VALUE -> operation = ModifierOperation.ADD_BASE_EARLY;
+            case ADD_MULTIPLIED_BASE -> operation = ModifierOperation.MULTIPLY_BASE_ADDITIVE;
+            case ADD_MULTIPLIED_TOTAL -> operation = ModifierOperation.MULTIPLY_TOTAL_MULTIPLICATIVE;
         }
         if(operation == null) {
             throw new RuntimeException(
                 "Could not construct generic modifier from attribute modifier. Unknown operation: "
-                    + attributeModifier.getOperation());
+                    + attributeModifier.operation());
         }
-        return createSimpleModifier(operation, attributeModifier.getAmount());
+        return createSimpleModifier(operation, attributeModifier.amount());
     }
 
     public static Map<IModifierOperation, List<SerializableData.Instance>> sortModifiers(List<Modifier> modifiers) {

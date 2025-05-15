@@ -16,7 +16,6 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Tuple;
-import net.minecraft.util.Unit;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.DismountHelper;
@@ -29,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.function.TriFunction;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ModifyPlayerSpawnPower extends Power {
@@ -83,9 +83,9 @@ public class ModifyPlayerSpawnPower extends Power {
         if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return;
 
         ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
-        if (serverPlayerEntity.hasDisconnected() || serverPlayerEntity.getRespawnPosition() == null || !serverPlayerEntity.isRespawnForced()) return;
+        if (serverPlayerEntity.hasDisconnected() || serverPlayerEntity.getRespawnConfig() == null || !serverPlayerEntity.getRespawnConfig().forced()) return;
 
-        serverPlayerEntity.setRespawnPosition(Level.OVERWORLD, null, 0F, false, false);
+        serverPlayerEntity.setRespawnPosition(new ServerPlayer.RespawnConfig(Level.OVERWORLD, null, 0f, false), false);
 
     }
 
@@ -102,11 +102,11 @@ public class ModifyPlayerSpawnPower extends Power {
 
         Vec3 tpPos = DismountHelper.findSafeDismountLocation(playerEntity.getType(), newSpawn.getA(), newSpawn.getB(), true);
         if (tpPos == null) {
-            serverPlayerEntity.teleportTo(newSpawnDimension, newSpawnPos.getX(), newSpawnPos.getY(), newSpawnPos.getZ(), entity.getXRot(), entity.getYRot());
+            serverPlayerEntity.teleportTo(newSpawnDimension, newSpawnPos.getX(), newSpawnPos.getY(), newSpawnPos.getZ(), Set.of(), entity.getXRot(), entity.getYRot(), false);
             Apoli.LOGGER.warn("Power {} could not find a suitable spawnpoint for {}! Teleporting to the desired location directly...", this.getType().getIdentifier(), entity.getScoreboardName());
         }
 
-        else serverPlayerEntity.teleportTo(newSpawnDimension, tpPos.x, tpPos.y, tpPos.z, entity.getXRot(), entity.getYRot());
+        else serverPlayerEntity.teleportTo(newSpawnDimension, tpPos.x, tpPos.y, tpPos.z, Set.of(), entity.getXRot(), entity.getYRot(), false);
 
     }
 
@@ -143,7 +143,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         Vec3 msp = modifiedSpawnPos.get();
         modifiedSpawnBlockPos.set(msp.x, msp.y, msp.z);
-        targetDimension.getChunkSource().addRegionTicket(TicketType.START, new ChunkPos(modifiedSpawnBlockPos), 11, Unit.INSTANCE);
+        targetDimension.getChunkSource().addTicketWithRadius(TicketType.START, new ChunkPos(modifiedSpawnBlockPos), 11);
 
         return new Tuple<>(targetDimension, modifiedSpawnBlockPos);
 
@@ -153,7 +153,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         if (biomeId == null) return Optional.empty();
 
-        Optional<Biome> targetBiome = targetDimension.registryAccess().registryOrThrow(Registries.BIOME).getOptional(biomeId);
+        Optional<Biome> targetBiome = targetDimension.registryAccess().lookupOrThrow(Registries.BIOME).getOptional(biomeId);
         if (targetBiome.isEmpty()) {
             Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it's not registered in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.location());
             return Optional.empty();
@@ -177,13 +177,13 @@ public class ModifyPlayerSpawnPower extends Power {
 
     private Optional<Tuple<BlockPos, Structure>> getStructurePos(Level world, ResourceKey<Structure> structure, TagKey<Structure> structureTag, ResourceKey<Level> dimension) {
 
-        Registry<Structure> structureRegistry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
+        Registry<Structure> structureRegistry = world.registryAccess().lookupOrThrow(Registries.STRUCTURE);
         HolderSet<Structure> structureRegistryEntryList = null;
         String structureTagOrName = "";
 
         if (structure != null) {
 
-            var entry = structureRegistry.getHolder(structure);
+            var entry = structureRegistry.get(structure);
             if (entry.isPresent()) structureRegistryEntryList = HolderSet.direct(entry.get());
 
             structureTagOrName = structure.location().toString();
@@ -192,7 +192,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         if (structureRegistryEntryList == null) {
 
-            var entryList = structureRegistry.getTag(structureTag);
+            var entryList = structureRegistry.get(structureTag);
             if (entryList.isPresent()) structureRegistryEntryList = entryList.get();
 
             structureTagOrName = "#" + structureTag.location().toString();

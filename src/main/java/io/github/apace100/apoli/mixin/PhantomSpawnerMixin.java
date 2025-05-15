@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(PhantomSpawner.class)
 public class PhantomSpawnerMixin {
@@ -21,7 +21,7 @@ public class PhantomSpawnerMixin {
     private Player apoli$CachedPlayer;
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/dimension/DimensionType;hasSkyLight()Z", ordinal = 1))
-    private void cachePlayerEntity(ServerLevel world, boolean spawnMonsters, boolean spawnAnimals, CallbackInfoReturnable<Integer> cir, @Local ServerPlayer serverPlayerEntity) {
+    private void cachePlayerEntity(ServerLevel level, boolean spawnEnemies, boolean spawnFriendlies, CallbackInfo ci, @Local ServerPlayer serverPlayerEntity) {
         apoli$CachedPlayer = serverPlayerEntity;
     }
 
