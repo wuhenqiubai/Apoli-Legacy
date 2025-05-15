@@ -2,6 +2,7 @@ package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.*;
 import net.fabricmc.api.EnvType;
@@ -9,6 +10,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -87,8 +89,8 @@ public abstract class GameRendererMixin {
         }
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V"))
-    private void renderOverlayPowers(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V", shift = At.Shift.AFTER))
+    private void renderOverlayPowers(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci, @Local GuiGraphics guiGraphics) {
         boolean hudHidden = this.minecraft.options.hideGui;
         boolean thirdPerson = !minecraft.options.getCameraType().isFirstPerson();
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), OverlayPower.class, p -> {
@@ -102,7 +104,7 @@ public abstract class GameRendererMixin {
                 return false;
             }
             return true;
-        }, OverlayPower::render);
+        }, p -> p.render(guiGraphics));
     }
 
     @Inject(at = @At("HEAD"), method = "togglePostEffect", cancellable = true)

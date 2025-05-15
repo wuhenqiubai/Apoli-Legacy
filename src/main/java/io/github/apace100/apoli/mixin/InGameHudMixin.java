@@ -42,7 +42,7 @@ public class InGameHudMixin {
                 return false;
             }
             return true;
-        }, OverlayPower::render);
+        }, p -> p.render(guiGraphics));
 
         for(GameHudRender hudRender : GameHudRender.HUD_RENDERS) {
             hudRender.render(guiGraphics, deltaTracker.getGameTimeDeltaPartialTick(true));

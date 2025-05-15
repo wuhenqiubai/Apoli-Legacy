@@ -14,8 +14,11 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -88,7 +91,7 @@ public class OverlayPower extends Power {
     }
 
     @Environment(EnvType.CLIENT)
-    public void render() {
+    public void render(GuiGraphics guiGraphics) {
         Minecraft client = Minecraft.getInstance();
         int i = client.getWindow().getGuiScaledWidth();
         int j = client.getWindow().getGuiScaledHeight();
@@ -123,7 +126,7 @@ public class OverlayPower extends Power {
         var renderTarget = client.getMainRenderTarget();
         var encoder = RenderSystem.getDevice().createCommandEncoder();
 
-        RenderSystem.setShaderColor(g, h, k, a);
+        guiGraphics.blit(location -> RenderType.guiNauseaOverlay(), texture, 0, 0, 0f, 0f, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), ARGB.colorFromFloat(a, g, h, k));
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         bufferBuilder.addVertex(m, n + l, -90.0f).setUv(0.0F, 1.0F);
