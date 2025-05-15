@@ -1,5 +1,8 @@
 package io.github.apace100.apoli.mixin;
 
+import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.ref.LocalFloatRef;
+import com.llamalad7.mixinextras.sugar.ref.LocalIntRef;
 import io.github.apace100.apoli.access.ModifiableFoodEntity;
 import io.github.apace100.apoli.power.ModifyFoodPower;
 import io.github.apace100.apoli.util.ApoliSharedMixinValues;
@@ -13,9 +16,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 @Mixin(FoodData.class)
 public class HungerManagerMixin {
@@ -28,8 +29,8 @@ public class HungerManagerMixin {
     @Unique
     private boolean apoli$ShouldUpdateManually = false;
 
-    @ModifyArgs(method = "eat(IF)V", at = @At("HEAD"))
-    private void modifyHunger(Args args) {
+    @Inject(method = "eat(IF)V", at = @At("HEAD"))
+    private void modifyHunger(int foodLevelModifier, float saturationLevelModifier, CallbackInfo ci, @Local(argsOnly = true) LocalIntRef foodLevel, @Local(argsOnly = true) LocalFloatRef saturationLevel) {
         apoli$ShouldUpdateManually = false;
 
         if (player == null) return;
@@ -43,14 +44,14 @@ public class HungerManagerMixin {
         var foodModifiers = modifiers.flatMap(p -> p.getFoodModifiers().stream()).toList();
         var saturationModifiers = modifiers.flatMap(p -> p.getSaturationModifiers().stream()).toList();
 
-        int newFood = (int) ModifierUtil.applyModifiers(player, foodModifiers, args.get(0));
-        if (newFood != (int) args.get(0) && newFood == 0) apoli$ShouldUpdateManually = true;
+        int newFood = (int) ModifierUtil.applyModifiers(player, foodModifiers, foodLevelModifier);
+        if (newFood != foodLevelModifier && newFood == 0) apoli$ShouldUpdateManually = true;
 
-        float newSat = (float) ModifierUtil.applyModifiers(player, saturationModifiers, args.get(1));
-        if (newSat != (float) args.get(1) && newSat == 0) apoli$ShouldUpdateManually = true;
+        float newSat = (float) ModifierUtil.applyModifiers(player, saturationModifiers, saturationLevelModifier);
+        if (newSat != saturationLevelModifier && newSat == 0) apoli$ShouldUpdateManually = true;
 
-        args.set(0, newFood);
-        args.set(1, newSat);
+        foodLevel.set(newFood);
+        saturationLevel.set(newSat);
     }
 
     @Inject(method = "eat(IF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;add(IF)V", shift = At.Shift.AFTER))
