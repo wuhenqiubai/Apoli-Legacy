@@ -34,7 +34,7 @@ public class DamageOverTimePower extends Power {
     private final float damageAmount;
     private final DamageSourceDescription damageSourceDescription;
     private final ResourceKey<DamageType> damageType;
-    private final Enchantment protectingEnchantment;
+    private final ResourceKey<Enchantment> protectingEnchantment;
     private final float protectionEffectiveness;
 
     private int outOfDamageTicks;
@@ -42,7 +42,7 @@ public class DamageOverTimePower extends Power {
 
     private DamageSource damageSource;
 
-    public DamageOverTimePower(PowerType<?> type, LivingEntity entity, int beginDamageIn, int damageInterval, float damageAmountEasy, float damageAmount, DamageSourceDescription damageSourceDescription, ResourceKey<DamageType> damageType, Enchantment protectingEnchantment, float protectionEffectiveness) {
+    public DamageOverTimePower(PowerType<?> type, LivingEntity entity, int beginDamageIn, int damageInterval, float damageAmountEasy, float damageAmount, DamageSourceDescription damageSourceDescription, ResourceKey<DamageType> damageType, ResourceKey<Enchantment> protectingEnchantment, float protectionEffectiveness) {
         super(type, entity);
         this.damageSourceDescription = damageSourceDescription;
         this.damageType = damageType;
@@ -106,12 +106,12 @@ public class DamageOverTimePower extends Power {
         if(protectingEnchantment == null) {
             return 0;
         } else {
-            Map<EquipmentSlot, ItemStack> enchantedItems = protectingEnchantment.getSlotItems(entity);
+            Map<EquipmentSlot, ItemStack> enchantedItems = this.entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getValue(protectingEnchantment).getSlotItems(entity);
             Iterable<ItemStack> iterable = enchantedItems.values();
             int i = 0;
             int items = 0;
             for (ItemStack itemStack : iterable) {
-                int enchLevel = EnchantmentHelper.getItemEnchantmentLevel(this.entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).wrapAsHolder(protectingEnchantment), itemStack);
+                int enchLevel = EnchantmentHelper.getItemEnchantmentLevel(this.entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(protectingEnchantment), itemStack);
                 i += enchLevel;
                 if(enchLevel > 0)
                     items++;

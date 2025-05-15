@@ -2,7 +2,6 @@ package io.github.apace100.apoli.power.factory.action;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.serialization.Dynamic;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.MutableItemStack;
 import io.github.apace100.apoli.data.ApoliDataTypes;
@@ -12,7 +11,7 @@ import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.SharedConstants;
+import io.github.apace100.calio.util.UpgradeUtils;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
@@ -26,8 +25,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Tuple;
-import net.minecraft.util.datafix.DataFixers;
-import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -120,8 +117,8 @@ public class ItemActions {
                     recreatedTag.putInt("Count", worldAndStack.getB().getCount());
                     recreatedTag.put("tag", oldTag);
 
-                    var convertedStackNbt = DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(NbtOps.INSTANCE, recreatedTag), 3465, SharedConstants.WORLD_VERSION);
-                    var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt.getValue()).getOrThrow().getFirst();
+                    var convertedStackNbt = UpgradeUtils.upgradeStack(recreatedTag);
+                    var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt).getOrThrow().getFirst();
                     worldAndStack.getB().applyComponents(convertedStack.getComponents());
                 } catch (CommandSyntaxException e) {
                     Apoli.LOGGER.error("Failed `merge_nbt` item action due to malformed nbt string: \"" + nbtString + "\"");

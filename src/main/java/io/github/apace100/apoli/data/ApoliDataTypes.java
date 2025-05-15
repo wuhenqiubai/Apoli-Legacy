@@ -2,7 +2,6 @@ package io.github.apace100.apoli.data;
 
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
-import com.mojang.serialization.Dynamic;
 import io.github.apace100.apoli.power.Active;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeReference;
@@ -19,9 +18,9 @@ import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import io.github.apace100.calio.util.ArgumentWrapper;
+import io.github.apace100.calio.util.UpgradeUtils;
 import io.github.ladysnake.pal.Pal;
 import io.github.ladysnake.pal.PlayerAbility;
-import net.minecraft.SharedConstants;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.SlotArgument;
 import net.minecraft.commands.arguments.selector.EntitySelector;
@@ -34,8 +33,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Tuple;
-import net.minecraft.util.datafix.DataFixers;
-import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -173,8 +170,8 @@ public class ApoliDataTypes {
                 recreatedTag.putInt("Count", stack.getCount());
                 recreatedTag.put("tag", oldTag);
 
-                var convertedStackNbt = DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(NbtOps.INSTANCE, recreatedTag), 3465, SharedConstants.WORLD_VERSION);
-                var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt.getValue()).getOrThrow().getFirst();
+                var convertedStackNbt = UpgradeUtils.upgradeStack(recreatedTag);
+                var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt).getOrThrow().getFirst();
                 stack.applyComponents(convertedStack.getComponents());
             }
             if (data.isPresent("components")) {

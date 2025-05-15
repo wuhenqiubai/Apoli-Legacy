@@ -1,6 +1,5 @@
 package io.github.apace100.apoli.power.factory.condition;
 
-import com.mojang.serialization.Dynamic;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.condition.item.EnchantmentCondition;
@@ -9,7 +8,7 @@ import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.apoli.util.StackPowerUtil;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.SharedConstants;
+import io.github.apace100.calio.util.UpgradeUtils;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
@@ -20,8 +19,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.util.datafix.DataFixers;
-import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
@@ -109,8 +106,8 @@ public class ItemConditions {
             recreatedTag.putInt("Count", stack.getCount());
             recreatedTag.put("tag", oldTag);
 
-            var convertedStackNbt = DataFixers.getDataFixer().update(References.ITEM_STACK, new Dynamic<>(NbtOps.INSTANCE, recreatedTag), 3465, SharedConstants.WORLD_VERSION);
-            var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt.getValue()).getOrThrow().getFirst();
+            var convertedStackNbt = UpgradeUtils.upgradeStack(recreatedTag);
+            var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt).getOrThrow().getFirst();
 
             return convertedStack.getComponentsPatch().equals(stack.getComponentsPatch());
         }));
