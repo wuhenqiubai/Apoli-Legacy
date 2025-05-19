@@ -3,6 +3,7 @@ package io.github.apace100.apoli.power;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -27,10 +28,11 @@ import java.util.OptionalInt;
 public class OverlayPower extends Power {
     @Environment(EnvType.CLIENT)
     private static final RenderPipeline.Snippet OVERLAY_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_SNIPPET)
-        .withFragmentShader("core/position_tex")
-        .withVertexShader("core/position_tex")
+        .withFragmentShader("core/position_tex_color")
+        .withVertexShader("core/position_tex_color")
         .withSampler("Sampler0")
-        .withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS)
+        .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
+        .withUniform("ColorModulator", UniformType.VEC4) // We don't need this, but also, for some reason it will spam the logs if we don't use it?
         .withBlend(BlendFunction.PANORAMA)
         .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
         .withDepthWrite(false)
@@ -128,11 +130,11 @@ public class OverlayPower extends Power {
 
         guiGraphics.blit(location -> RenderType.guiNauseaOverlay(), texture, 0, 0, 0f, 0f, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), ARGB.colorFromFloat(a, g, h, k));
         Tesselator tessellator = Tesselator.getInstance();
-        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferBuilder.addVertex(m, n + l, -90.0f).setUv(0.0F, 1.0F);
-        bufferBuilder.addVertex(m + e, n + l, -90.0f).setUv(1.0F, 1.0F);
-        bufferBuilder.addVertex(m + e, n, -90.0f).setUv(1.0F, 0.0F);
-        bufferBuilder.addVertex(m, n, -90.0f).setUv(0.0F, 0.0F);
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        bufferBuilder.addVertex(m, n + l, -90.0f).setUv(0.0F, 1.0F).setColor(g, h, k, a);
+        bufferBuilder.addVertex(m + e, n + l, -90.0f).setUv(1.0F, 1.0F).setColor(g, h, k, a);
+        bufferBuilder.addVertex(m + e, n, -90.0f).setUv(1.0F, 0.0F).setColor(g, h, k, a);
+        bufferBuilder.addVertex(m, n, -90.0f).setUv(0.0F, 0.0F).setColor(g, h, k, a);
 
         try (MeshData meshData = bufferBuilder.buildOrThrow()) {
             var vertexBuffer = DefaultVertexFormat.POSITION_TEX.uploadImmediateVertexBuffer(meshData.vertexBuffer());
@@ -155,7 +157,6 @@ public class OverlayPower extends Power {
                 pass.drawIndexed(0, meshData.drawState().indexCount());
             }
         }
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     public static PowerFactory createFactory() {
