@@ -80,7 +80,6 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                             } catch (Exception e) {
                                 Apoli.LOGGER.error("There was a problem reading sub-power \"" +
                                     subId + "\" in power file \"" + id + "\": " + e.getMessage());
-                                e.printStackTrace();
                             }
                         }
                         MultiplePowerType<?> superPower = (MultiplePowerType) readPower(id, je, false, MultiplePowerType::new);
@@ -96,7 +95,6 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                     }
                 } catch (Exception e) {
                     Apoli.LOGGER.error("There was a problem reading power file " + id.toString() + " (skipping): " + e.getMessage());
-                    e.printStackTrace();
                 }
             }
         });

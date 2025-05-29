@@ -73,7 +73,6 @@ public record PowerListPacket(
                     factories.put(powerId, type);
                 } catch(Exception e) {
                     Apoli.LOGGER.error("Error while receiving \"" + powerId + "\" (factory: \"" + factoryId + "\"): " + e.getMessage());
-                    e.printStackTrace();
                 }
             }
 
