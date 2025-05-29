@@ -136,7 +136,7 @@ public class ApoliDataTypes {
             .add("attribute", SerializableDataTypes.ATTRIBUTE)
             .add("operation", SerializableDataTypes.MODIFIER_OPERATION)
             .add("value", SerializableDataTypes.DOUBLE)
-            .add("name", SerializableDataTypes.IDENTIFIER, ResourceLocation.parse("apoli:unnamed")),
+            .add("name", SerializableDataTypes.STRING, "apoli:unnamed"),
         dataInst -> new AttributedEntityAttributeModifier(dataInst.get("attribute"),
             new AttributeModifier(
                 SerializableDataTypes.convertNameToLocation(dataInst.getString("name")),
@@ -147,7 +147,7 @@ public class ApoliDataTypes {
             dataInst.set("attribute", inst.getAttribute());
             dataInst.set("operation", inst.getModifier().operation());
             dataInst.set("value", inst.getModifier().amount());
-            dataInst.set("name", inst.getModifier().id());
+            dataInst.set("name", inst.getModifier().id().toString());
             return dataInst;
         });
 
