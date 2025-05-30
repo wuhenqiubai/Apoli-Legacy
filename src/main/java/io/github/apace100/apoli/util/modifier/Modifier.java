@@ -53,7 +53,7 @@ public class Modifier implements Comparable<Modifier> {
             SerializableData.Instance instance = operation.getData().read(packetByteBuf);
             return new Modifier(operation, instance);
         }),
-        (jsonElement -> {
+        ((jsonElement, provider) -> {
             if(!jsonElement.isJsonObject()) {
                 throw new JsonParseException("Modifiers need to be a JSON object.");
             }
@@ -63,11 +63,11 @@ public class Modifier implements Comparable<Modifier> {
             }
             IModifierOperation op;
             try {
-                op = IModifierOperation.DATA_TYPE.read(jo.get("operation"));
+                op = IModifierOperation.DATA_TYPE.read(jo.get("operation"), provider);
             } catch(Exception e) {
                 throw new DataException(DataException.Phase.READING, "operation", e);
             }
-            SerializableData.Instance dataInstance = op.getData().read(jo);
+            SerializableData.Instance dataInstance = op.getData().read(jo, provider);
             return new Modifier(op, dataInstance);
         }));
 

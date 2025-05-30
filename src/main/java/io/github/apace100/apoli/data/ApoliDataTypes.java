@@ -209,7 +209,7 @@ public class ApoliDataTypes {
         }));
 
     public static final SerializableDataType<Active.Key> BACKWARDS_COMPATIBLE_KEY = new SerializableDataType<>(Active.Key.class,
-        KEY::send, KEY::receive, jsonElement -> {
+        KEY::send, KEY::receive, (jsonElement, provider) -> {
         if(jsonElement.isJsonPrimitive() && jsonElement.getAsJsonPrimitive().isString()) {
             String keyString = jsonElement.getAsString();
             Active.Key key = new Active.Key();
@@ -217,7 +217,7 @@ public class ApoliDataTypes {
             key.continuous = false;
             return key;
         }
-        return KEY.read(jsonElement);
+        return KEY.read(jsonElement, provider);
     });
 
     public static final SerializableDataType<HudRender> HUD_RENDER = SerializableDataType.compound(HudRender.class, new
@@ -274,10 +274,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<LegacyMaterial>> LEGACY_MATERIALS = SerializableDataType.list(LEGACY_MATERIAL);
 
     public static <T> SerializableDataType<ConditionFactory<T>.Instance> condition(Class<ConditionFactory<T>.Instance> dataClass, ConditionType<T> conditionType) {
-        return new SerializableDataType<>(dataClass, conditionType::write, conditionType::read, conditionType::read);
+        return new SerializableDataType<>(dataClass, conditionType::write, conditionType::read, (json, provider) -> conditionType.read(json, provider));
     }
 
     public static <T> SerializableDataType<ActionFactory<T>.Instance> action(Class<ActionFactory<T>.Instance> dataClass, ActionType<T> actionType) {
-        return new SerializableDataType<>(dataClass, actionType::write, actionType::read, actionType::read);
+        return new SerializableDataType<>(dataClass, actionType::write, actionType::read, (json, providers) -> actionType.read(json, providers));
     }
 }

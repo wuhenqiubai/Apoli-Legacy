@@ -11,6 +11,8 @@ import io.github.apace100.calio.data.MultiJsonDataLoader;
 import io.github.apace100.calio.data.SerializableData;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
@@ -35,8 +37,11 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
 
     private static final HashMap<String, AdditionalPowerDataCallback> ADDITIONAL_DATA = new HashMap<>();
 
-    public PowerTypes() {
+    private final HolderLookup.Provider provider;
+
+    public PowerTypes(HolderLookup.Provider provider) {
         super(GSON, "powers");
+        this.provider = provider;
     }
 
     @Override
@@ -80,6 +85,8 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                             } catch (Exception e) {
                                 Apoli.LOGGER.error("There was a problem reading sub-power \"" +
                                     subId + "\" in power file \"" + id + "\": " + e.getMessage());
+                                if (FabricLoader.getInstance().isDevelopmentEnvironment())
+                                    e.printStackTrace();
                             }
                         }
                         MultiplePowerType<?> superPower = (MultiplePowerType) readPower(id, je, false, MultiplePowerType::new);
@@ -95,6 +102,8 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                     }
                 } catch (Exception e) {
                     Apoli.LOGGER.error("There was a problem reading power file " + id.toString() + " (skipping): " + e.getMessage());
+                    if (FabricLoader.getInstance().isDevelopmentEnvironment())
+                        e.printStackTrace();
                 }
             }
         });
@@ -145,7 +154,7 @@ public class PowerTypes extends MultiJsonDataLoader implements IdentifiableResou
                 throw new JsonSyntaxException("Power type \"" + factoryId + "\" is not defined.");
             }
         }
-        PowerFactory.Instance factoryInstance = optionalFactory.get().read(jo);
+        PowerFactory.Instance factoryInstance = optionalFactory.get().read(jo, this.provider);
         PowerType type = powerTypeFactory.apply(id, factoryInstance);
         String name = GsonHelper.getAsString(jo, "name", "");
         String description = GsonHelper.getAsString(jo, "description", "");

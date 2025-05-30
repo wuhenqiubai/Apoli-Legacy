@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.github.apace100.apoli.util.NamespaceAlias;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -34,7 +35,7 @@ public class ActionType<T> {
         return actionFactory.read(buf);
     }
 
-    public ActionFactory<T>.Instance read(JsonElement jsonElement) {
+    public ActionFactory<T>.Instance read(JsonElement jsonElement, HolderLookup.Provider provider) {
         if(jsonElement.isJsonObject()) {
             JsonObject obj = jsonElement.getAsJsonObject();
             if(!obj.has("type")) {
@@ -51,7 +52,7 @@ public class ActionType<T> {
                     throw new JsonSyntaxException(actionTypeName + " json type \"" + type.toString() + "\" is not defined.");
                 }
             }
-            return optionalAction.get().read(obj);
+            return optionalAction.get().read(obj, provider);
         }
         throw new JsonSyntaxException(actionTypeName + " has to be a JsonObject!");
     }

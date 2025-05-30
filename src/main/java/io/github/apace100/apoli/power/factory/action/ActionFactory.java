@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import io.github.apace100.apoli.power.factory.Factory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
@@ -53,8 +54,8 @@ public class ActionFactory<T> implements Factory {
         return data;
     }
 
-    public Instance read(JsonObject json) {
-        return new Instance(data.read(json));
+    public Instance read(JsonObject json, HolderLookup.Provider provider) {
+        return new Instance(data.read(json, provider));
     }
 
     public Instance read(RegistryFriendlyByteBuf buffer) {

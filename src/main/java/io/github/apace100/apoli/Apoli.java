@@ -133,6 +133,6 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 
 	@Override
 	public void registerResourceListeners(OrderedResourceListenerManager manager) {
-		manager.register(PackType.SERVER_DATA, new PowerTypes()).complete();
+		manager.registerWithRegistries(identifier("powers"), PowerTypes::new).complete();
 	}
 }

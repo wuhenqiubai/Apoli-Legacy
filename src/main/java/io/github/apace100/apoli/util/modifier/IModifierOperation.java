@@ -14,7 +14,7 @@ public interface IModifierOperation {
         SerializableDataType.registry(IModifierOperation.class, ApoliRegistries.MODIFIER_OPERATION);
 
     SerializableDataType<IModifierOperation> DATA_TYPE = new SerializableDataType<>(IModifierOperation.class,
-        STRICT_DATA_TYPE::send, STRICT_DATA_TYPE::receive, (jsonElement -> {
+        STRICT_DATA_TYPE::send, STRICT_DATA_TYPE::receive, ((jsonElement, provider) -> {
         if(jsonElement.isJsonPrimitive()) {
             switch(jsonElement.getAsString().toLowerCase(Locale.ROOT)) {
                 case "addition":
@@ -25,7 +25,7 @@ public interface IModifierOperation {
                     return ModifierOperation.MULTIPLY_TOTAL_MULTIPLICATIVE;
             }
         }
-        return STRICT_DATA_TYPE.read(jsonElement);
+        return STRICT_DATA_TYPE.read(jsonElement, provider);
     }));
 
     /**
