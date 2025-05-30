@@ -106,7 +106,24 @@ public class ModifiedCraftingRecipe extends CustomRecipe {
         AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
         Player player = getPlayerFromHandler(handler);
         if(player != null && player.getServer() != null) {
-            return player.getServer().getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, player.level());
+            var recipeManager = player.getServer().getRecipeManager();
+
+            for (RecipeHolder<?> recipe : recipeManager.getRecipes()) {
+                var value = recipe.value();
+
+                if (value instanceof ModifiedCraftingRecipe)
+                    continue;
+
+                if (value.getType() != RecipeType.CRAFTING)
+                    continue;
+
+                if (!(value instanceof CraftingRecipe craftingRecipe))
+                    continue;
+
+                if (craftingRecipe.matches(input, player.level())) {
+                    return Optional.of((RecipeHolder<CraftingRecipe>) recipe);
+                }
+            }
         }
         return Optional.empty();
     }
