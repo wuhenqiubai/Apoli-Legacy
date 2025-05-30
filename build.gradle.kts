@@ -1,3 +1,5 @@
+import net.fabricmc.loom.task.RemapJarTask
+
 plugins {
 	id("fabric-loom") version "1.10-SNAPSHOT"
 	`maven-publish`
@@ -6,7 +8,8 @@ plugins {
 base {
 	archivesName.set(project.property("archives_base_name") as String)
 }
-version = project.property("mod_version") as String
+
+version = "${project.property("mod_version")}+${project.property("minecraft_version")}"
 group = project.property("maven_group") as String
 
 repositories {
@@ -77,9 +80,6 @@ dependencies {
 	include("io.github.ladysnake:PlayerAbilityLib:${property("pal_version")}")
 
 	implementation(project(":calio", "namedElements"))
-	include(project(":calio", "transformProductionFabric")) {
-		isTransitive = false
-	}
 
 	modApi("me.shedaniel.cloth:cloth-config-fabric:${project.property("clothconfig_version")}") {
 		exclude(group = "net.fabricmc.fabric-api")
@@ -92,6 +92,8 @@ dependencies {
 	// modImplementation "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 	// include "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 }
+
+project.tasks.getByName<RemapJarTask>("remapJar").nestedJars.from(project(":calio").tasks.getByName("remapJar"))
 
 tasks.withType<JavaCompile>().configureEach {
 	// ensure that the encoding is set to UTF-8, no matter what the system default is
@@ -131,7 +133,7 @@ tasks {
 
 	jar {
 		from("LICENSE") {
-			rename { "${it}_${project.base.archivesName}" }
+			rename { "${it}_${project.base.archivesName.get()}" }
 		}
 	}
 }
