@@ -51,7 +51,8 @@
       "badges": ["library"]
     },
     "lithium:options": {
-      "mixin.entity.collisions.suffocation": false
+      "mixin.entity.collisions.suffocation": false,
+      "mixin.collections.attributes": false
     }
   },
 
