@@ -20,6 +20,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
@@ -56,6 +57,10 @@ public class ItemConditions {
             .add("compare_to", SerializableDataTypes.INT),
             (data, stack) -> {
                 double armor = 0;
+                if(stack.getItem() instanceof ArmorItem) {
+                    ArmorItem item = (ArmorItem)stack.getItem();
+                    armor = item.getDefense();
+                }
                 if(stack.has(DataComponents.ATTRIBUTE_MODIFIERS)) {
                     var modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
                     for (ItemAttributeModifiers.Entry entry : modifiers.modifiers()) {
