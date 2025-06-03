@@ -39,7 +39,7 @@ public abstract class ClientPlayerInteractionManagerMixin {
             InteractionResult ar = p.executeAction(hitResult.getBlockPos(), hitResult.getDirection(), hand);
             if(ar.consumesAction() && !result.consumesAction()) {
                 result = ar;
-            } else if((ar instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && !(result instanceof InteractionResult.Success success1 && success1.swingSource() != InteractionResult.SwingSource.NONE)) {
+            } else if(ar.shouldSwing() && !result.shouldSwing()) {
                 result = ar;
             }
         }

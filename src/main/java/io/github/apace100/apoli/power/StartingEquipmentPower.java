@@ -5,7 +5,6 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
@@ -61,7 +60,7 @@ public class StartingEquipmentPower extends Power {
                     player.addItem(stack);
                 }
             } else if (!entity.level().isClientSide()) {
-                entity.spawnAtLocation((ServerLevel) entity.level(), stack);
+                entity.spawnAtLocation(stack);
             }
         });
         itemStacks.forEach(is -> {
@@ -70,7 +69,7 @@ public class StartingEquipmentPower extends Power {
                 Player player = (Player)entity;
                 player.addItem(copy);
             } else if (!entity.level().isClientSide()) {
-                entity.spawnAtLocation((ServerLevel) entity.level(), copy);
+                entity.spawnAtLocation(copy);
             }
         });
     }

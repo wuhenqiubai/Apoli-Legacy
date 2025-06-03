@@ -16,7 +16,7 @@ import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.vehicle.DismountHelper;
-import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
 import org.ladysnake.cca.api.v3.component.ComponentProvider;
 import org.spongepowered.asm.mixin.Mixin;
@@ -62,12 +62,12 @@ public abstract class LoginMixin {
 		component.getPowers().forEach(Power::onRemoved);
 	}
 
-	@WrapOperation(method = "respawn", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;findRespawnPositionAndUseSpawnBlock(ZLnet/minecraft/world/level/portal/TeleportTransition$PostTeleportTransition;)Lnet/minecraft/world/level/portal/TeleportTransition;"))
-	private TeleportTransition retryObstructedSpawnpointIfFailed(ServerPlayer instance, boolean useCharge, TeleportTransition.PostTeleportTransition postTeleportTransition, Operation<TeleportTransition> operation) {
-		TeleportTransition original = operation.call(instance, useCharge, postTeleportTransition);
+	@WrapOperation(method = "respawn", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;findRespawnPositionAndUseSpawnBlock(ZLnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)Lnet/minecraft/world/level/portal/DimensionTransition;"))
+	private DimensionTransition retryObstructedSpawnpointIfFailed(ServerPlayer instance, boolean keepInventory, DimensionTransition.PostDimensionTransition postDimensionTransition, Operation<DimensionTransition> operation) {
+		DimensionTransition original = operation.call(instance, keepInventory, postDimensionTransition);
 		if(!original.missingRespawnBlock()) {
 			if(PowerHolderComponent.hasPower(instance, ModifyPlayerSpawnPower.class)) {
-				return new TeleportTransition(instance.serverLevel(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, instance.level(), instance.blockPosition(), useCharge), Vec3.ZERO, 0f, 0f, postTeleportTransition);
+				return new DimensionTransition(instance.serverLevel(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, instance.level(), instance.blockPosition(), keepInventory), Vec3.ZERO, 0f, 0f, postDimensionTransition);
 			}
 		}
 		return original;

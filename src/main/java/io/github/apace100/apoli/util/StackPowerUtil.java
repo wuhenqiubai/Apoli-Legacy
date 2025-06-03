@@ -69,7 +69,7 @@ public final class StackPowerUtil {
         );
 
         public static final StreamCodec<FriendlyByteBuf, StackPower> STREAM_CODEC = StreamCodec.composite(
-            EquipmentSlot.STREAM_CODEC, power -> power.slot,
+            ByteBufCodecs.fromCodec(EquipmentSlot.CODEC), power -> power.slot,
             ResourceLocation.STREAM_CODEC, power -> power.powerId,
             ByteBufCodecs.BOOL, power -> power.isHidden,
             ByteBufCodecs.BOOL, power -> power.isNegative,
@@ -100,10 +100,10 @@ public final class StackPowerUtil {
 
         public static StackPower fromNbt(CompoundTag nbt) {
             StackPower stackPower = new StackPower();
-            stackPower.slot = EquipmentSlot.byName(nbt.getString("Slot").get());
-            stackPower.powerId = ResourceLocation.parse(nbt.getString("Power").get());
-            stackPower.isHidden = nbt.contains("Hidden") && nbt.getBoolean("Hidden").orElseThrow();
-            stackPower.isNegative = nbt.contains("Negative") && nbt.getBoolean("Negative").orElseThrow();
+            stackPower.slot = EquipmentSlot.byName(nbt.getString("Slot"));
+            stackPower.powerId = ResourceLocation.parse(nbt.getString("Power"));
+            stackPower.isHidden = nbt.contains("Hidden") && nbt.getBoolean("Hidden");
+            stackPower.isNegative = nbt.contains("Negative") && nbt.getBoolean("Negative");
             return stackPower;
         }
     }

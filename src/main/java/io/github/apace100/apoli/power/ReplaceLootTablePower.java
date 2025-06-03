@@ -64,16 +64,16 @@ public class ReplaceLootTablePower extends Power {
 
     public boolean doesApply(LootContext lootContext) {
         if(biEntityCondition != null
-            && !biEntityCondition.test(new Tuple<>(entity, lootContext.getOptionalParameter(LootContextParams.THIS_ENTITY)))) {
+            && !biEntityCondition.test(new Tuple<>(entity, lootContext.getParamOrNull(LootContextParams.THIS_ENTITY)))) {
             return false;
         }
         if(itemCondition != null
-            && lootContext.hasParameter(LootContextParams.TOOL)
-            && !itemCondition.test(lootContext.getOptionalParameter(LootContextParams.TOOL))) {
+            && lootContext.hasParam(LootContextParams.TOOL)
+            && !itemCondition.test(lootContext.getParamOrNull(LootContextParams.TOOL))) {
             return false;
         }
-        if(blockCondition != null && lootContext.hasParameter(LootContextParams.ORIGIN)) {
-            BlockPos blockPos = BlockPos.containing(lootContext.getOptionalParameter(LootContextParams.ORIGIN));
+        if(blockCondition != null && lootContext.hasParam(LootContextParams.ORIGIN)) {
+            BlockPos blockPos = BlockPos.containing(lootContext.getParamOrNull(LootContextParams.ORIGIN));
             BlockInWorld cbp = new BlockInWorld(lootContext.getLevel(), blockPos, true);
             if(!blockCondition.test(cbp)) {
                 return false;
@@ -202,23 +202,23 @@ public class ReplaceLootTablePower extends Power {
             }
             return map;
         }, jsonElement -> {
-            if(jsonElement.isJsonObject()) {
-                JsonObject jo = jsonElement.getAsJsonObject();
-                Map<String, ResourceLocation> map = new LinkedHashMap<>();
-                for(String s : jo.keySet()) {
-                    JsonElement ele = jo.get(s);
-                    if(!ele.isJsonPrimitive()) {
-                        continue;
-                    }
-                    JsonPrimitive jp = ele.getAsJsonPrimitive();
-                    if(!jp.isString()) {
-                        continue;
-                    }
-                    ResourceLocation id = ResourceLocation.parse(jp.getAsString());
-                    map.put(s, id);
+        if(jsonElement.isJsonObject()) {
+            JsonObject jo = jsonElement.getAsJsonObject();
+            Map<String, ResourceLocation> map = new LinkedHashMap<>();
+            for(String s : jo.keySet()) {
+                JsonElement ele = jo.get(s);
+                if(!ele.isJsonPrimitive()) {
+                    continue;
                 }
-                return map;
+                JsonPrimitive jp = ele.getAsJsonPrimitive();
+                if(!jp.isString()) {
+                    continue;
+                }
+                ResourceLocation id = ResourceLocation.parse(jp.getAsString());
+                map.put(s, id);
             }
-            throw new JsonParseException("Expected a JSON object");
-        });
+            return map;
+        }
+        throw new JsonParseException("Expected a JSON object");
+    });
 }

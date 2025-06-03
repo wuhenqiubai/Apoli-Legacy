@@ -46,7 +46,7 @@ public class ModifyCraftingPower extends ValueModifyingPower {
 
     public boolean doesApply(CraftingInput inventory, RecipeHolder<CraftingRecipe> recipe) {
         if(recipeIdentifier != null) {
-            if(!recipe.id().location().equals(recipeIdentifier)) {
+            if(!recipe.id().equals(recipeIdentifier)) {
                 return false;
             }
         }

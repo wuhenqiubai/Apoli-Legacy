@@ -107,7 +107,7 @@ public class RaycastAction {
             for(double current = 0; current < length; current += step) {
                 boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                 CommandSourceStack source = new CommandSourceStack(
-                    Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
+                    Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
                     origin.add(direction.scale(current)),
                     entity.getRotationVector(),
                     entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
@@ -126,7 +126,7 @@ public class RaycastAction {
         if(server != null) {
             boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
             CommandSourceStack source = new CommandSourceStack(
-                Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
+                Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
                 hitPosition,
                 entity.getRotationVector(),
                 entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,

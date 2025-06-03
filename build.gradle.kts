@@ -84,7 +84,7 @@ dependencies {
 
 	modImplementation("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
 
-	include(modApi("de.dafuqs:additionalentityattributes:${project.property("aea_version")}")!!)
+	include(modApi("maven.modrinth:AdditionalEntityAttributes:${project.property("aea_version")}")!!)
 	// modImplementation "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 	// include "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 }
@@ -98,10 +98,10 @@ tasks.withType<JavaCompile>().configureEach {
 	// If Javadoc is generated, this must be specified in that task too.
 	options.encoding = "UTF-8"
 
-	options.release = 17
+	options.release = 21
 }
 
-val targetJavaVersion = "17"
+val targetJavaVersion = "21"
 
 java {
 	val javaVersion = JavaVersion.toVersion(targetJavaVersion)

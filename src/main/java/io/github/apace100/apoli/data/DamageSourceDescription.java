@@ -99,7 +99,7 @@ public class DamageSourceDescription {
     }
 
     private void findBestMatchingDamageType(DamageSources damageSources) {
-        Optional<? extends Holder<DamageType>> bestMatchingDamageType = damageSources.damageTypes.listElements()
+        Optional<? extends Holder<DamageType>> bestMatchingDamageType = damageSources.damageTypes.holders()
                 .max(Comparator.comparingInt(this::getTagMatches));
         if(bestMatchingDamageType.isPresent()) {
             Holder<DamageType> bestMatch = bestMatchingDamageType.get();

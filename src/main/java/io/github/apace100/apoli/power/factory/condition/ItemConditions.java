@@ -17,10 +17,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.Tool;
@@ -47,7 +47,7 @@ public class ItemConditions {
                 condition -> condition.test(stack)
             )));
         register(new ConditionFactory<>(Apoli.identifier("food"), new SerializableData(),
-            (data, stack) -> stack.has(DataComponents.CONSUMABLE) && stack.has(DataComponents.FOOD)));
+            (data, stack) -> stack.has(DataComponents.FOOD)));
         register(new ConditionFactory<>(Apoli.identifier("ingredient"), new SerializableData()
             .add("ingredient", SerializableDataTypes.INGREDIENT),
             (data, stack) -> ((Ingredient)data.get("ingredient")).test(stack)));
@@ -97,7 +97,7 @@ public class ItemConditions {
             }));
         register(EnchantmentCondition.getFactory());
         register(new ConditionFactory<>(Apoli.identifier("meat"), new SerializableData(),
-            (data, stack) -> stack.has(DataComponents.CONSUMABLE) && stack.is(ItemTags.MEAT)));
+            (data, stack) -> stack.has(DataComponents.FOOD) && stack.is(ItemTags.MEAT)));
         register(new ConditionFactory<>(Apoli.identifier("nbt"), new SerializableData()
             .add("nbt", SerializableDataTypes.NBT), (data, stack) -> {
             CompoundTag oldTag = data.get("nbt");
@@ -112,7 +112,7 @@ public class ItemConditions {
             return convertedStack.getComponentsPatch().equals(stack.getComponentsPatch());
         }));
         register(new ConditionFactory<>(Apoli.identifier("fireproof"), new SerializableData(),
-            (data, stack) -> stack.has(DataComponents.DAMAGE_RESISTANT) && stack.get(DataComponents.DAMAGE_RESISTANT).types().equals(DamageTypeTags.IS_FIRE)));
+            (data, stack) -> stack.has(DataComponents.FIRE_RESISTANT)));
         register(new ConditionFactory<>(Apoli.identifier("enchantable"), new SerializableData(),
             (data, stack) -> !stack.isEnchantable()));
         register(new ConditionFactory<>(Apoli.identifier("power_count"), new SerializableData()
@@ -167,10 +167,9 @@ public class ItemConditions {
         register(new ConditionFactory<>(Apoli.identifier("is_equippable"), new SerializableData()
             .add("equipment_slot", SerializableDataTypes.EQUIPMENT_SLOT),
             (data, stack) -> {
-                if (!stack.has(DataComponents.EQUIPPABLE))
+                if (!(stack.getItem() instanceof Equipable equipable))
                     return false;
-                var equippable = stack.get(DataComponents.EQUIPPABLE);
-                return equippable.slot() == data.get("equipment_slot");
+                return equipable.getEquipmentSlot() == data.get("equipment_slot");
             }));
     }
 

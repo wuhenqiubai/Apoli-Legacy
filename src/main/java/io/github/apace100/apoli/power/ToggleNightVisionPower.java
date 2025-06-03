@@ -42,7 +42,7 @@ public class ToggleNightVisionPower extends NightVisionPower implements Active {
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
         if(tag instanceof ByteTag) {
-            isActive = ((ByteTag)tag).value() > 0;
+            isActive = ((ByteTag)tag).getAsByte() > 0;
         }
     }
 

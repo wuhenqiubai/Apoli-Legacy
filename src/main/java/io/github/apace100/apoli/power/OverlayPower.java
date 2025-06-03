@@ -1,10 +1,6 @@
 package io.github.apace100.apoli.power;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import io.github.apace100.apoli.Apoli;
@@ -15,39 +11,12 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 
-import java.util.OptionalInt;
-
 public class OverlayPower extends Power {
-    @Environment(EnvType.CLIENT)
-    private static final RenderPipeline.Snippet OVERLAY_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_SNIPPET)
-        .withFragmentShader("core/position_tex_color")
-        .withVertexShader("core/position_tex_color")
-        .withSampler("Sampler0")
-        .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
-        .withUniform("ColorModulator", UniformType.VEC4) // We don't need this, but also, for some reason it will spam the logs if we don't use it?
-        .withBlend(BlendFunction.PANORAMA)
-        .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-        .withDepthWrite(false)
-        .buildSnippet();
-
-    @Environment(EnvType.CLIENT)
-    private static final RenderPipeline OVERLAY_PIPELINE = RenderPipeline.builder(OVERLAY_SNIPPET)
-        .withLocation(Apoli.identifier("pipeline/overlay"))
-        .build();
-
-    @Environment(EnvType.CLIENT)
-    private static final RenderPipeline NAUSEA_PIPELINE = RenderPipeline.builder(OVERLAY_SNIPPET)
-        .withLocation(Apoli.identifier("pipeline/overlay_nausea"))
-        .withBlend(BlendFunction.ADDITIVE)
-        .build();
 
     private final ResourceLocation texture;
     private final float strength;
@@ -93,7 +62,7 @@ public class OverlayPower extends Power {
     }
 
     @Environment(EnvType.CLIENT)
-    public void render(GuiGraphics guiGraphics) {
+    public void render() {
         Minecraft client = Minecraft.getInstance();
         int i = client.getWindow().getGuiScaledWidth();
         int j = client.getWindow().getGuiScaledHeight();
@@ -125,38 +94,32 @@ public class OverlayPower extends Power {
                 break;
         }
 
-        var renderTarget = client.getMainRenderTarget();
-        var encoder = RenderSystem.getDevice().createCommandEncoder();
-
-        guiGraphics.blit(location -> RenderType.guiNauseaOverlay(), texture, 0, 0, 0f, 0f, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), ARGB.colorFromFloat(a, g, h, k));
-        Tesselator tessellator = Tesselator.getInstance();
-        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bufferBuilder.addVertex(m, n + l, -90.0f).setUv(0.0F, 1.0F).setColor(g, h, k, a);
-        bufferBuilder.addVertex(m + e, n + l, -90.0f).setUv(1.0F, 1.0F).setColor(g, h, k, a);
-        bufferBuilder.addVertex(m + e, n, -90.0f).setUv(1.0F, 0.0F).setColor(g, h, k, a);
-        bufferBuilder.addVertex(m, n, -90.0f).setUv(0.0F, 0.0F).setColor(g, h, k, a);
-
-        try (MeshData meshData = bufferBuilder.buildOrThrow()) {
-            var vertexBuffer = DefaultVertexFormat.POSITION_TEX.uploadImmediateVertexBuffer(meshData.vertexBuffer());
-            var indexBufferStorage = RenderSystem.getSequentialBuffer(meshData.drawState().mode());
-            var indexBuffer = indexBufferStorage.getBuffer(meshData.drawState().indexCount());
-            var indexType = indexBufferStorage.type();
-            var gpuTexture = client.getTextureManager().getTexture(texture).getTexture();
-
-            try (RenderPass pass = encoder.createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty())) {
-                pass.bindSampler("Sampler0", gpuTexture);
-                pass.setVertexBuffer(0, vertexBuffer);
-                pass.setIndexBuffer(indexBuffer, indexType);
-
-                if (drawMode == DrawMode.NAUSEA) {
-                    pass.setPipeline(NAUSEA_PIPELINE);
-                } else {
-                    pass.setPipeline(OVERLAY_PIPELINE);
-                }
-
-                pass.drawIndexed(0, meshData.drawState().indexCount());
-            }
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.enableBlend();
+        switch (drawMode) {
+            case NAUSEA:
+                RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
+                break;
+            case TEXTURE: default:
+                RenderSystem.defaultBlendFunc();
+                break;
         }
+        RenderSystem.setShaderColor(g, h, k, a);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, texture);
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferBuilder.addVertex(m, n + l, -90.0f).setUv(0.0F, 1.0F);
+        bufferBuilder.addVertex(m + e, n + l, -90.0f).setUv(1.0F, 1.0F);
+        bufferBuilder.addVertex(m + e, n, -90.0f).setUv(1.0F, 0.0F);
+        bufferBuilder.addVertex(m, n, -90.0f).setUv(0.0F, 0.0F);
+        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableBlend();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
     }
 
     public static PowerFactory createFactory() {

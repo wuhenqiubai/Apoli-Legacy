@@ -28,7 +28,7 @@ public class ActionType<T> {
 
     public ActionFactory<T>.Instance read(RegistryFriendlyByteBuf buf) {
         ResourceLocation type = buf.readResourceLocation();
-        ActionFactory<T> actionFactory = actionFactoryRegistry.getValue(type);
+        ActionFactory<T> actionFactory = actionFactoryRegistry.get(type);
         if(actionFactory == null) {
             throw new JsonSyntaxException(actionTypeName + " \"" + type + "\" was not registered.");
         }

@@ -79,13 +79,13 @@ public class FireProjectilePower extends ActiveCooldownPower {
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
         if(tag instanceof LongTag) {
-            lastUseTime = ((LongTag)tag).value();
+            lastUseTime = ((LongTag)tag).getAsLong();
         }
         else {
-            lastUseTime = ((CompoundTag)tag).getLong("LastUseTime").orElseThrow();
-            shotProjectiles = ((CompoundTag)tag).getInt("ShotProjectiles").orElseThrow();
-            finishedStartDelay = ((CompoundTag)tag).getBoolean("FinishedStartDelay").orElseThrow();
-            isFiringProjectiles = ((CompoundTag)tag).getBoolean("IsFiringProjectiles").orElseThrow();
+            lastUseTime = ((CompoundTag)tag).getLong("LastUseTime");
+            shotProjectiles = ((CompoundTag)tag).getInt("ShotProjectiles");
+            finishedStartDelay = ((CompoundTag)tag).getBoolean("FinishedStartDelay");
+            isFiringProjectiles = ((CompoundTag)tag).getBoolean("IsFiringProjectiles");
         }
     }
 

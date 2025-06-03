@@ -51,7 +51,7 @@ public class BiomeConditions {
             }));
         register(new ConditionFactory<>(Apoli.identifier("precipitation"), new SerializableData()
             .add("precipitation", SerializableDataType.enumValue(Biome.Precipitation.class)),
-            (data, biome) -> biome.value().getPrecipitationAt(new BlockPos(0, 64, 0), 63).equals(data.get("precipitation"))));
+            (data, biome) -> biome.value().getPrecipitationAt(new BlockPos(0, 64, 0)).equals(data.get("precipitation"))));
         register(new ConditionFactory<>(Apoli.identifier("in_tag"), new SerializableData()
             .add("tag", SerializableDataTypes.BIOME_TAG),
             (data, biome) -> {

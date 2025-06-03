@@ -106,7 +106,7 @@ public class DamageOverTimePower extends Power {
         if(protectingEnchantment == null) {
             return 0;
         } else {
-            Map<EquipmentSlot, ItemStack> enchantedItems = this.entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getValue(protectingEnchantment).getSlotItems(entity);
+            Map<EquipmentSlot, ItemStack> enchantedItems = this.entity.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(protectingEnchantment).value().getSlotItems(entity);
             Iterable<ItemStack> iterable = enchantedItems.values();
             int i = 0;
             int items = 0;
@@ -131,8 +131,8 @@ public class DamageOverTimePower extends Power {
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
         if(tag instanceof CompoundTag nbt) {
-            inDamageTicks = nbt.getInt("InDamage").get();
-            outOfDamageTicks = nbt.getInt("OutDamage").get();
+            inDamageTicks = nbt.getInt("InDamage");
+            outOfDamageTicks = nbt.getInt("OutDamage");
         }
     }
 

@@ -385,7 +385,7 @@ public class InventoryUtil {
 
     private static void deduplicateSlots(Entity entity, Set<Integer> slots) {
         if(entity instanceof Player player) {
-            int selectedSlot = player.getInventory().getSelectedSlot();
+            int selectedSlot = player.getInventory().selected;
             Integer hotbarSlot = SlotRanges.nameToIds("hotbar." + selectedSlot).slots().getInt(0);
             if(slots.contains(hotbarSlot)) {
                 Integer mainHandSlot = SlotRanges.nameToIds("weapon.mainhand").slots().getInt(0);

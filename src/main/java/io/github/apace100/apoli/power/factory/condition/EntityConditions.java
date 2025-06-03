@@ -23,6 +23,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -88,7 +89,7 @@ public class EntityConditions {
             ((Comparison)data.get("comparison")).compare(entity.level().getDayTime() % 24000L, data.getInt("compare_to"))));
         register(new ConditionFactory<>(Apoli.identifier("fall_flying"), new SerializableData(), (data, entity) -> entity instanceof LivingEntity && ((LivingEntity) entity).isFallFlying()));
         register(new ConditionFactory<>(Apoli.identifier("exposed_to_sun"), new SerializableData(), (data, entity) -> {
-            if (entity.level().isBrightOutside() && !((EntityAccessor) entity).callIsInRain()) {
+            if (entity.level().isDay() && !((EntityAccessor) entity).callIsInRain()) {
                 float f = entity.getLightLevelDependentMagicValue();
                 BlockPos blockPos = entity.getVehicle() instanceof Boat ? (BlockPos.containing(entity.getX(), (double) Math.round(entity.getY()), entity.getZ())).above() : BlockPos.containing(entity.getX(), (double) Math.round(entity.getY()), entity.getZ());
                 return f > 0.5F && entity.level().canSeeSky(blockPos);
@@ -114,7 +115,7 @@ public class EntityConditions {
             .add("max_duration", SerializableDataTypes.INT, Integer.MAX_VALUE),
             (data, entity) -> {
                 MobEffect effect = data.get("effect");
-                var effectHolder = entity.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).wrapAsHolder(effect);
+                var effectHolder = entity.registryAccess().lookupOrThrow(Registries.MOB_EFFECT).getOrThrow(BuiltInRegistries.MOB_EFFECT.getResourceKey(effect).orElseThrow());
                 if(entity instanceof LivingEntity living) {
                     if (living.hasEffect(effectHolder)) {
                         MobEffectInstance instance = living.getEffect(effectHolder);
@@ -256,10 +257,9 @@ public class EntityConditions {
             .add("condition", ApoliDataTypes.BIOME_CONDITION, null),
             (data, entity) -> {
                 Holder<Biome> biomeEntry = entity.level().getBiome(entity.blockPosition());
-                Biome biome = biomeEntry.value();
                 ConditionFactory<Holder<Biome>>.Instance condition = data.get("condition");
                 if(data.isPresent("biome") || data.isPresent("biomes")) {
-                    ResourceLocation biomeId = entity.level().registryAccess().lookupOrThrow(Registries.BIOME).getKey(biome);
+                    ResourceLocation biomeId = biomeEntry.unwrapKey().orElseThrow().location();
                     if(data.isPresent("biome") && biomeId.equals(data.getId("biome"))) {
                         return condition == null || condition.test(biomeEntry);
                     }
@@ -283,7 +283,7 @@ public class EntityConditions {
                 if(server != null) {
                     boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
+                        Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
@@ -307,7 +307,7 @@ public class EntityConditions {
             (data, entity) -> {
                 MinecraftServer server = entity.level().getServer();
                 if (server != null) {
-                    LootItemCondition lootCondition = server.registryAccess().lookupOrThrow(Registries.PREDICATE).getValue((ResourceLocation) data.get("predicate"));
+                    LootItemCondition lootCondition = server.registryAccess().lookupOrThrow(Registries.PREDICATE).getOrThrow(ResourceKey.create(Registries.PREDICATE, (ResourceLocation) data.get("predicate"))).value();
                     if (lootCondition != null) {
                         LootParams lootContextParameterSet = new LootParams.Builder((ServerLevel) entity.level())
                                 .withParameter(LootContextParams.ORIGIN, entity.position())

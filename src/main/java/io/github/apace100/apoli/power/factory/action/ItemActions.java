@@ -68,7 +68,7 @@ public class ItemActions {
                 MinecraftServer server = worldAndStack.getA().getServer();
                 if(server != null) {
                     ResourceLocation id = data.getId("modifier");
-                    LootItemFunction lootFunction = server.registryAccess().get(Registries.ITEM_MODIFIER).orElseThrow().value().getValue(id);
+                    LootItemFunction lootFunction = server.registryAccess().lookupOrThrow(Registries.ITEM_MODIFIER).getOrThrow(ResourceKey.create(Registries.ITEM_MODIFIER, id)).value();
                     if (lootFunction == null) {
                         Apoli.LOGGER.info("Unknown item modifier used in `modify` action: " + id);
                         return;
@@ -111,7 +111,7 @@ public class ItemActions {
             (data, worldAndStack) -> {
                 String nbtString = data.get("nbt");
                 try {
-                    CompoundTag oldTag = TagParser.create(NbtOps.INSTANCE).parseFully(new StringReader(nbtString)).asCompound().get();
+                    CompoundTag oldTag = new TagParser(new StringReader(nbtString)).readStruct();
                     CompoundTag recreatedTag = new CompoundTag();
                     recreatedTag.putString("id", BuiltInRegistries.ITEM.getKey(worldAndStack.getB().getItem()).toString());
                     recreatedTag.putInt("Count", worldAndStack.getB().getCount());

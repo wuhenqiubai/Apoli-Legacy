@@ -56,6 +56,6 @@ public class VariableIntPower extends Power {
 
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
-        currentValue = ((IntTag)tag).intValue();
+        currentValue = ((IntTag)tag).getAsInt();
     }
 }

@@ -53,16 +53,16 @@ public class LootTableMixin implements IdentifiedLootTable {
         if(((ReplacingLootContext)context).isReplaced((LootTable)(Object)this)) {
             return;
         }
-        if(context.hasParameter(LootContextParams.THIS_ENTITY)) {
+        if(context.hasParam(LootContextParams.THIS_ENTITY)) {
             var type = ((ReplacingLootContext)context).getType();
-            Entity entity = context.getOptionalParameter(LootContextParams.THIS_ENTITY);
+            Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
             if(type == LootContextParamSets.FISHING) {
                 if(entity instanceof FishingHook bobber) {
                     entity = bobber.getPlayerOwner();
                 }
             } else if(type == LootContextParamSets.ENTITY) {
-                if(context.hasParameter(LootContextParams.DIRECT_ATTACKING_ENTITY)) { // TODO: this used to be KILLER_ENTITY
-                    entity = context.getOptionalParameter(LootContextParams.DIRECT_ATTACKING_ENTITY);
+                if(context.hasParam(LootContextParams.DIRECT_ATTACKING_ENTITY)) { // TODO: this used to be KILLER_ENTITY
+                    entity = context.getParamOrNull(LootContextParams.DIRECT_ATTACKING_ENTITY);
                 }
             } else if(type == LootContextParamSets.PIGLIN_BARTER) {
                 if(entity instanceof Piglin piglin) {
@@ -84,7 +84,7 @@ public class LootTableMixin implements IdentifiedLootTable {
             LootTable replacement = null;
             for (ReplaceLootTablePower power : powers) {
                 ResourceLocation id = power.getReplacement(apoli$id);
-                replacement = apoli$lootManager.getOrThrow(ResourceKey.create(Registries.LOOT_TABLE, id)).value();
+                replacement = apoli$lootManager.lookupOrThrow(Registries.LOOT_TABLE).getOrThrow(ResourceKey.create(Registries.LOOT_TABLE, id)).value();
                 ReplaceLootTablePower.addToStack(replacement);
             }
             ((ReplacingLootContext)context).setReplaced((LootTable)(Object)this);

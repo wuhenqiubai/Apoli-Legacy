@@ -24,7 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.ARGB;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -183,7 +183,7 @@ public class EntityActions {
                 if(data.isPresent("effects")) {
                     effects.addAll(data.get("effects"));
                 }
-                areaEffectCloudEntity.setParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, ARGB.opaque(PotionContents.getColorOptional(effects).orElse(PotionContents.BASE_POTION_COLOR))));
+                areaEffectCloudEntity.setParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, FastColor.ARGB32.opaque(PotionContents.getColorOptional(effects).orElse(-13083194))));
                 effects.forEach(areaEffectCloudEntity::addEffect);
 
                 entity.level().addFreshEntity(areaEffectCloudEntity);
@@ -198,8 +198,7 @@ public class EntityActions {
                     boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                     CommandSourceStack source = new CommandSourceStack(
                         Apoli.config.executeCommand.showOutput && validOutput ?
-                            entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource()
-                                : CommandSource.NULL
+                            entity
                         : CommandSource.NULL,
                         entity.position(),
                         entity.getRotationVector(),

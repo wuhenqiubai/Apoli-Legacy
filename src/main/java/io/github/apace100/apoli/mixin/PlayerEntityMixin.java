@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.InteractionHand;
@@ -88,7 +87,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                 }
                 if(ar.consumesAction() && !result.consumesAction()) {
                     result = ar;
-                } else if((ar instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && (!(result instanceof InteractionResult.Success success1 && success1.swingSource() != InteractionResult.SwingSource.NONE))) {
+                } else if(ar.shouldSwing() && !result.shouldSwing()) {
                     result = ar;
                 }
             }
@@ -97,7 +96,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
             } else {
                 apoli$CachedPriorityZeroResult = InteractionResult.PASS;
                 if(result != InteractionResult.PASS) {
-                    if(result instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) {
+                    if(result.shouldSwing()) {
                         this.swing(hand);
                     }
                     cir.setReturnValue(result);
@@ -107,8 +106,8 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         }
     }
 
-    @Inject(method = "hurtServer", at = @At(value = "RETURN", ordinal = 3), cancellable = true)
-    private void allowDamageIfModifyingPowersExist(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurt", at = @At(value = "RETURN", ordinal = 3), cancellable = true)
+    private void allowDamageIfModifyingPowersExist(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
 
         boolean hasModifyingPower = false;
 
@@ -118,7 +117,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
         }
 
         hasModifyingPower |= PowerHolderComponent.hasPower(this, ModifyDamageTakenPower.class, mdtp -> mdtp.doesApply(source, amount));
-        if (hasModifyingPower) cir.setReturnValue(super.hurtServer(level, source, amount));
+        if (hasModifyingPower) cir.setReturnValue(super.hurt(source, amount));
 
     }
 
@@ -148,7 +147,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                     }
                     if(ar.consumesAction() && !result.consumesAction()) {
                         result = ar;
-                    } else if((ar instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && (!(result instanceof InteractionResult.Success success1 &&  success1.swingSource() != InteractionResult.SwingSource.NONE))) {
+                    } else if(ar.shouldSwing() && !result.shouldSwing()) {
                         result = ar;
                     }
                 }
@@ -158,11 +157,11 @@ public abstract class PlayerEntityMixin extends LivingEntity implements Nameable
                 }
             }
         }
-        if((custom instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE)) {
+        if(custom.shouldSwing()) {
             this.swing(hand);
         }
         if(original.consumesAction() && !custom.consumesAction()) {
-        } else if((original instanceof InteractionResult.Success success && success.swingSource() != InteractionResult.SwingSource.NONE) && (!(custom instanceof InteractionResult.Success success1 && success1.swingSource() != InteractionResult.SwingSource.NONE))) {
+        } else if(original.shouldSwing() && !custom.shouldSwing()) {
         } else {
             cir.setReturnValue(custom);
         }

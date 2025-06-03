@@ -67,7 +67,7 @@ public class StackingStatusEffectPower extends StatusEffectPower {
 
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
-        currentStack = ((IntTag)tag).value();
+        currentStack = ((IntTag)tag).getAsInt();
     }
 
     public static PowerFactory createFactory() {

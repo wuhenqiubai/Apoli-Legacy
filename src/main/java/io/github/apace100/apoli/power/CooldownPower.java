@@ -63,7 +63,7 @@ public class CooldownPower extends Power implements HudRendered {
 
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
-        lastUseTime = ((LongTag)tag).value();
+        lastUseTime = ((LongTag)tag).getAsLong();
     }
 
     @Override

@@ -193,15 +193,15 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
             ListTag powerList = (ListTag) compoundTag.get("Powers");
             if(powerList != null) {
                 for (int i = 0; i < powerList.size(); i++) {
-                    CompoundTag powerTag = powerList.getCompound(i).orElseThrow();
-                    ResourceLocation powerTypeId = ResourceLocation.tryParse(powerTag.getString("Type").orElseThrow());
+                    CompoundTag powerTag = powerList.getCompound(i);
+                    ResourceLocation powerTypeId = ResourceLocation.tryParse(powerTag.getString("Type"));
                     if(callPowerOnAdd && PowerTypeRegistry.isDisabled(powerTypeId)) {
                         continue;
                     }
                     ListTag sources = (ListTag) powerTag.get("Sources");
                     List<ResourceLocation> list = new LinkedList<>();
                     if(sources != null) {
-                        sources.forEach(nbtElement -> list.add(ResourceLocation.tryParse(nbtElement.asString().orElseThrow())));
+                        sources.forEach(nbtElement -> list.add(ResourceLocation.tryParse(nbtElement.getAsString())));
                     }
                     PowerType<?> type = PowerTypeRegistry.get(powerTypeId);
                     powerSources.put(type, list);

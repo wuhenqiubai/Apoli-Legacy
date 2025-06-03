@@ -253,9 +253,10 @@ public class PowerCommand {
 			List<Component> powerSources = new LinkedList<>();
             powerHolderComponent.getSources(powerType).forEach(powerSource -> powerSources.add(Component.nullToEmpty(powerSource.toString())));
 
-            HoverEvent powerSourcesOnHover = new HoverEvent.ShowText(
-                Component.translatable(powerSources.size() == 1 ? "commands.apoli.list.source" : "commands.apoli.list.sources", ComponentUtils.formatList(powerSources, Component.nullToEmpty(", ")))
-            );
+            HoverEvent powerSourcesOnHover = new HoverEvent(
+				HoverEvent.Action.SHOW_TEXT,
+				Component.translatable(powerSources.size() == 1 ? "commands.apoli.list.source" : "commands.apoli.list.sources", ComponentUtils.formatList(powerSources, Component.nullToEmpty(", ")))
+			);
 
 			Component power = Component.literal(powerType.getIdentifier().toString()).setStyle(Style.EMPTY.withHoverEvent(powerSourcesOnHover));
 			powers.add(power);

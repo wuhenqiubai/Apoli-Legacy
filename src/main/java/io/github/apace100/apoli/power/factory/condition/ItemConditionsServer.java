@@ -5,7 +5,8 @@ import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.calio.data.SerializableData;
 import net.minecraft.core.Registry;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipePropertySet;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.level.Level;
 
 public class ItemConditionsServer {
@@ -18,7 +19,13 @@ public class ItemConditionsServer {
                 if(world == null) {
                     return false;
                 }
-                return world.recipeAccess().propertySet(RecipePropertySet.FURNACE_INPUT).test(stack);
+                var optional = world.getRecipeManager()
+                    .getRecipeFor(
+                        RecipeType.SMELTING,
+                        new SingleRecipeInput(stack),
+                        world
+                    );
+                return optional.isPresent();
             }));
     }
 

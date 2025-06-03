@@ -110,7 +110,7 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		BlockActions.register();
 		BiEntityActions.register();
 
-		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new GlobalPowerSetLoader());
+		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(Apoli.identifier("global_powers"), GlobalPowerSetLoader::new);
 		ResourceConditions.register(ApoliResourceConditions.ANY_NAMESPACE_LOADED);
 		ResourceConditions.register(ApoliResourceConditions.ALL_NAMESPACES_LOADED);
 

@@ -71,7 +71,7 @@ public class HungerManagerMixin {
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private void cachePlayer(ServerPlayer player, CallbackInfo ci) {
+    private void cachePlayer(Player player, CallbackInfo ci) {
         this.player = player;
     }
 }

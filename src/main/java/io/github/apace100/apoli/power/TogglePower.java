@@ -65,7 +65,7 @@ public class TogglePower extends Power implements Active {
 
     @Override
     public void fromTag(Tag tag, HolderLookup.Provider provider) {
-        isActive = ((ByteTag)tag).value() > 0;
+        isActive = ((ByteTag)tag).getAsByte() > 0;
     }
 
     private Key key;

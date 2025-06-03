@@ -12,6 +12,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.PostChain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -53,10 +55,9 @@ public abstract class GameRendererMixin {
     private boolean effectActive;
     @Shadow @Final private ResourceManager resourceManager;
 
-    @Shadow protected abstract void setPostEffect(ResourceLocation postEffectId);
+    @Shadow protected abstract void loadEffect(ResourceLocation resourceLocation);
 
-    @Shadow public abstract void clearPostEffect();
-
+    @Shadow @Nullable private PostChain postEffect;
     @Unique
     private ResourceLocation currentlyLoadedShader;
 
@@ -65,7 +66,7 @@ public abstract class GameRendererMixin {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
             ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(this.resourceManager.getResource(shaderLoc).isPresent()) {
-                this.setPostEffect(shaderLoc);
+                this.loadEffect(shaderLoc);
                 currentlyLoadedShader = shaderLoc;
             }
         });
@@ -77,13 +78,16 @@ public abstract class GameRendererMixin {
             ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(currentlyLoadedShader != shaderLoc) {
                 if(this.resourceManager.getResource(shaderLoc).isPresent()) {
-                    this.setPostEffect(shaderLoc);
+                    this.loadEffect(shaderLoc);
                     currentlyLoadedShader = shaderLoc;
                 }
             }
         });
         if(!PowerHolderComponent.hasPower(minecraft.getCameraEntity(), ShaderPower.class) && currentlyLoadedShader != null) {
-            this.clearPostEffect();
+            if(this.postEffect != null) {
+                this.postEffect.close();
+                this.postEffect = null;
+            }
             this.effectActive = false;
             currentlyLoadedShader = null;
         }
@@ -104,7 +108,7 @@ public abstract class GameRendererMixin {
                 return false;
             }
             return true;
-        }, p -> p.render(guiGraphics));
+        }, p -> p.render());
     }
 
     @Inject(at = @At("HEAD"), method = "togglePostEffect", cancellable = true)

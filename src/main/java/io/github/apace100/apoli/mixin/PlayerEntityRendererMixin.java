@@ -11,7 +11,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
-import net.minecraft.util.ARGB;
+import net.minecraft.util.FastColor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -29,7 +29,7 @@ public class PlayerEntityRendererMixin {
             float green = modelColorPowers.stream().map(ModelColorPower::getGreen).reduce((a, b) -> a * b).get();
             float blue = modelColorPowers.stream().map(ModelColorPower::getBlue).reduce((a, b) -> a * b).get();
             float alpha = modelColorPowers.stream().map(ModelColorPower::getAlpha).min(Float::compare).get();
-            modelPart.render(matrices, vertices, light, overlay, ARGB.colorFromFloat(alpha, red, green, blue));
+            modelPart.render(matrices, vertices, light, overlay, FastColor.ARGB32.colorFromFloat(alpha, red, green, blue));
             return;
         }
 

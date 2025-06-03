@@ -28,7 +28,7 @@ public class ConditionType<T> {
 
     public ConditionFactory<T>.Instance read(RegistryFriendlyByteBuf buf) {
         ResourceLocation type = ResourceLocation.tryParse(buf.readUtf(32767));
-        ConditionFactory<T> conditionFactory = conditionRegistry.getValue(type);
+        ConditionFactory<T> conditionFactory = conditionRegistry.get(type);
         return conditionFactory.read(buf);
     }
 

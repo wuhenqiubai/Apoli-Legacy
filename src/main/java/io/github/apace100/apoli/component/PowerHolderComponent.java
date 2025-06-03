@@ -5,14 +5,10 @@ import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.integration.ModifyValueCallback;
 import io.github.apace100.apoli.networking.SyncPowerPacket;
 import io.github.apace100.apoli.power.*;
-import io.github.apace100.apoli.util.ApoliLivingEntityRenderState;
 import io.github.apace100.apoli.util.modifier.Modifier;
 import io.github.apace100.apoli.util.modifier.ModifierUtil;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -113,21 +109,8 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
         return Lists.newArrayList();
     }
 
-    @Environment(EnvType.CLIENT)
-    static <T extends Power> List<T> getPowers(LivingEntityRenderState state, Class<T> powerClass) {
-        if (((ApoliLivingEntityRenderState) state).apoli$getPowerHolder() == null)
-            return Lists.newArrayList();
-
-        return ((ApoliLivingEntityRenderState) state).apoli$getPowerHolder().getPowers(powerClass);
-    }
-
     static <T extends Power> boolean hasPower(Entity entity, Class<T> powerClass) {
         return hasPower(entity, powerClass, null);
-    }
-
-    @Environment(EnvType.CLIENT)
-    static <T extends Power> boolean hasPower(LivingEntityRenderState state, Class<T> powerClass) {
-        return hasPower(state, powerClass, null);
     }
 
     static <T extends Power> boolean hasPower(Entity entity, Class<T> powerClass, Predicate<T> powerFilter) {
@@ -137,16 +120,6 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
                     (powerFilter == null || powerFilter.test((T)p)));
         }
         return false;
-    }
-
-    @Environment(EnvType.CLIENT)
-    static <T extends Power> boolean hasPower(LivingEntityRenderState state, Class<T> powerClass, Predicate<T> powerFilter) {
-        if (((ApoliLivingEntityRenderState) state).apoli$getPowerHolder() == null)
-            return false;
-
-        return ((ApoliLivingEntityRenderState) state).apoli$getPowerHolder().getPowers().stream()
-            .anyMatch(p -> powerClass.isAssignableFrom(p.getClass()) && p.isActive() &&
-                (powerFilter == null || powerFilter.test((T) p)));
     }
 
     static <T extends ValueModifyingPower> float modify(Entity entity, Class<T> powerClass, float baseValue) {

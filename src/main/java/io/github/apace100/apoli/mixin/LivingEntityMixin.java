@@ -19,22 +19,23 @@ import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.damagesource.CombatRules;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeMap;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +48,10 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 @Mixin(LivingEntity.class)
@@ -78,11 +82,9 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         SyncStatusEffectsUtil.sendStatusEffectUpdatePacket((LivingEntity)(Object)this, SyncStatusEffectsUtil.UpdateType.UPGRADE, effectInstance);
     }
 
-    @Inject(method = "onEffectsRemoved", at = @At("TAIL"))
-    private void updateStatusEffectWhenRemoved(Collection<MobEffectInstance> effects, CallbackInfo ci) {
-        for (MobEffectInstance effectInstance : effects) {
-            SyncStatusEffectsUtil.sendStatusEffectUpdatePacket((LivingEntity)(Object)this, SyncStatusEffectsUtil.UpdateType.REMOVE, effectInstance);
-        }
+    @Inject(method = "onEffectRemoved", at = @At("TAIL"))
+    private void updateStatusEffectWhenRemoved(MobEffectInstance effectInstance, CallbackInfo ci) {
+        SyncStatusEffectsUtil.sendStatusEffectUpdatePacket((LivingEntity)(Object)this, SyncStatusEffectsUtil.UpdateType.REMOVE, effectInstance);
     }
 
     @Inject(method = "removeAllEffects", at = @At("RETURN"))
@@ -117,7 +119,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     private void syncAttacker(LivingEntity attacker, CallbackInfo ci) {
         if(!level().isClientSide) {
             for (ServerPlayer player : PlayerLookup.tracking(this)) {
-                ServerPlayNetworking.send(player, new SetAttackerPacket(getId(), this.lastHurtByMob == null ? Optional.empty() : Optional.of(this.lastHurtByMob.getEntity(this.level(), LivingEntity.class).getId())));
+                ServerPlayNetworking.send(player, new SetAttackerPacket(getId(), this.lastHurtByMob == null ? Optional.empty() : Optional.of(this.lastHurtByMob.getId())));
             }
         }
     }
@@ -174,7 +176,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     private Optional<Boolean> apoli$shouldApplyArmor;
     private Optional<Boolean> apoli$shouldDamageArmor;
 
-    @ModifyVariable(method = "hurtServer", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "hurt", at = @At("HEAD"), argsOnly = true)
     private float modifyDamageTaken(float originalValue, @Local(argsOnly = true) DamageSource source) {
         float newValue = originalValue;
         LivingEntity thisAsLiving = (LivingEntity)(Object)this;
@@ -235,15 +237,15 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         return !apoli$shouldDamageArmor.isPresent() || apoli$shouldDamageArmor.get();
     }
 
-    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"), cancellable = true)
-    private void preventHitIfDamageIsZero(ServerLevel level, DamageSource damageSource, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isSleeping()Z"), cancellable = true)
+    private void preventHitIfDamageIsZero(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if(apoli$hasModifiedDamage && amount <= 0f) {
             cir.setReturnValue(false);
         }
     }
 
-    @Inject(method = "hurtServer", at = @At("RETURN"))
-    private void invokeHitActions(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurt", at = @At("RETURN"))
+    private void invokeHitActions(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if(cir.getReturnValue()) {
             Entity attacker = source.getEntity();
             if(attacker != null) {
@@ -258,18 +260,18 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;die(Lnet/minecraft/world/damagesource/DamageSource;)V"))
-    private void invokeKillAction(ServerLevel level, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;die(Lnet/minecraft/world/damagesource/DamageSource;)V"))
+    private void invokeKillAction(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         PowerHolderComponent.getPowers(source.getEntity(), SelfActionOnKillPower.class).forEach(p -> p.onKill((LivingEntity)(Object)this, source, amount));
     }
 
-    /*@WrapOperation(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isInWaterRainOrBubble()Z"))
+    @WrapOperation(method = "baseTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;isInWaterRainOrBubble()Z"))
     private boolean preventExtinguishingFromSwimming(LivingEntity livingEntity, Operation<Boolean> original) {
         if(PowerHolderComponent.hasPower(livingEntity, SwimmingPower.class) && livingEntity.isSwimming() && !(getFluidHeight(FluidTags.WATER) > 0)) {
             return false;
         }
         return original.call(livingEntity);
-    }*/
+    }
 
     @Unique
     private boolean prevPowderSnowState = false;
@@ -360,7 +362,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     }
 
     // SLOW_FALLING
-    @ModifyReturnValue(at = @At("RETURN"), method = "getEffectiveGravity")
+    @ModifyVariable(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;getFluidState(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/material/FluidState;"), method = "travel", ordinal = 0)
     public double modifyFallingVelocity(double in) {
         if(this.getDeltaMovement().y > 0D) {
             return in;
@@ -385,7 +387,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    @ModifyExpressionValue(method = "travelInAir", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;getFriction()F", ordinal = 0))
+    @ModifyExpressionValue(method = "travel", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;getFriction()F", ordinal = 0))
     private float modifySlipperiness(float original) {
         return PowerHolderComponent.modify(this, ModifySlipperinessPower.class, original, p -> p.doesApply(level(), getBlockPosBelowThatAffectsMyMovement()));
     }
@@ -401,8 +403,8 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     @Unique
     private float cachedDamageAmount;
 
-    @Inject(method = "hurtServer", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;checkTotemDeathProtection(Lnet/minecraft/world/damagesource/DamageSource;)Z"))
-    private void cacheDamageAmount(ServerLevel level, DamageSource damageSource, float amount, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(method = "hurt", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;checkTotemDeathProtection(Lnet/minecraft/world/damagesource/DamageSource;)Z"))
+    private void cacheDamageAmount(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         this.cachedDamageAmount = amount;
     }
 
@@ -424,7 +426,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
 
     @Shadow public abstract double getAttributeValue(Holder<Attribute> attribute);
 
-    @Shadow private @Nullable EntityReference<LivingEntity> lastHurtByMob;
+    @Shadow @Nullable private LivingEntity lastHurtByMob;
 
     @Inject(method = "getFlyingSpeed", at = @At("RETURN"), cancellable = true)
     private void modifyFlySpeed(CallbackInfoReturnable<Float> cir) {
@@ -462,7 +464,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         InventoryUtil.forEachStack(this, stack -> stack.setEntityRepresentation(this));
     }
 
-    @Inject(method = "canEquipWithDispenser", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "canEquipWithDispenser", at = @At("HEAD"), cancellable = true)
     private void preventArmorDispensing(ItemStack stack, CallbackInfoReturnable<Boolean> info) {
         Equippable equippable = stack.get(DataComponents.EQUIPPABLE);
         if (equippable != null && equippable.dispensable()) {
@@ -472,5 +474,5 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                 info.setReturnValue(false);
             }
         }
-    }
+    }*/
 }

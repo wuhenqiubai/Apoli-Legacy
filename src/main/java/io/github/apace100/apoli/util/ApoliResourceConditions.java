@@ -14,7 +14,7 @@ import net.fabricmc.fabric.api.resource.conditions.v1.ResourceCondition;
 import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditionType;
 import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
 import net.fabricmc.fabric.impl.resource.conditions.ResourceConditionsImpl;
-import net.minecraft.resources.RegistryOps;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +65,7 @@ public class ApoliResourceConditions {
 		}
 
 		@Override
-		public boolean test(RegistryOps.@Nullable RegistryInfoLookup registryInfo) {
+		public boolean test(HolderLookup.@Nullable Provider provider) {
 			for (String namespace : namespaces) {
 				if (PowerTypes.LOADED_NAMESPACES.contains(namespace) != and) {
 					return !and;

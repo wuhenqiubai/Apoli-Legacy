@@ -51,7 +51,7 @@ public record PowerListPacket(
                 ResourceLocation powerId = buf.readResourceLocation();
                 ResourceLocation factoryId = buf.readResourceLocation();
                 try {
-                    PowerFactory<?> factory = ApoliRegistries.POWER_FACTORY.getValue(factoryId);
+                    PowerFactory<?> factory = ApoliRegistries.POWER_FACTORY.get(factoryId);
                     PowerFactory<?>.Instance factoryInstance = factory.read(buf);
                     PowerType<?> type;
                     if (buf.readBoolean()) {

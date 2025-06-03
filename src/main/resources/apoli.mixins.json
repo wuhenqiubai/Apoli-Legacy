@@ -10,7 +10,6 @@
         "BiomeBuilderMixin",
         "BiomeMixin",
         "BlockItemMixin",
-        "ConsumableMixin",
         "CraftingContainerMixin",
         "CraftingInputMixin",
         "CraftingInventoryAccessor",
@@ -73,7 +72,6 @@
         "ItemStackMixinClient",
         "LightmapTextureManagerMixin",
         "LivingEntityRendererMixin",
-        "LivingEntityRenderStateInject",
         "MinecraftClientMixin",
         "PlayerEntityRendererMixin",
         "WorldRendererMixin"

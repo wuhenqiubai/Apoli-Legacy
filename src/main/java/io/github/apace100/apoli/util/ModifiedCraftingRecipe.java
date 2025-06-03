@@ -23,7 +23,7 @@ import java.util.Optional;
 
 public class ModifiedCraftingRecipe extends CustomRecipe {
 
-    public static final RecipeSerializer<? extends CustomRecipe> SERIALIZER = new CustomRecipe.Serializer<>(ModifiedCraftingRecipe::new);
+    public static final RecipeSerializer<? extends CustomRecipe> SERIALIZER = new SimpleCraftingRecipeSerializer<CustomRecipe>(ModifiedCraftingRecipe::new);
 
     public ModifiedCraftingRecipe(CraftingBookCategory category) {
         super(category);
@@ -72,6 +72,11 @@ public class ModifiedCraftingRecipe extends CustomRecipe {
         }
 
         return ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean canCraftInDimensions(int width, int height) {
+        return true;
     }
 
     @Override

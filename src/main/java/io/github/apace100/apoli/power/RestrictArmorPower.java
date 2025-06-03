@@ -5,7 +5,6 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.calio.data.SerializableData;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -29,7 +28,7 @@ public class RestrictArmorPower extends Power {
             if(!equippedItem.isEmpty()) {
                 if(!canEquip(equippedItem, slot) && !entity.level().isClientSide()) {
                     // TODO: Prefer putting armor in inv instead of dropping when inv exists
-                    entity.spawnAtLocation((ServerLevel) entity.level(), equippedItem, entity.getEyeHeight(entity.getPose()));
+                    entity.spawnAtLocation(equippedItem, entity.getEyeHeight(entity.getPose()));
                     entity.setItemSlot(slot, ItemStack.EMPTY);
                 }
             }
