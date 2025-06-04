@@ -1,9 +1,5 @@
 package io.github.apace100.apoli.power;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
-import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -16,7 +12,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
@@ -25,30 +20,10 @@ import net.minecraft.world.entity.LivingEntity;
 
 import java.util.OptionalInt;
 
+import static io.github.apace100.apoli.power.OverlayPowerPipelines.NAUSEA_PIPELINE;
+import static io.github.apace100.apoli.power.OverlayPowerPipelines.OVERLAY_PIPELINE;
+
 public class OverlayPower extends Power {
-    @Environment(EnvType.CLIENT)
-    private static final RenderPipeline.Snippet OVERLAY_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_SNIPPET)
-        .withFragmentShader("core/position_tex_color")
-        .withVertexShader("core/position_tex_color")
-        .withSampler("Sampler0")
-        .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
-        .withUniform("ColorModulator", UniformType.VEC4) // We don't need this, but also, for some reason it will spam the logs if we don't use it?
-        .withBlend(BlendFunction.PANORAMA)
-        .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-        .withDepthWrite(false)
-        .buildSnippet();
-
-    @Environment(EnvType.CLIENT)
-    private static final RenderPipeline OVERLAY_PIPELINE = RenderPipeline.builder(OVERLAY_SNIPPET)
-        .withLocation(Apoli.identifier("pipeline/overlay"))
-        .build();
-
-    @Environment(EnvType.CLIENT)
-    private static final RenderPipeline NAUSEA_PIPELINE = RenderPipeline.builder(OVERLAY_SNIPPET)
-        .withLocation(Apoli.identifier("pipeline/overlay_nausea"))
-        .withBlend(BlendFunction.ADDITIVE)
-        .build();
-
     private final ResourceLocation texture;
     private final float strength;
     private final float red;
