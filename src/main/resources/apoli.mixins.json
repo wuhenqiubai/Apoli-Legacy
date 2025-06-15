@@ -67,6 +67,7 @@
         "ElytraFeatureRendererMixin",
         "EntityParticleMixin",
         "EntityRenderDispatcherMixin",
+        "EquipmentLayerRendererMixin",
         "GameRendererMixin",
         "InGameHudMixin",
         "InGameOverlayRendererMixin",

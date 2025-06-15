@@ -47,7 +47,7 @@ public class ElytraFeatureRendererMixin {
     private ResourceLocation modifyEntityElytraTextureToPower(ResourceLocation original, @Local(argsOnly = true) HumanoidRenderState renderState) {
         if (!renderState.isInvisible) {
             for (ElytraFlightPower power : PowerHolderComponent.getPowers(renderState, ElytraFlightPower.class)) {
-                if (power.shouldRenderElytra()) {
+                if (power.shouldRenderElytra() && power.getTextureLocation() != null) {
                     return power.getTextureLocation();
                 }
             }
