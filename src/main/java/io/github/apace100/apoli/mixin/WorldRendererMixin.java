@@ -1,6 +1,7 @@
 package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.apace100.apoli.ApoliClient;
@@ -18,6 +19,7 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -44,7 +46,7 @@ public abstract class WorldRendererMixin {
     @Shadow public abstract void allChanged();
 
     @Inject(method = "method_62215", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSkyDisc(FFF)V"), cancellable = true)
-    private void skipSkyRenderingForPhasingBlindness(FogParameters fogParameters, DimensionSpecialEffects.SkyType skyType, float f, DimensionSpecialEffects dimensionSpecialEffects, CallbackInfo ci) {
+    private void skipSkyRenderingForPhasingBlindness(GpuBufferSlice gpuBufferSlice, DimensionSpecialEffects.SkyType skyType, float f, DimensionSpecialEffects dimensionSpecialEffects, CallbackInfo ci) {
         if(Minecraft.getInstance().cameraEntity instanceof LivingEntity) {
             List<PhasingPower> phasings = PowerHolderComponent.getPowers(Minecraft.getInstance().cameraEntity, PhasingPower.class);
             if(phasings.stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.BLINDNESS)) {
@@ -56,7 +58,7 @@ public abstract class WorldRendererMixin {
     }
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
-    private void updateChunksIfRenderChanged(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
+    private void updateChunksIfRenderChanged(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean bl, Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, GpuBufferSlice gpuBufferSlice, Vector4f vector4f, boolean bl2, CallbackInfo ci) {
         if(ApoliClient.shouldReloadWorldRenderer) {
             allChanged();
             ApoliClient.shouldReloadWorldRenderer = false;

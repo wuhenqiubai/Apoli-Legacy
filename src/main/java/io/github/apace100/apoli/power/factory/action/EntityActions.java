@@ -183,7 +183,7 @@ public class EntityActions {
                 if(data.isPresent("effects")) {
                     effects.addAll(data.get("effects"));
                 }
-                areaEffectCloudEntity.setParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, ARGB.opaque(PotionContents.getColorOptional(effects).orElse(PotionContents.BASE_POTION_COLOR))));
+                areaEffectCloudEntity.setCustomParticle(ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, ARGB.opaque(PotionContents.getColorOptional(effects).orElse(PotionContents.BASE_POTION_COLOR))));
                 effects.forEach(areaEffectCloudEntity::addEffect);
 
                 entity.level().addFreshEntity(areaEffectCloudEntity);

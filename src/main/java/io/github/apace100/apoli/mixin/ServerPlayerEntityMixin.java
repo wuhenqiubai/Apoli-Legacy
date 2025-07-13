@@ -46,8 +46,8 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
     @Shadow
     public ServerGamePacketListenerImpl connection;
 
-    public ServerPlayerEntityMixin(Level world, BlockPos pos, float yaw, GameProfile gameProfile) {
-        super(world, pos, yaw, gameProfile);
+    public ServerPlayerEntityMixin(Level level, GameProfile gameProfile) {
+        super(level, gameProfile);
     }
 
     @Shadow

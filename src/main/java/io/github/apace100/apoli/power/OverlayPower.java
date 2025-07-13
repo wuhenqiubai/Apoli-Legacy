@@ -12,6 +12,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
@@ -103,7 +104,7 @@ public class OverlayPower extends Power {
         var renderTarget = client.getMainRenderTarget();
         var encoder = RenderSystem.getDevice().createCommandEncoder();
 
-        guiGraphics.blit(location -> RenderType.guiNauseaOverlay(), texture, 0, 0, 0f, 0f, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), ARGB.colorFromFloat(a, g, h, k));
+        guiGraphics.blit(RenderPipelines.GUI_NAUSEA_OVERLAY, texture, 0, 0, 0f, 0f, client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), client.getWindow().getGuiScaledWidth(), client.getWindow().getGuiScaledHeight(), ARGB.colorFromFloat(a, g, h, k));
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         bufferBuilder.addVertex(m, n + l, -90.0f).setUv(0.0F, 1.0F).setColor(g, h, k, a);
@@ -116,10 +117,10 @@ public class OverlayPower extends Power {
             var indexBufferStorage = RenderSystem.getSequentialBuffer(meshData.drawState().mode());
             var indexBuffer = indexBufferStorage.getBuffer(meshData.drawState().indexCount());
             var indexType = indexBufferStorage.type();
-            var gpuTexture = client.getTextureManager().getTexture(texture).getTexture();
+            var gpuTextureView = client.getTextureManager().getTexture(texture).getTextureView();
 
-            try (RenderPass pass = encoder.createRenderPass(renderTarget.getColorTexture(), OptionalInt.empty())) {
-                pass.bindSampler("Sampler0", gpuTexture);
+            try (RenderPass pass = encoder.createRenderPass(() -> "Immediate draw for Overlay Power", renderTarget.getColorTextureView(), OptionalInt.empty())) {
+                pass.bindSampler("Sampler0", gpuTextureView);
                 pass.setVertexBuffer(0, vertexBuffer);
                 pass.setIndexBuffer(indexBuffer, indexType);
 
@@ -129,7 +130,7 @@ public class OverlayPower extends Power {
                     pass.setPipeline(OVERLAY_PIPELINE);
                 }
 
-                pass.drawIndexed(0, meshData.drawState().indexCount());
+                pass.draw(0, meshData.drawState().indexCount());
             }
         }
     }

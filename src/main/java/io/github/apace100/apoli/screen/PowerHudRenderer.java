@@ -9,6 +9,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.FluidTags;
@@ -51,16 +52,16 @@ public class PowerHudRenderer implements GameHudRender {
                     RenderSystem.setShaderTexture(0, currentLocation);
                     lastLocation = currentLocation;
                 }*/
-                context.blit(RenderType::guiTextured, currentLocation, x, y, 0, 0, barWidth, 5, 256, 256);
+                context.blit(RenderPipelines.GUI_TEXTURED, currentLocation, x, y, 0, 0, barWidth, 5, 256, 256);
                 int v = 8 + render.getBarIndex() * 10;
                 float fill = hudPower.getFill();
                 if(render.isInverted()) {
                     fill = 1f - fill;
                 }
                 int w = (int)(fill * barWidth);
-                context.blit(RenderType::guiTextured, currentLocation, x, y - 2, 0, v, w, barHeight, 256, 256);
+                context.blit(RenderPipelines.GUI_TEXTURED, currentLocation, x, y - 2, 0, v, w, barHeight, 256, 256);
                 //setZOffset(getZOffset() + 1);
-                context.blit(RenderType::guiTextured, currentLocation, x - iconSize - 2, y - 2, 73, v, iconSize, iconSize, 256, 256);
+                context.blit(RenderPipelines.GUI_TEXTURED, currentLocation, x - iconSize - 2, y - 2, 73, v, iconSize, iconSize, 256, 256);
                 //setZOffset(getZOffset() - 1);
                 y -= 8;
             }

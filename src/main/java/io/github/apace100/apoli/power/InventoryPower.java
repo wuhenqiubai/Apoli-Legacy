@@ -6,11 +6,9 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.Container;
@@ -22,6 +20,8 @@ import net.minecraft.world.inventory.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.function.Predicate;
 
@@ -90,15 +90,13 @@ public class InventoryPower extends Power implements Active, Container {
     }
 
     @Override
-    public CompoundTag toTag(HolderLookup.Provider provider) {
-        CompoundTag tag = new CompoundTag();
-        ContainerHelper.saveAllItems(tag, container, provider);
-        return tag;
+    public void toValue(ValueOutput output) {
+        ContainerHelper.saveAllItems(output, container, true);
     }
 
     @Override
-    public void fromTag(Tag tag, HolderLookup.Provider provider) {
-        ContainerHelper.loadAllItems((CompoundTag)tag, container, provider);
+    public void fromValue(ValueInput input) {
+        ContainerHelper.loadAllItems(input, container);
     }
 
     @Override

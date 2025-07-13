@@ -32,6 +32,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffect;
@@ -48,6 +49,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
@@ -507,9 +509,9 @@ public class EntityConditions {
         register(new ConditionFactory<>(Apoli.identifier("nbt"), new SerializableData()
             .add("nbt", SerializableDataTypes.NBT),
             (data, entity) -> {
-                CompoundTag nbt = new CompoundTag();
-                entity.saveWithoutId(nbt);
-                return NbtUtils.compareNbt(data.get("nbt"), nbt, true);
+                var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, entity.registryAccess());
+                entity.saveWithoutId(output);
+                return NbtUtils.compareNbt(data.get("nbt"), output.buildResult(), true);
             }));
         register(new ConditionFactory<>(Apoli.identifier("exists"), new SerializableData(), (data, entity) -> entity != null));
         register(new ConditionFactory<>(Apoli.identifier("creative_flying"), new SerializableData(),

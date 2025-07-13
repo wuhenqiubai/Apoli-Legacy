@@ -6,6 +6,7 @@ import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.apace100.apoli.util.SyncStatusEffectsUtil;
+import io.netty.channel.ChannelFutureListener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientLoginNetworking;
@@ -17,12 +18,13 @@ import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.PacketSendListener;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.storage.TagValueInput;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -90,7 +92,7 @@ public class ModPacketsS2C {
 
 
     @Environment(EnvType.CLIENT)
-    private static CompletableFuture<FriendlyByteBuf> handleHandshake(Minecraft client, ClientHandshakePacketListenerImpl handler, FriendlyByteBuf receivedBuf, Consumer<PacketSendListener> callbacksConsumer) {
+    private static CompletableFuture<FriendlyByteBuf> handleHandshake(Minecraft client, ClientHandshakePacketListenerImpl handler, FriendlyByteBuf receivedBuf, Consumer<ChannelFutureListener> callbacksConsumer) {
         FriendlyByteBuf buf = PacketByteBufs.create();
         buf.writeInt(Apoli.SEMVER.length);
         for(int i = 0; i < Apoli.SEMVER.length; i++) {
@@ -163,7 +165,10 @@ public class ModPacketsS2C {
             PowerType<?> powerType = PowerTypeRegistry.get(powerId);
             PowerHolderComponent.KEY.maybeGet(entity).ifPresentOrElse(phc -> {
                 Power power = phc.getPower(powerType);
-                power.fromTag(powerNbt, context.client().level.registryAccess());
+                if (powerNbt instanceof CompoundTag)
+                    power.fromValue(TagValueInput.create(ProblemReporter.DISCARDING, context.player().registryAccess(), (CompoundTag) powerNbt));
+                else
+                    power.fromTag(powerNbt);
             }, () -> Apoli.LOGGER.warn("Received sync packet for entity without power holder."));
         });
     }

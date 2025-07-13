@@ -14,13 +14,14 @@ import net.minecraft.client.renderer.RenderPipelines;
 @Environment(EnvType.CLIENT)
 public class OverlayPowerPipelines {
     @Environment(EnvType.CLIENT)
-    public static final RenderPipeline.Snippet OVERLAY_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_SNIPPET)
+    public static final RenderPipeline.Snippet OVERLAY_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
         .withFragmentShader("core/position_tex_color")
         .withVertexShader("core/position_tex_color")
         .withSampler("Sampler0")
         .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.QUADS)
-        .withUniform("ColorModulator", UniformType.VEC4) // We don't need this, but also, for some reason it will spam the logs if we don't use it?
-        .withBlend(BlendFunction.PANORAMA)
+        .withUniform("ColorModulator", UniformType.UNIFORM_BUFFER) // We don't need this, but also, for some reason it will spam the logs if we don't use it?
+        .withColorWrite(true, true)
+        .withBlend(BlendFunction.OVERLAY)
         .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
         .withDepthWrite(false)
         .buildSnippet();

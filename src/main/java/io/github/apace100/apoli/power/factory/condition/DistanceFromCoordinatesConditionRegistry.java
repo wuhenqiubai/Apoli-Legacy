@@ -110,7 +110,7 @@ public class DistanceFromCoordinatesConditionRegistry {
                 world = (Level)worldView;
         } else {
             pos = entity.position();
-            world = entity.getCommandSenderWorld();
+            world = entity.level();
         }
         double currentDimensionCoordinateScale = world.dimensionType().coordinateScale();
 

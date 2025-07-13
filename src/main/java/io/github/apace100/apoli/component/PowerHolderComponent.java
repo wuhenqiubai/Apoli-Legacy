@@ -13,12 +13,12 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.storage.TagValueOutput;
 import org.ladysnake.cca.api.v3.component.ComponentKey;
 import org.ladysnake.cca.api.v3.component.ComponentRegistry;
 import org.ladysnake.cca.api.v3.component.sync.AutoSyncedComponent;
@@ -79,10 +79,9 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
         KEY.maybeGet(entity).ifPresent(phc -> {
             if(phc.hasPower(finalPowerType)) {
                 Power power = phc.getPower(finalPowerType);
-                Tag elem = power.toTag(entity.registryAccess());
-                CompoundTag compound = new CompoundTag();
-                compound.put("Data", elem);
-                var packet = new SyncPowerPacket(entity.getId(), finalPowerType.getIdentifier(), compound);
+                TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, entity.registryAccess());
+                power.toValue(output.child("Data"));
+                var packet = new SyncPowerPacket(entity.getId(), finalPowerType.getIdentifier(), output.buildResult());
                 for(ServerPlayer player : PlayerLookup.tracking(entity)) {
                     ServerPlayNetworking.send(player, packet);
                 }

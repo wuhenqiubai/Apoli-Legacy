@@ -51,7 +51,6 @@ public abstract class GameRendererMixin {
 
     @Shadow
     private boolean effectActive;
-    @Shadow @Final private ResourceManager resourceManager;
 
     @Shadow protected abstract void setPostEffect(ResourceLocation postEffectId);
 
@@ -64,7 +63,7 @@ public abstract class GameRendererMixin {
     private void loadShaderFromPowerOnCameraEntity(Entity entity, CallbackInfo ci) {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
             ResourceLocation shaderLoc = shaderPower.getShaderLocation();
-            if(this.resourceManager.getResource(shaderLoc).isPresent()) {
+            if(this.minecraft.getResourceManager().getResource(shaderLoc).isPresent()) {
                 this.setPostEffect(shaderLoc);
                 currentlyLoadedShader = shaderLoc;
             }
@@ -76,7 +75,7 @@ public abstract class GameRendererMixin {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
             ResourceLocation shaderLoc = shaderPower.getShaderLocation();
             if(currentlyLoadedShader != shaderLoc) {
-                if(this.resourceManager.getResource(shaderLoc).isPresent()) {
+                if(this.minecraft.getResourceManager().getResource(shaderLoc).isPresent()) {
                     this.setPostEffect(shaderLoc);
                     currentlyLoadedShader = shaderLoc;
                 }
