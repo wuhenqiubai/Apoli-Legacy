@@ -25,7 +25,7 @@ public abstract class PlayerScreenHandlerMixin extends Slot {
     private void preventArmorInsertion(ItemStack stack, CallbackInfoReturnable<Boolean> info) {
         Player player = ((Inventory)container).player;
         PowerHolderComponent component = PowerHolderComponent.KEY.get(player);
-        EquipmentSlot slot = Minecraft.getInstance().player.getEquipmentSlotForItem(stack);
+        EquipmentSlot slot = player.getEquipmentSlotForItem(stack);
         if(component.getPowers(RestrictArmorPower.class).stream().anyMatch(rap -> !rap.canEquip(stack, slot))) {
             info.setReturnValue(false);
         }
