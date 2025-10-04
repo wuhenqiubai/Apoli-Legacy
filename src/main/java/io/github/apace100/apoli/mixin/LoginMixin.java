@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.component.PowerHolderComponent;
+import io.github.apace100.apoli.events.ApoliPlayerEvent;
 import io.github.apace100.apoli.networking.PowerListPacket;
 import io.github.apace100.apoli.power.ModifyPlayerSpawnPower;
 import io.github.apace100.apoli.power.Power;
@@ -44,6 +45,8 @@ public abstract class LoginMixin {
 			PowerHolderComponent.KEY.syncWith(player, (ComponentProvider) spe);
 		});
 		PowerHolderComponent.sync(player);
+
+        ApoliPlayerEvent.POWERS_SYNCED.invoker().onApoliPlayerEvent(player);
 	}
 
 	// TODO O-L: is this broken?
