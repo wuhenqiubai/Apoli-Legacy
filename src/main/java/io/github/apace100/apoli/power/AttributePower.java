@@ -9,6 +9,7 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 
 import java.util.LinkedList;
@@ -47,7 +48,13 @@ public class AttributePower extends Power {
             float previousHealthPercent = entity.getHealth() / previousMaxHealth;
             modifiers.forEach(mod -> {
                 if(entity.getAttributes().hasAttribute(mod.getAttributeHolder())) {
-                    entity.getAttribute(mod.getAttributeHolder()).addTransientModifier(mod.getModifier());
+                    AttributeInstance attribute = entity.getAttribute(mod.getAttributeHolder());
+
+                    if (!attribute.hasModifier(mod.getModifier().id())) {
+                        attribute.addTransientModifier(mod.getModifier());
+                    } else {
+                        Apoli.LOGGER.warn("Attribute modifier {} on attribute {} from power ID {} failed to apply, because it already exists!", mod.getModifier().id(), attribute.getAttribute().unwrapKey().orElseThrow(), this.getType().getIdentifier());
+                    }
                 }
             });
             float afterMaxHealth = entity.getMaxHealth();
