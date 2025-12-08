@@ -26,6 +26,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.HashMap;
 import java.util.List;
 
 @SuppressWarnings("rawtypes")
@@ -36,7 +37,7 @@ public abstract class LoginMixin {
 
 	@Inject(at = @At("TAIL"), method = "placeNewPlayer")
 	private void syncPowerTypes(Connection connection, ServerPlayer player, CommonListenerCookie cookie, CallbackInfo ci) {
-		ServerPlayNetworking.send(player, new PowerListPacket(PowerTypeRegistry.get()));
+		ServerPlayNetworking.send(player, new PowerListPacket(new HashMap<>(PowerTypeRegistry.get())));
 
 		List<ServerPlayer> playerList = getPlayers();
 		playerList.forEach(spe -> {
