@@ -42,7 +42,11 @@ public class ConditionFactory<T> implements Factory {
         }
 
         public boolean isFulfilled(T t) {
-            return condition.apply(dataInstance, t);
+            try {
+                return condition.apply(dataInstance, t);
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to run condition on " + identifier + "!", e);
+            }
         }
 
         public void write(RegistryFriendlyByteBuf buf) {
