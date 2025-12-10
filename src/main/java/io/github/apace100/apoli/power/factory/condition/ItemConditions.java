@@ -112,7 +112,7 @@ public class ItemConditions {
             recreatedTag.put("tag", oldTag);
 
             var convertedStackNbt = UpgradeUtils.upgradeStack(recreatedTag);
-            var convertedStack = ItemStack.CODEC.decode(NbtOps.INSTANCE, convertedStackNbt).getOrThrow().getFirst();
+            var convertedStack = ItemStack.OPTIONAL_CODEC.decode(NbtOps.INSTANCE, convertedStackNbt).getOrThrow().getFirst();
 
             return convertedStack.getComponentsPatch().equals(stack.getComponentsPatch());
         }));
