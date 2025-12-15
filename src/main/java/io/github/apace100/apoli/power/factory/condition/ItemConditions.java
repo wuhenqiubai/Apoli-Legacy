@@ -15,7 +15,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.ItemTags;
@@ -135,7 +135,7 @@ public class ItemConditions {
             .add("slot", SerializableDataTypes.EQUIPMENT_SLOT, null)
             .add("power", SerializableDataTypes.IDENTIFIER),
             (data, stack) -> {
-                ResourceLocation power = data.getId("power");
+                Identifier power = data.getId("power");
                 if(data.isPresent("slot")) {
                     return StackPowerUtil.getPowers(stack, data.get("slot")).stream().anyMatch(p -> p.powerId.equals(power));
                 } else {

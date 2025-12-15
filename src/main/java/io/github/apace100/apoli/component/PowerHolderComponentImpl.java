@@ -6,7 +6,7 @@ import io.github.apace100.apoli.power.*;
 import io.github.apace100.apoli.util.GainedPowerCriterion;
 import net.minecraft.nbt.*;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,7 +22,7 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
 
     private final LivingEntity owner;
     private final ConcurrentHashMap<PowerType<?>, Power> powers = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<PowerType<?>, List<ResourceLocation>> powerSources = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<PowerType<?>, List<Identifier>> powerSources = new ConcurrentHashMap<>();
 
     public PowerHolderComponentImpl(LivingEntity owner) {
         this.owner = owner;
@@ -34,7 +34,7 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     }
 
     @Override
-    public boolean hasPower(PowerType<?> powerType, ResourceLocation source) {
+    public boolean hasPower(PowerType<?> powerType, Identifier source) {
         return powerSources.containsKey(powerType) && powerSources.get(powerType).contains(source);
     }
 
@@ -80,7 +80,7 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     }
 
     @Override
-    public List<ResourceLocation> getSources(PowerType<?> powerType) {
+    public List<Identifier> getSources(PowerType<?> powerType) {
         if(powerSources.containsKey(powerType)) {
             return List.copyOf(powerSources.get(powerType));
         } else {
@@ -88,12 +88,12 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
         }
     }
 
-    public void removePower(PowerType<?> powerType, ResourceLocation source) {
+    public void removePower(PowerType<?> powerType, Identifier source) {
         if(powerType instanceof PowerTypeReference<?>) {
             powerType = ((PowerTypeReference<?>)powerType).getReferencedPowerType();
         }
         if(powerSources.containsKey(powerType)) {
-            List<ResourceLocation> sources = powerSources.get(powerType);
+            List<Identifier> sources = powerSources.get(powerType);
             sources.remove(source);
             if(sources.isEmpty()) {
                 powerSources.remove(powerType);
@@ -104,8 +104,8 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
                 }
             }
             if(powerType instanceof MultiplePowerType) {
-                ImmutableList<ResourceLocation> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
-                for(ResourceLocation subPowerId : subPowers) {
+                ImmutableList<Identifier> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
+                for(Identifier subPowerId : subPowers) {
                     removePower(PowerTypeRegistry.get(subPowerId), source);
                 }
             }
@@ -113,16 +113,16 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     }
 
     @Override
-    public int removeAllPowersFromSource(ResourceLocation source) {
+    public int removeAllPowersFromSource(Identifier source) {
         List<PowerType<?>> powersToRemove = getPowersFromSource(source);
         powersToRemove.forEach(p -> removePower(p, source));
         return powersToRemove.size();
     }
 
     @Override
-    public List<PowerType<?>> getPowersFromSource(ResourceLocation source) {
+    public List<PowerType<?>> getPowersFromSource(Identifier source) {
         List<PowerType<?>> powers = new LinkedList<>();
-        for(Map.Entry<PowerType<?>, List<ResourceLocation>> sourceEntry : powerSources.entrySet()) {
+        for(Map.Entry<PowerType<?>, List<Identifier>> sourceEntry : powerSources.entrySet()) {
             if(sourceEntry.getValue().contains(source)) {
                 powers.add(sourceEntry.getKey());
             }
@@ -130,30 +130,30 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
         return powers;
     }
 
-    public boolean addPower(PowerType<?> powerType, ResourceLocation source) {
+    public boolean addPower(PowerType<?> powerType, Identifier source) {
         if(powerType instanceof PowerTypeReference<?>) {
             powerType = ((PowerTypeReference<?>)powerType).getReferencedPowerType();
         }
         if(powerSources.containsKey(powerType)) {
-            List<ResourceLocation> sources = powerSources.get(powerType);
+            List<Identifier> sources = powerSources.get(powerType);
             if(sources.contains(source)) {
                 return false;
             } else {
                 sources.add(source);
                 if(powerType instanceof MultiplePowerType) {
-                    ImmutableList<ResourceLocation> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
-                    for(ResourceLocation subPowerId : subPowers) {
+                    ImmutableList<Identifier> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
+                    for(Identifier subPowerId : subPowers) {
                         addPower(PowerTypeRegistry.get(subPowerId), source);
                     }
                 }
                 return true;
             }
         } else {
-            List<ResourceLocation> sources = new LinkedList<>();
+            List<Identifier> sources = new LinkedList<>();
             sources.add(source);
             if(powerType instanceof MultiplePowerType) {
-                ImmutableList<ResourceLocation> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
-                for(ResourceLocation subPowerId : subPowers) {
+                ImmutableList<Identifier> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
+                for(Identifier subPowerId : subPowers) {
                     addPower(PowerTypeRegistry.get(subPowerId), source);
                 }
             }
@@ -192,12 +192,12 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
             }
             powers.clear();
             for (ValueInput powerTag : input.childrenListOrEmpty("Powers")) {
-                ResourceLocation powerTypeId = ResourceLocation.tryParse(powerTag.getString("Type").orElseThrow());
+                Identifier powerTypeId = Identifier.tryParse(powerTag.getString("Type").orElseThrow());
                 if(callPowerOnAdd && PowerTypeRegistry.isDisabled(powerTypeId)) {
                     continue;
                 }
-                List<ResourceLocation> list = new LinkedList<>();
-                for (ResourceLocation location : powerTag.listOrEmpty("Sources", ResourceLocation.CODEC)) {
+                List<Identifier> list = new LinkedList<>();
+                for (Identifier location : powerTag.listOrEmpty("Sources", Identifier.CODEC)) {
                     list.add(location);
                 }
                 PowerType<?> type = PowerTypeRegistry.get(powerTypeId);
@@ -221,14 +221,14 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
                 }
             }
 
-            for(Map.Entry<PowerType<?>, List<ResourceLocation>> entry : powerSources.entrySet()) {
+            for(Map.Entry<PowerType<?>, List<Identifier>> entry : powerSources.entrySet()) {
                 PowerType<?> powerType = entry.getKey();
                 if(powerType instanceof MultiplePowerType) {
-                    ImmutableList<ResourceLocation> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
-                    for(ResourceLocation subPowerId : subPowers) {
+                    ImmutableList<Identifier> subPowers = ((MultiplePowerType<?>)powerType).getSubPowers();
+                    for(Identifier subPowerId : subPowers) {
                         try {
                             PowerType<?> subType = PowerTypeRegistry.get(subPowerId);
-                            for(ResourceLocation source : entry.getValue()) {
+                            for(Identifier source : entry.getValue()) {
                                 if(!hasPower(subType, source)) {
                                     addPower(subType, source);
                                 }
@@ -254,7 +254,7 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
             ValueOutput powerTag = powerList.addChild();
             powerTag.putString("Type", PowerTypeRegistry.getId(powerEntry.getKey()).toString());
             powerEntry.getValue().toValue(powerTag.child("Data"));
-            ValueOutput.TypedOutputList<ResourceLocation> sources = powerTag.list("Sources", ResourceLocation.CODEC);
+            ValueOutput.TypedOutputList<Identifier> sources = powerTag.list("Sources", Identifier.CODEC);
             powerSources.get(powerEntry.getKey()).forEach(sources::add);
         }
     }

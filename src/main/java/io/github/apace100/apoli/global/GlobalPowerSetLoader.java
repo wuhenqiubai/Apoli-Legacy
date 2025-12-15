@@ -5,7 +5,7 @@ import io.github.apace100.apoli.power.PowerType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
 import net.minecraft.resources.FileToIdConverter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class GlobalPowerSetLoader extends SimpleJsonResourceReloadListener<GlobalPowerSet> implements IdentifiableResourceReloadListener {
-    public static final Set<ResourceLocation> DEPENDENCIES = Set.of(Apoli.identifier("powers"));
+    public static final Set<Identifier> DEPENDENCIES = Set.of(Apoli.identifier("powers"));
 
     public static List<GlobalPowerSet> ALL = new LinkedList<>();
 
@@ -27,7 +27,7 @@ public class GlobalPowerSetLoader extends SimpleJsonResourceReloadListener<Globa
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, GlobalPowerSet> object, ResourceManager resourceManager, ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, GlobalPowerSet> object, ResourceManager resourceManager, ProfilerFiller profiler) {
         ALL.clear();
         object.forEach((id, gps) -> {
             List<PowerType<?>> invalidPowerTypes = gps.validate();
@@ -35,7 +35,7 @@ public class GlobalPowerSetLoader extends SimpleJsonResourceReloadListener<Globa
                 Apoli.LOGGER.error("Global power set \"{}\" contained invalid powers: {}",
                     id, invalidPowerTypes.stream()
                         .map(PowerType::getIdentifier)
-                        .map(ResourceLocation::toString)
+                        .map(Identifier::toString)
                         .collect(Collectors.joining(", ")));
             }
 
@@ -45,12 +45,12 @@ public class GlobalPowerSetLoader extends SimpleJsonResourceReloadListener<Globa
     }
 
     @Override
-    public ResourceLocation getFabricId() {
+    public Identifier getFabricId() {
         return Apoli.identifier("global_powers");
     }
 
     @Override
-    public Collection<ResourceLocation> getFabricDependencies() {
+    public Collection<Identifier> getFabricDependencies() {
         return DEPENDENCIES;
     }
 }

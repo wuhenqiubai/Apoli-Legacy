@@ -9,12 +9,12 @@ import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.PowerType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -35,19 +35,19 @@ public class PowerCommand {
 					.then(argument("targets", EntityArgument.entities())
 						.then(argument("power", PowerTypeArgumentType.power())
 							.executes(context -> grantPower(context, false))
-                            .then(argument("source", ResourceLocationArgument.id())
+                            .then(argument("source", IdentifierArgument.id())
                                 .executes(context -> grantPower(context, true)))))
 				)
 				.then(literal("revoke")
 					.then(argument("targets", EntityArgument.entities())
 						.then(argument("power", PowerTypeArgumentType.power())
 							.executes(context -> revokePower(context, false))
-							.then(argument("source", ResourceLocationArgument.id())
+							.then(argument("source", IdentifierArgument.id())
 								.executes(context -> revokePower(context, true)))))
 				)
 				.then(literal("revokeall")
 					.then(argument("targets", EntityArgument.entities())
-						.then(argument("source", ResourceLocationArgument.id())
+						.then(argument("source", IdentifierArgument.id())
 							.executes(PowerCommand::revokeAllPowers)))
 				)
 				.then(literal("list")
@@ -83,7 +83,7 @@ public class PowerCommand {
 		CommandSourceStack source = context.getSource();
 		Collection<? extends Entity> targets = EntityArgument.getEntities(context, "targets");
 		PowerType<?> powerType = PowerTypeArgumentType.getPower(context, "power");
-		ResourceLocation powerSource = isSourceSpecified ? ResourceLocationArgument.getId(context, "source") : Apoli.identifier("command");
+		Identifier powerSource = isSourceSpecified ? IdentifierArgument.getId(context, "source") : Apoli.identifier("command");
 
 		LinkedList<Entity> nonLivingTargets = new LinkedList<>();
 		LinkedList<LivingEntity> livingTargets = new LinkedList<>();
@@ -136,7 +136,7 @@ public class PowerCommand {
 		CommandSourceStack source = context.getSource();
 		Collection<? extends Entity> targets = EntityArgument.getEntities(context, "targets");
 		PowerType<?> powerType = PowerTypeArgumentType.getPower(context, "power");
-		ResourceLocation powerSource = isSourceSpecified ? ResourceLocationArgument.getId(context, "source") : Apoli.identifier("command");
+		Identifier powerSource = isSourceSpecified ? IdentifierArgument.getId(context, "source") : Apoli.identifier("command");
 
 		LinkedList<Entity> nonLivingTargets = new LinkedList<>();
 		LinkedList<LivingEntity> livingTargets = new LinkedList<>();
@@ -189,7 +189,7 @@ public class PowerCommand {
 
 		CommandSourceStack source = context.getSource();
 		Collection<? extends Entity> targets = EntityArgument.getEntities(context, "targets");
-		ResourceLocation powerSource = ResourceLocationArgument.getId(context, "source");
+		Identifier powerSource = IdentifierArgument.getId(context, "source");
 
 		int revokedPowers = 0;
 		LinkedList<Entity> nonLivingTargets = new LinkedList<>();
@@ -320,7 +320,7 @@ public class PowerCommand {
 		}
 
 		PowerHolderComponent powerHolderComponent = PowerHolderComponent.KEY.get(livingTarget);
-		for (ResourceLocation powerSource : powerHolderComponent.getSources(powerType)) {
+		for (Identifier powerSource : powerHolderComponent.getSources(powerType)) {
 			if (powerSourceCount > 0) powerSources.append(", ");
 			powerSources.append(powerSource.toString());
 			powerSourceCount++;
@@ -356,10 +356,10 @@ public class PowerCommand {
 
 			livingTargets.add(livingTarget);
 			PowerHolderComponent powerHolderComponent = PowerHolderComponent.KEY.get(livingTarget);
-			List<ResourceLocation> powerSources = powerHolderComponent.getSources(powerType);
+			List<Identifier> powerSources = powerHolderComponent.getSources(powerType);
 			if (powerSources.isEmpty()) continue;
 			
-			for (ResourceLocation powerSource : powerSources) {
+			for (Identifier powerSource : powerSources) {
 				powerHolderComponent.removePower(powerType, powerSource);
 			}
 			
@@ -409,7 +409,7 @@ public class PowerCommand {
 			if (powerTypes.isEmpty()) continue;
 			
 			for (PowerType<?> powerType : powerTypes) {
-				List<ResourceLocation> powerSources = powerHolderComponent.getSources(powerType);
+				List<Identifier> powerSources = powerHolderComponent.getSources(powerType);
 				powerSources.forEach(powerHolderComponent::removeAllPowersFromSource);
 			}
 			

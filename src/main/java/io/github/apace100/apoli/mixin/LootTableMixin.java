@@ -7,7 +7,7 @@ import io.github.apace100.apoli.power.ReplaceLootTablePower;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.piglin.Piglin;
@@ -33,18 +33,18 @@ import java.util.function.Consumer;
 public class LootTableMixin implements IdentifiedLootTable {
 
     @Unique
-    private ResourceLocation apoli$id;
+    private Identifier apoli$id;
     @Unique
     private HolderGetter.Provider apoli$lootManager;
 
     @Override
-    public void setId(ResourceLocation id, HolderGetter.Provider lootManager) {
+    public void setId(Identifier id, HolderGetter.Provider lootManager) {
         apoli$id = id;
         apoli$lootManager = lootManager;
     }
 
     @Override
-    public ResourceLocation getId() {
+    public Identifier getId() {
         return apoli$id;
     }
 
@@ -83,7 +83,7 @@ public class LootTableMixin implements IdentifiedLootTable {
             ReplaceLootTablePower.addToStack((LootTable)(Object)this);
             LootTable replacement = null;
             for (ReplaceLootTablePower power : powers) {
-                ResourceLocation id = power.getReplacement(apoli$id);
+                Identifier id = power.getReplacement(apoli$id);
                 replacement = apoli$lootManager.getOrThrow(ResourceKey.create(Registries.LOOT_TABLE, id)).value();
                 ReplaceLootTablePower.addToStack(replacement);
             }

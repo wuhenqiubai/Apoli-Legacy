@@ -1,11 +1,11 @@
 package io.github.apace100.apoli.access;
 
 import net.minecraft.core.HolderGetter;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public interface IdentifiedLootTable {
 
-    void setId(ResourceLocation id, HolderGetter.Provider lootManager);
+    void setId(Identifier id, HolderGetter.Provider lootManager);
 
-    ResourceLocation getId();
+    Identifier getId();
 }

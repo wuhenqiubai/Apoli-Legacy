@@ -20,7 +20,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
@@ -126,7 +126,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
     private void removeEquipmentPowers(CallbackInfoReturnable<Map> cir, @Local(ordinal = 0) ItemStack stack, @Local EquipmentSlot equipmentSlot) {
         List<StackPowerUtil.StackPower> powers = StackPowerUtil.getPowers(stack, equipmentSlot);
         if(powers.size() > 0) {
-            ResourceLocation source = ResourceLocation.fromNamespaceAndPath(Apoli.MODID, equipmentSlot.getName());
+            Identifier source = Identifier.fromNamespaceAndPath(Apoli.MODID, equipmentSlot.getName());
             PowerHolderComponent powerHolder = PowerHolderComponent.KEY.get(this);
             powers.forEach(sp -> {
                 if(PowerTypeRegistry.contains(sp.powerId)) {
@@ -144,7 +144,7 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
 
         List<StackPowerUtil.StackPower> powers = StackPowerUtil.getPowers(stack2, equipmentSlot);
         if(powers.size() > 0) {
-            ResourceLocation source = ResourceLocation.fromNamespaceAndPath(Apoli.MODID, equipmentSlot.getName());
+            Identifier source = Identifier.fromNamespaceAndPath(Apoli.MODID, equipmentSlot.getName());
             PowerHolderComponent powerHolder = PowerHolderComponent.KEY.get(this);
             powers.forEach(sp -> {
                 if(PowerTypeRegistry.contains(sp.powerId)) {

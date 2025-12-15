@@ -83,7 +83,7 @@ public abstract class ItemStackMixinClient implements DataComponentHolder {
         }
     }
 
-    @Inject(method = "addDetailsToTooltip", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/DefaultedRegistry;getKey(Ljava/lang/Object;)Lnet/minecraft/resources/ResourceLocation;", shift = At.Shift.AFTER))
+    @Inject(method = "addDetailsToTooltip", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/DefaultedRegistry;getKey(Ljava/lang/Object;)Lnet/minecraft/resources/Identifier;", shift = At.Shift.AFTER))
     private void addEquipmentPowerTooltips(Item.TooltipContext context, TooltipDisplay tooltipDisplay, @Nullable Player player, TooltipFlag tooltipFlag, Consumer<Component> tooltipAdder, CallbackInfo ci, @Local(argsOnly = true) Consumer<Component> list) {
         for(EquipmentSlot slot : EquipmentSlot.values()) {
             List<StackPowerUtil.StackPower> powers = StackPowerUtil.getPowers((ItemStack)(Object)this, slot)

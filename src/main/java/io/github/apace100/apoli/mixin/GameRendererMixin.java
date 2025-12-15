@@ -13,7 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -52,17 +52,17 @@ public abstract class GameRendererMixin {
     @Shadow
     private boolean effectActive;
 
-    @Shadow protected abstract void setPostEffect(ResourceLocation postEffectId);
+    @Shadow protected abstract void setPostEffect(Identifier postEffectId);
 
     @Shadow public abstract void clearPostEffect();
 
     @Unique
-    private ResourceLocation currentlyLoadedShader;
+    private Identifier currentlyLoadedShader;
 
     @Inject(at = @At("TAIL"), method = "checkEntityPostEffect")
     private void loadShaderFromPowerOnCameraEntity(Entity entity, CallbackInfo ci) {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
-            ResourceLocation shaderLoc = shaderPower.getShaderLocation();
+            Identifier shaderLoc = shaderPower.getShaderLocation();
             if(this.minecraft.getResourceManager().getResource(shaderLoc).isPresent()) {
                 this.setPostEffect(shaderLoc);
                 currentlyLoadedShader = shaderLoc;
@@ -73,7 +73,7 @@ public abstract class GameRendererMixin {
     @Inject(at = @At("HEAD"), method = "render")
     private void loadShaderFromPower(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
-            ResourceLocation shaderLoc = shaderPower.getShaderLocation();
+            Identifier shaderLoc = shaderPower.getShaderLocation();
             if(currentlyLoadedShader != shaderLoc) {
                 if(this.minecraft.getResourceManager().getResource(shaderLoc).isPresent()) {
                     this.setPostEffect(shaderLoc);
@@ -109,7 +109,7 @@ public abstract class GameRendererMixin {
     @Inject(at = @At("HEAD"), method = "togglePostEffect", cancellable = true)
     private void disableShaderToggle(CallbackInfo ci) {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
-            ResourceLocation shaderLoc = shaderPower.getShaderLocation();
+            Identifier shaderLoc = shaderPower.getShaderLocation();
             if(!shaderPower.isToggleable() && currentlyLoadedShader == shaderLoc) {
                 ci.cancel();
             }

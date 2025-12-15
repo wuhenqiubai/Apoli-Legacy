@@ -30,7 +30,7 @@ import net.fabricmc.fabric.api.resource.conditions.v1.ResourceConditions;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.world.entity.LivingEntity;
@@ -119,8 +119,8 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		LOGGER.info("Apoli " + VERSION + " has initialized. Ready to power up your game!");
 	}
 
-	public static ResourceLocation identifier(String path) {
-		return ResourceLocation.fromNamespaceAndPath(MODID, path);
+	public static Identifier identifier(String path) {
+		return Identifier.fromNamespaceAndPath(MODID, path);
 	}
 
 	@Override

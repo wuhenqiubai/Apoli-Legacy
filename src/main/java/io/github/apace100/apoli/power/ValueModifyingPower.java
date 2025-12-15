@@ -7,7 +7,7 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiFunction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 
 public class ValueModifyingPower extends Power {
@@ -26,7 +26,7 @@ public class ValueModifyingPower extends Power {
         return modifiers;
     }
 
-    public static PowerFactory createValueModifyingFactory(BiFunction<PowerType, LivingEntity, ValueModifyingPower> powerConstructor, ResourceLocation identifier) {
+    public static PowerFactory createValueModifyingFactory(BiFunction<PowerType, LivingEntity, ValueModifyingPower> powerConstructor, Identifier identifier) {
         return new PowerFactory<>(identifier,
             new SerializableData()
                 .add("modifier", Modifier.DATA_TYPE, null)

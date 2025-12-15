@@ -1,8 +1,7 @@
 package io.github.apace100.apoli.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.apace100.apoli.component.PowerHolderComponent;
@@ -14,15 +13,13 @@ import io.github.apace100.apoli.util.ApoliLivingEntityRenderState;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.model.EntityModel;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,7 +35,7 @@ import java.util.List;
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extends LivingEntityRenderState, M extends EntityModel<S>> extends EntityRenderer<T, S> {
 
-    @Shadow public abstract ResourceLocation getTextureLocation(S renderState);
+    @Shadow public abstract Identifier getTextureLocation(S renderState);
 
     protected LivingEntityRendererMixin(EntityRendererProvider.Context ctx) {
         super(ctx);
@@ -51,9 +48,9 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
         }
     }
 
-    @ModifyExpressionValue(method = "extractRenderState(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;F)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;shouldEntityAppearGlowing(Lnet/minecraft/world/entity/Entity;)Z"))
-    private boolean preventOutlineRendering(boolean original, LivingEntity livingEntity) {
-        List<InvisibilityPower> invisibilityPowers = PowerHolderComponent.getPowers(livingEntity, InvisibilityPower.class);
+    @ModifyExpressionValue(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;appearsGlowing()Z"))
+    private boolean preventOutlineRendering(boolean original, @Local(argsOnly = true) LivingEntityRenderState renderState) {
+        List<InvisibilityPower> invisibilityPowers = PowerHolderComponent.getPowers(renderState, InvisibilityPower.class);
         if(invisibilityPowers.size() > 0 && invisibilityPowers.stream().noneMatch(InvisibilityPower::shouldRenderOutline)) {
             return false;
         }
@@ -65,29 +62,29 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
         ((ApoliLivingEntityRenderState) livingEntityRenderState).apoli$setPowerHolder(PowerHolderComponent.KEY.getNullable(livingEntity));
     }
 
-    @ModifyArg(method = "render(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/MultiBufferSource;getBuffer(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"))
-    private RenderType changeRenderLayerWhenTranslucent(RenderType renderType, @Local(argsOnly = true) S renderState) {
+    @ModifyArg(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;getRenderType(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;ZZZ)Lnet/minecraft/client/renderer/rendertype/RenderType;"), index = 1)
+    private boolean changeRenderLayerWhenTranslucent(boolean original, @Local(argsOnly = true) S renderState) {
         if(PowerHolderComponent.getPowers(renderState, ModelColorPower.class).stream().anyMatch(ModelColorPower::isTranslucent)) {
-            return RenderType.itemEntityTranslucentCull(getTextureLocation(renderState));
+            return true;
         }
-        return renderType;
+
+        return original;
     }
 
-    @WrapOperation(method = "render(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/RenderLayer;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/client/renderer/entity/state/EntityRenderState;FF)V"))
-    private void preventFeatureRendering(RenderLayer featureRenderer, PoseStack poseStack, MultiBufferSource bufferSource, int i, EntityRenderState renderState, float yRot, float xRot, Operation<Void> original) {
+    @SuppressWarnings("InvalidInjectorMethodSignature") // not sure why this is happening?
+    @WrapWithCondition(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/RenderLayer;submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/EntityRenderState;FF)V"))
+    private boolean preventFeatureRendering(RenderLayer featureRenderer, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int i, S renderState, float yRot, float xRot) {
         List<InvisibilityPower> invisibilityPowers = PowerHolderComponent.getPowers((S) renderState, InvisibilityPower.class);
         if(invisibilityPowers.size() > 0 && invisibilityPowers.stream().noneMatch(InvisibilityPower::shouldRenderArmor)) {
-            return;
+            return false;
         }
         Class cls = featureRenderer.getClass();
-        if(!PowerHolderComponent.getPowers((S) renderState, PreventFeatureRenderPower.class).stream().anyMatch(p -> p.doesApply(cls))) {
-            original.call(featureRenderer, poseStack, bufferSource, i, renderState, yRot, xRot);
-        }
+        return !PowerHolderComponent.getPowers((S) renderState, PreventFeatureRenderPower.class).stream().anyMatch(p -> p.doesApply(cls));
     }
 
     @Environment(EnvType.CLIENT)
-    @ModifyArg(method = "render(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/model/EntityModel;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"), index = 4)
-    private int renderColorChangedModel(int rgb, @Local(argsOnly = true) LivingEntityRenderState renderState) {
+    @Inject(method = "getModelTint", at = @At("HEAD"), cancellable = true)
+    private void renderColorChangedModel(S renderState, CallbackInfoReturnable<Integer> cir) {
         List<ModelColorPower> modelColorPowers = PowerHolderComponent.getPowers(renderState, ModelColorPower.class);
         if (modelColorPowers.size() > 0) {
             float r = modelColorPowers.stream().map(ModelColorPower::getRed).reduce((a, b) -> a * b).get();
@@ -95,9 +92,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
             float b = modelColorPowers.stream().map(ModelColorPower::getBlue).reduce((a, c) -> a * c).get();
             float a = modelColorPowers.stream().map(ModelColorPower::getAlpha).min(Float::compare).get();
 
-            return ARGB.colorFromFloat(ARGB.alphaFloat(rgb) * a, ARGB.redFloat(rgb) * r, ARGB.greenFloat(rgb) * g, ARGB.blueFloat(rgb) * b);
+            cir.setReturnValue(ARGB.colorFromFloat(a, r, g, b));
         }
-
-        return rgb;
     }
 }

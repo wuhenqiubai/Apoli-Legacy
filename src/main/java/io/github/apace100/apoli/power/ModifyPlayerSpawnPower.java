@@ -8,7 +8,7 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -35,7 +35,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
     public final ResourceKey<Level> dimension;
     public final float dimensionDistanceMultiplier;
-    public final ResourceLocation biomeId;
+    public final Identifier biomeId;
     public final SpawnStrategy spawnStrategy;
     public final ResourceKey<Structure> structure;
     public final SoundEvent spawnSound;
@@ -67,7 +67,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
     }
 
-    public ModifyPlayerSpawnPower(PowerType<?> type, LivingEntity entity, ResourceKey<Level> dimension, float dimensionDistanceMultiplier, ResourceLocation biomeId, SpawnStrategy spawnStrategy, ResourceKey<Structure> structure, SoundEvent spawnSound) {
+    public ModifyPlayerSpawnPower(PowerType<?> type, LivingEntity entity, ResourceKey<Level> dimension, float dimensionDistanceMultiplier, Identifier biomeId, SpawnStrategy spawnStrategy, ResourceKey<Structure> structure, SoundEvent spawnSound) {
         super(type, entity);
         this.dimension = dimension;
         this.dimensionDistanceMultiplier = dimensionDistanceMultiplier;
@@ -123,7 +123,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         ServerLevel targetDimension = server.getLevel(dimension);
         if (targetDimension == null) {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at dimension \"{}\" as it's not registered! Falling back to default spawnpoint...", this.getType().getIdentifier(), entity.getScoreboardName(), dimension.location());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at dimension \"{}\" as it's not registered! Falling back to default spawnpoint...", this.getType().getIdentifier(), entity.getScoreboardName(), dimension.identifier());
             return null;
         }
 
@@ -155,7 +155,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         Optional<Biome> targetBiome = targetDimension.registryAccess().lookupOrThrow(Registries.BIOME).getOptional(biomeId);
         if (targetBiome.isEmpty()) {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it's not registered in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.location());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it's not registered in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.identifier());
             return Optional.empty();
         }
 
@@ -169,7 +169,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         if (targetBiomePos != null) return Optional.of(targetBiomePos.getFirst());
         else {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.location());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at biome \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), biomeId, dimension.identifier());
             return Optional.empty();
         }
 
@@ -186,7 +186,7 @@ public class ModifyPlayerSpawnPower extends Power {
             var entry = structureRegistry.get(structure);
             if (entry.isPresent()) structureRegistryEntryList = HolderSet.direct(entry.get());
 
-            structureTagOrName = structure.location().toString();
+            structureTagOrName = structure.identifier().toString();
 
         }
 
@@ -195,7 +195,7 @@ public class ModifyPlayerSpawnPower extends Power {
             var entryList = structureRegistry.get(structureTag);
             if (entryList.isPresent()) structureRegistryEntryList = entryList.get();
 
-            structureTagOrName = "#" + structureTag.location().toString();
+            structureTagOrName = "#" + structureTag.identifier().toString();
 
         }
 
@@ -218,7 +218,7 @@ public class ModifyPlayerSpawnPower extends Power {
                 );
 
         if (structurePos == null) {
-            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at structure \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), structureTagOrName, dimension.location());
+            Apoli.LOGGER.warn("Power {} could not set {}'s spawnpoint at structure \"{}\" as it couldn't be found in dimension \"{}\".", this.getType().getIdentifier(), entity.getScoreboardName(), structureTagOrName, dimension.identifier());
             return Optional.empty();
         }
 

@@ -9,7 +9,7 @@ import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -35,7 +35,7 @@ public class SelfActionWhenHitPower extends CooldownPower {
         }
     }
 
-    public static PowerFactory createFactory(ResourceLocation identifier) {
+    public static PowerFactory createFactory(Identifier identifier) {
         return new PowerFactory<>(identifier,
             new SerializableData()
                 .add("entity_action", ApoliDataTypes.ENTITY_ACTION)

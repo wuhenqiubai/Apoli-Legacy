@@ -11,7 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -47,7 +47,7 @@ public class PowerHudRenderer implements GameHudRender {
         for (HudRendered hudPower : hudPowers) {
             HudRender render = hudPower.getRenderSettings();
             if(render.shouldRender(client.player) && hudPower.shouldRender()) {
-                ResourceLocation currentLocation = render.getSpriteLocation();
+                Identifier currentLocation = render.getSpriteLocation();
                 /*if(currentLocation != lastLocation) {
                     RenderSystem.setShaderTexture(0, currentLocation);
                     lastLocation = currentLocation;

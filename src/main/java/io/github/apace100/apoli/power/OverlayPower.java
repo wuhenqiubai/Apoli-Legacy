@@ -14,7 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
@@ -25,7 +25,7 @@ import static io.github.apace100.apoli.power.OverlayPowerPipelines.NAUSEA_PIPELI
 import static io.github.apace100.apoli.power.OverlayPowerPipelines.OVERLAY_PIPELINE;
 
 public class OverlayPower extends Power {
-    private final ResourceLocation texture;
+    private final Identifier texture;
     private final float strength;
     private final float red;
     private final float green;
@@ -43,7 +43,7 @@ public class OverlayPower extends Power {
         BELOW_HUD, ABOVE_HUD
     }
 
-    public OverlayPower(PowerType<?> type, LivingEntity entity, ResourceLocation texture, float strength, float red, float green, float blue, DrawMode drawMode, DrawPhase drawPhase, boolean hideWithHud, boolean visibleInThirdPerson) {
+    public OverlayPower(PowerType<?> type, LivingEntity entity, Identifier texture, float strength, float red, float green, float blue, DrawMode drawMode, DrawPhase drawPhase, boolean hideWithHud, boolean visibleInThirdPerson) {
         super(type, entity);
         this.texture = texture;
         this.strength = strength;

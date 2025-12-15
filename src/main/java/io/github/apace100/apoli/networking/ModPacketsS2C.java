@@ -18,7 +18,7 @@ import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -149,7 +149,7 @@ public class ModPacketsS2C {
     @Environment(EnvType.CLIENT)
     private static void onPowerSync(SyncPowerPacket payload, ClientPlayNetworking.Context context) {
         int entityId = payload.entityId();
-        ResourceLocation powerId = payload.powerId();
+        Identifier powerId = payload.powerId();
         CompoundTag powerNbtContainer = payload.powerNbtContainer();
         Tag powerNbt = powerNbtContainer.get("Data");
         context.client().execute(() -> {

@@ -27,7 +27,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -261,11 +261,11 @@ public class EntityConditions {
                 Biome biome = biomeEntry.value();
                 ConditionFactory<Holder<Biome>>.Instance condition = data.get("condition");
                 if(data.isPresent("biome") || data.isPresent("biomes")) {
-                    ResourceLocation biomeId = entity.level().registryAccess().lookupOrThrow(Registries.BIOME).getKey(biome);
+                    Identifier biomeId = entity.level().registryAccess().lookupOrThrow(Registries.BIOME).getKey(biome);
                     if(data.isPresent("biome") && biomeId.equals(data.getId("biome"))) {
                         return condition == null || condition.test(biomeEntry);
                     }
-                    if(data.isPresent("biomes") && ((List<ResourceLocation>)data.get("biomes")).contains(biomeId)) {
+                    if(data.isPresent("biomes") && ((List<Identifier>)data.get("biomes")).contains(biomeId)) {
                         return condition == null || condition.test(biomeEntry);
                     }
                     return false;
@@ -309,7 +309,7 @@ public class EntityConditions {
             (data, entity) -> {
                 MinecraftServer server = entity.level().getServer();
                 if (server != null) {
-                    LootItemCondition lootCondition = server.registryAccess().lookupOrThrow(Registries.PREDICATE).getValue((ResourceLocation) data.get("predicate"));
+                    LootItemCondition lootCondition = server.registryAccess().lookupOrThrow(Registries.PREDICATE).getValue((Identifier) data.get("predicate"));
                     if (lootCondition != null) {
                         LootParams lootContextParameterSet = new LootParams.Builder((ServerLevel) entity.level())
                                 .withParameter(LootContextParams.ORIGIN, entity.position())
