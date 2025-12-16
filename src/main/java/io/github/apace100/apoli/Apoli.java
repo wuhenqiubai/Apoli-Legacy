@@ -49,6 +49,8 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 	public static final Scheduler SCHEDULER = new Scheduler();
 
 	public static final String MODID = "apoli";
+	public static final String LEGACY_MODID = "apoli_legacy";
+
 	public static final Logger LOGGER = LogManager.getLogger(Apoli.class);
 	public static String VERSION = "";
 	public static int[] SEMVER;
@@ -121,6 +123,10 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 
 	public static Identifier identifier(String path) {
 		return Identifier.fromNamespaceAndPath(MODID, path);
+	}
+
+	public static ResourceLocation legacy(String path) {
+		return ResourceLocation.fromNamespaceAndPath(LEGACY_MODID, path);
 	}
 
 	@Override
