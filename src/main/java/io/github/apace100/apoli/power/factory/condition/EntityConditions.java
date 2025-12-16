@@ -11,6 +11,7 @@ import io.github.apace100.apoli.power.ClimbingPower;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeReference;
 import io.github.apace100.apoli.power.factory.condition.entity.*;
+import io.github.apace100.apoli.power.factory.condition.entity.legacy.DistanceToGroundCondition;
 import io.github.apace100.apoli.registry.ApoliRegistries;
 import io.github.apace100.apoli.util.Comparison;
 import io.github.apace100.apoli.util.Shape;
@@ -532,6 +533,9 @@ public class EntityConditions {
         register(RaycastCondition.getFactory());
         register(ElytraFlightPossibleCondition.getFactory());
         register(InventoryCondition.getFactory());
+
+        // Origins: Legacy
+        register(DistanceToGroundCondition.getFactory());
     }
 
     private static void register(ConditionFactory<Entity> conditionFactory) {
