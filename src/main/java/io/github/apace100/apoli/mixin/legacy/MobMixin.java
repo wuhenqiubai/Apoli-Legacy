@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,6 +23,13 @@ public abstract class MobMixin extends LivingEntity {
     @Shadow
     @Final
     protected GoalSelector targetSelector;
+
+    @Shadow
+    @Nullable
+    public abstract LivingEntity getTarget();
+
+    @Shadow
+    public abstract void setTarget(@Nullable LivingEntity target);
 
     protected MobMixin(EntityType<? extends LivingEntity> entityType, Level level) {
         super(entityType, level);
@@ -45,5 +53,24 @@ public abstract class MobMixin extends LivingEntity {
 
             return false;
         }));
+    }
+
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void origins_legacy$removeTargetIfPassive(CallbackInfo ci) {
+        LivingEntity target = this.getTarget();
+
+        if (target != null) {
+            Mob self = (Mob) (Object) this;
+            List<ModifyBehaviorPower> powers = PowerHolderComponent.getPowers(target, ModifyBehaviorPower.class);
+            powers.removeIf(power -> !power.doesApply(self));
+
+            if (!powers.isEmpty()) {
+                for (ModifyBehaviorPower power : powers) {
+                    if (power.getBehaviorType() == ModifyBehaviorPower.BehaviorType.PASSIVE) {
+                        this.setTarget(null);
+                    }
+                }
+            }
+        }
     }
 }
