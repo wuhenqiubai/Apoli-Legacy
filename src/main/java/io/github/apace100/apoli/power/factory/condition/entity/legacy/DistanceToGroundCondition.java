@@ -18,7 +18,7 @@ public class DistanceToGroundCondition {
 
         BlockPos.MutableBlockPos pos = entity.blockPosition().mutable();
         for (int i = 0; i < distance; i++) {
-            BlockState state = entity.level().getBlockState(pos.set(0, -1, 0));
+            BlockState state = entity.level().getBlockState(pos.move(0, -1, 0));
             if (!state.isAir() && state.entityCanStandOnFace(entity.level(), pos, entity, Direction.UP)) {
                 return true;
             }
