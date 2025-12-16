@@ -22,8 +22,8 @@ public abstract class TargetingConditionsMixin {
     @Inject(method = "test", at = @At("HEAD"), cancellable = true)
     private void origins_legacy$avoidCombatTargetingIfPassive(LivingEntity attacker, LivingEntity target, CallbackInfoReturnable<Boolean> cir) {
         if (this.isCombat && attacker != null && target != null && attacker != target) {
-            List<ModifyBehaviorPower> powers = PowerHolderComponent.getPowers(attacker, ModifyBehaviorPower.class);
-            powers.removeIf(power -> !power.doesApply(target));
+            List<ModifyBehaviorPower> powers = PowerHolderComponent.getPowers(target, ModifyBehaviorPower.class);
+            powers.removeIf(power -> !power.doesApply(attacker));
 
             if (!powers.isEmpty()) {
                 for (ModifyBehaviorPower power : powers) {
