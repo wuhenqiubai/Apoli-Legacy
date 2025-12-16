@@ -52,7 +52,10 @@
         "ServerWorldMixin",
         "SlotRangesAccessor",
         "StatusEffectInstanceMixin",
-        "WeightedListEntryAccessor"
+        "WeightedListEntryAccessor",
+        "legacy.MobMixin",
+        "legacy.NearestAttackableTargetGoalMixin",
+        "legacy.TargetingConditionsMixin"
     ],
     "client": [
         "BackgroundRendererMixin",
