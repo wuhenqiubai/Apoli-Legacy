@@ -70,14 +70,24 @@ public class EntityConditions {
             (data, entity) -> data.getBoolean("value")));
         register(new ConditionFactory<>(Apoli.identifier("and"), new SerializableData()
             .add("conditions", ApoliDataTypes.ENTITY_CONDITIONS),
-            (data, entity) -> ((List<ConditionFactory<Entity>.Instance>)data.get("conditions")).stream().allMatch(
-                condition -> condition.test(entity)
-            )));
+            (data, entity) -> {
+                for (ConditionFactory<Entity>.Instance condition : ((List<ConditionFactory<Entity>.Instance>) data.get("conditions"))) {
+                    if (!condition.test(entity))
+                        return false;
+                }
+
+                return true;
+            }));
         register(new ConditionFactory<>(Apoli.identifier("or"), new SerializableData()
             .add("conditions", ApoliDataTypes.ENTITY_CONDITIONS),
-            (data, entity) -> ((List<ConditionFactory<Entity>.Instance>)data.get("conditions")).stream().anyMatch(
-                condition -> condition.test(entity)
-            )));
+            (data, entity) -> {
+                for (ConditionFactory<Entity>.Instance condition : ((List<ConditionFactory<Entity>.Instance>) data.get("conditions"))) {
+                    if (condition.test(entity))
+                        return true;
+                }
+
+                return false;
+            }));
         register(BlockCollisionCondition.getFactory());
         register(new ConditionFactory<>(Apoli.identifier("brightness"), new SerializableData()
             .add("comparison", ApoliDataTypes.COMPARISON)
