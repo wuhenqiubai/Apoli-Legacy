@@ -27,14 +27,24 @@ public class BiEntityConditions {
             (data, pair) -> data.getBoolean("value")));
         register(new ConditionFactory<>(Apoli.identifier("and"), new SerializableData()
             .add("conditions", ApoliDataTypes.BIENTITY_CONDITIONS),
-            (data, pair) -> ((List<ConditionFactory<Tuple<Entity, Entity>>.Instance>)data.get("conditions")).stream().allMatch(
-                condition -> condition.test(pair)
-            )));
+            (data, pair) -> {
+                for (ConditionFactory<Tuple<Entity, Entity>>.Instance condition : ((List<ConditionFactory<Tuple<Entity, Entity>>.Instance>) data.get("conditions"))) {
+                    if (!condition.test(pair))
+                        return false;
+                }
+
+                return true;
+            }));
         register(new ConditionFactory<>(Apoli.identifier("or"), new SerializableData()
             .add("conditions", ApoliDataTypes.BIENTITY_CONDITIONS),
-            (data, pair) -> ((List<ConditionFactory<Tuple<Entity, Entity>>.Instance>)data.get("conditions")).stream().anyMatch(
-                condition -> condition.test(pair)
-            )));
+            (data, pair) -> {
+                for (ConditionFactory<Tuple<Entity, Entity>>.Instance condition : ((List<ConditionFactory<Tuple<Entity, Entity>>.Instance>) data.get("conditions"))) {
+                    if (condition.test(pair))
+                        return true;
+                }
+
+                return false;
+            }));
         register(new ConditionFactory<>(Apoli.identifier("invert"), new SerializableData()
             .add("condition", ApoliDataTypes.BIENTITY_CONDITION),
             (data, pair) -> {
