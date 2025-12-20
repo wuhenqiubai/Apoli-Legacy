@@ -125,8 +125,8 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		return Identifier.fromNamespaceAndPath(MODID, path);
 	}
 
-	public static ResourceLocation legacy(String path) {
-		return ResourceLocation.fromNamespaceAndPath(LEGACY_MODID, path);
+	public static Identifier legacy(String path) {
+		return Identifier.fromNamespaceAndPath(LEGACY_MODID, path);
 	}
 
 	@Override
