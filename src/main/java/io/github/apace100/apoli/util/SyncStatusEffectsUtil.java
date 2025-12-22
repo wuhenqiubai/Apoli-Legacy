@@ -15,7 +15,7 @@ public class SyncStatusEffectsUtil {
         if (living.level().isClientSide()) return;
 
         for (ServerPlayer player : PlayerLookup.tracking(living)) {
-            ServerPlayNetworking.send(player, new SyncStatusEffectPacket(living.getId(), (byte) type.ordinal(), type != UpdateType.CLEAR ? Optional.empty() : Optional.of(instance)));
+            ServerPlayNetworking.send(player, new SyncStatusEffectPacket(living.getId(), (byte) type.ordinal(), type == UpdateType.CLEAR ? Optional.empty() : Optional.of(instance)));
         }
     }
 
