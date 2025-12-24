@@ -67,7 +67,7 @@ public abstract class AbstractBlockStateMixin {
     }
 
     @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true)
-    private void preventCollisionWhenPhasing(Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier effectApplier, CallbackInfo ci) {
+    private void preventCollisionWhenPhasing(Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier applier, boolean intersects, CallbackInfo ci) {
         for (PhasingPower phasingPower : PowerHolderComponent.getPowers(entity, PhasingPower.class)) {
             if(phasingPower.doesApply(pos)) {
                 ci.cancel();

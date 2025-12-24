@@ -21,7 +21,7 @@ public class PhantomSpawnerMixin {
     private Player apoli$CachedPlayer;
 
     @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/dimension/DimensionType;hasSkyLight()Z", ordinal = 1))
-    private void cachePlayerEntity(ServerLevel level, boolean spawnEnemies, boolean spawnFriendlies, CallbackInfo ci, @Local ServerPlayer serverPlayerEntity) {
+    private void cachePlayerEntity(ServerLevel level, boolean spawnEnemies, CallbackInfo ci, @Local ServerPlayer serverPlayerEntity) {
         apoli$CachedPlayer = serverPlayerEntity;
     }
 

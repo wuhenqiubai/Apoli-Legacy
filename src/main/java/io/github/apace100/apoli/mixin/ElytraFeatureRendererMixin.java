@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(WingsLayer.class)
 public class ElytraFeatureRendererMixin {
-    @ModifyExpressionValue(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/client/renderer/entity/state/HumanoidRenderState;FF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;get(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;"))
+    @ModifyExpressionValue(method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/HumanoidRenderState;FF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;get(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;"))
     private Object modifyEquippedStackToElytra(Object original, @Local(argsOnly = true) HumanoidRenderState renderState) {
         if (!renderState.isInvisible) {
             for (ElytraFlightPower power : PowerHolderComponent.getPowers(renderState, ElytraFlightPower.class)) {
@@ -43,7 +43,7 @@ public class ElytraFeatureRendererMixin {
         return original;
     }
 
-    @ModifyExpressionValue(method = "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/client/renderer/entity/state/HumanoidRenderState;FF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/WingsLayer;getPlayerElytraTexture(Lnet/minecraft/client/renderer/entity/state/HumanoidRenderState;)Lnet/minecraft/resources/Identifier;"))
+    @ModifyExpressionValue(method = "submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/HumanoidRenderState;FF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/WingsLayer;getPlayerElytraTexture(Lnet/minecraft/client/renderer/entity/state/HumanoidRenderState;)Lnet/minecraft/resources/Identifier;"))
     private Identifier modifyEntityElytraTextureToPower(Identifier original, @Local(argsOnly = true) HumanoidRenderState renderState) {
         if (!renderState.isInvisible) {
             for (ElytraFlightPower power : PowerHolderComponent.getPowers(renderState, ElytraFlightPower.class)) {

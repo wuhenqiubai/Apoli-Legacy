@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(EquipmentLayerRenderer.class)
 public abstract class EquipmentLayerRendererMixin {
-    @WrapOperation(method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/resources/Identifier;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;get(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;", ordinal = 0))
+    @WrapOperation(method = "renderLayers(Lnet/minecraft/client/resources/model/EquipmentClientInfo$LayerType;Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lnet/minecraft/world/item/ItemStack;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/resources/Identifier;II)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;get(Lnet/minecraft/core/component/DataComponentType;)Ljava/lang/Object;", ordinal = 0))
     private Object apoli$disableElytraTrimmingIfUnneeded(ItemStack instance, DataComponentType<?> dataComponentType, Operation<Object> original, @Local(argsOnly = true) EquipmentClientInfo.LayerType layerType) {
         if (layerType == EquipmentClientInfo.LayerType.WINGS && instance.has(DataComponents.EQUIPPABLE) && !EquipmentAssets.ELYTRA.equals(instance.get(DataComponents.EQUIPPABLE).assetId().orElse(null))) {
             return null;
