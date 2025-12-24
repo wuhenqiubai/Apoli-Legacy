@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
@@ -71,15 +72,14 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
         return original;
     }
 
-    @SuppressWarnings("InvalidInjectorMethodSignature") // not sure why this is happening?
     @WrapWithCondition(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/layers/RenderLayer;submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;ILnet/minecraft/client/renderer/entity/state/EntityRenderState;FF)V"))
-    private boolean preventFeatureRendering(RenderLayer featureRenderer, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int i, S renderState, float yRot, float xRot) {
-        List<InvisibilityPower> invisibilityPowers = PowerHolderComponent.getPowers((S) renderState, InvisibilityPower.class);
+    private <S extends EntityRenderState> boolean preventFeatureRendering(RenderLayer featureRenderer, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int i, S renderState, float v, float unknown) {
+        List<InvisibilityPower> invisibilityPowers = PowerHolderComponent.getPowers((LivingEntityRenderState) renderState, InvisibilityPower.class);
         if(invisibilityPowers.size() > 0 && invisibilityPowers.stream().noneMatch(InvisibilityPower::shouldRenderArmor)) {
             return false;
         }
         Class cls = featureRenderer.getClass();
-        return !PowerHolderComponent.getPowers((S) renderState, PreventFeatureRenderPower.class).stream().anyMatch(p -> p.doesApply(cls));
+        return !PowerHolderComponent.getPowers((LivingEntityRenderState) renderState, PreventFeatureRenderPower.class).stream().anyMatch(p -> p.doesApply(cls));
     }
 
     @Environment(EnvType.CLIENT)
