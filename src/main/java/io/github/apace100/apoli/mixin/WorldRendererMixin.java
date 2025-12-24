@@ -1,9 +1,9 @@
 package io.github.apace100.apoli.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
-import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.apace100.apoli.ApoliClient;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.EntityGlowPower;
@@ -16,6 +16,10 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
+import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
+import net.minecraft.client.renderer.state.SkyRenderState;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.joml.Matrix4f;
@@ -23,12 +27,9 @@ import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
 import java.util.List;
 
@@ -40,17 +41,14 @@ public abstract class WorldRendererMixin {
     @Shadow
     private Minecraft minecraft;
 
-    @Unique
-    private Entity renderEntity;
-
     @Shadow public abstract void allChanged();
 
-    @Inject(method = "method_62215", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSkyDisc(FFF)V"), cancellable = true)
-    private void skipSkyRenderingForPhasingBlindness(GpuBufferSlice gpuBufferSlice, DimensionSpecialEffects.SkyType skyType, float f, DimensionSpecialEffects dimensionSpecialEffects, CallbackInfo ci) {
-        if(Minecraft.getInstance().cameraEntity instanceof LivingEntity) {
-            List<PhasingPower> phasings = PowerHolderComponent.getPowers(Minecraft.getInstance().cameraEntity, PhasingPower.class);
+    @Inject(method = "method_62215", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SkyRenderer;renderSkyDisc(I)V"), cancellable = true)
+    private static void skipSkyRenderingForPhasingBlindness(GpuBufferSlice gpuBufferSlice, SkyRenderState skyRenderState, SkyRenderer skyRenderer, CallbackInfo ci) {
+        if(Minecraft.getInstance().getCameraEntity() instanceof LivingEntity) {
+            List<PhasingPower> phasings = PowerHolderComponent.getPowers(Minecraft.getInstance().getCameraEntity(), PhasingPower.class);
             if(phasings.stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.BLINDNESS)) {
-                if(MiscUtil.getInWallBlockState((LivingEntity)Minecraft.getInstance().cameraEntity) != null) {
+                if(MiscUtil.getInWallBlockState((LivingEntity)Minecraft.getInstance().getCameraEntity()) != null) {
                     ci.cancel();
                 }
             }
@@ -58,35 +56,29 @@ public abstract class WorldRendererMixin {
     }
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
-    private void updateChunksIfRenderChanged(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean bl, Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, GpuBufferSlice gpuBufferSlice, Vector4f vector4f, boolean bl2, CallbackInfo ci) {
+    private void updateChunksIfRenderChanged(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f frustumMatrix, Matrix4f projectionMatrix, Matrix4f cullingProjectionMatrix, GpuBufferSlice shaderFog, Vector4f fogColor, boolean renderSky, CallbackInfo ci) {
         if(ApoliClient.shouldReloadWorldRenderer) {
             allChanged();
             ApoliClient.shouldReloadWorldRenderer = false;
         }
     }
 
-    @Inject(method = "renderEntities", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/world/entity/Entity;getTeamColor()I"))
-    private void getEntity(PoseStack poseStack, MultiBufferSource.BufferSource bufferSource, Camera camera, DeltaTracker deltaTracker, List<Entity> entities, CallbackInfo ci, @Local Entity entity) {
-        this.renderEntity = entity;
-    }
-
-    @ModifyArgs(method = "renderEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/OutlineBufferSource;setColor(IIII)V"))
-    private void setColors(Args args) {
+    @ModifyReturnValue(method = "extractEntity", at = @At("RETURN"))
+    private EntityRenderState setColors(EntityRenderState renderState, @Local(argsOnly = true) Entity entity) {
         for (EntityGlowPower power : PowerHolderComponent.getPowers(minecraft.getCameraEntity(), EntityGlowPower.class)) {
-            if (power.doesApply(renderEntity)) {
+            if (power.doesApply(entity)) {
                 if (!power.usesTeams()) {
-                    args.set(0, (int)(power.getRed() * 255.0F));
-                    args.set(1, (int)(power.getGreen() * 255.0F));
-                    args.set(2, (int)(power.getBlue() * 255.0F));
+                    renderState.outlineColor = ARGB.colorFromFloat(1f, power.getRed(), power.getGreen(), power.getBlue());
                 }
             }
         }
-        for (SelfGlowPower power : PowerHolderComponent.getPowers(renderEntity, SelfGlowPower.class)) {
+
+        for (SelfGlowPower power : PowerHolderComponent.getPowers(entity, SelfGlowPower.class)) {
             if (!power.usesTeams()) {
-                args.set(0, (int)(power.getRed() * 255.0F));
-                args.set(1, (int)(power.getGreen() * 255.0F));
-                args.set(2, (int)(power.getBlue() * 255.0F));
+                renderState.outlineColor = ARGB.colorFromFloat(1f, power.getRed(), power.getGreen(), power.getBlue());
             }
         }
+
+        return renderState;
     }
 }

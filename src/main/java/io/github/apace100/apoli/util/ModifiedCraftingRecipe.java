@@ -105,8 +105,8 @@ public class ModifiedCraftingRecipe extends CustomRecipe {
         var inv = ((CraftingInputContainerHolder) input).apoli$getCraftingContainer();
         AbstractContainerMenu handler = ((CraftingInventoryAccessor)inv).getMenu();
         Player player = getPlayerFromHandler(handler);
-        if(player != null && player.getServer() != null) {
-            var recipeManager = player.getServer().getRecipeManager();
+        if(player != null && player.level().getServer() != null) {
+            var recipeManager = player.level().getServer().getRecipeManager();
 
             for (RecipeHolder<?> recipe : recipeManager.getRecipes()) {
                 var value = recipe.value();

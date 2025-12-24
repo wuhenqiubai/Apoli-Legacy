@@ -15,6 +15,7 @@ import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -30,7 +31,7 @@ public class PowerCommand {
 
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 		dispatcher.register(
-			literal("power").requires(scs -> scs.hasPermission(2))
+			literal("power").requires(scs -> scs.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
 				.then(literal("grant")
 					.then(argument("targets", EntityArgument.entities())
 						.then(argument("power", PowerTypeArgumentType.power())

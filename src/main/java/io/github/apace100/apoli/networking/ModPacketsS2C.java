@@ -121,7 +121,7 @@ public class ModPacketsS2C {
             } else if(mountingPlayer == null) {
                 Apoli.LOGGER.warn("Received unknown passenger for player");
             } else {
-                boolean result = mountingPlayer.startRiding(mountedPlayer, true);
+                boolean result = mountingPlayer.startRiding(mountedPlayer, true, true);
                 if(result) {
                     Apoli.LOGGER.info(mountingPlayer.getDisplayName().getString() + " started riding " + mountedPlayer.getDisplayName().getString());
                 } else {

@@ -102,7 +102,7 @@ public class EntityActions {
             .add("effect", SerializableDataTypes.STATUS_EFFECT_INSTANCE, null)
             .add("effects", SerializableDataTypes.STATUS_EFFECT_INSTANCES, null),
             (data, entity) -> {
-                if(entity instanceof LivingEntity le && !entity.level().isClientSide) {
+                if(entity instanceof LivingEntity le && !entity.level().isClientSide()) {
                     if(data.isPresent("effect")) {
                         MobEffectInstance effect = data.get("effect");
                         le.addEffect(new MobEffectInstance(effect));
@@ -136,7 +136,7 @@ public class EntityActions {
             .add("set", SerializableDataTypes.BOOLEAN, false),
             (data, entity) -> {
                 if (entity instanceof Player
-                    && (entity.level().isClientSide ?
+                    && (entity.level().isClientSide() ?
                     !data.getBoolean("client") : !data.getBoolean("server")))
                     return;
                 Space space = data.get("space");
@@ -204,7 +204,7 @@ public class EntityActions {
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
-                        Apoli.config.executeCommand.permissionLevel,
+                        Apoli.config.executeCommand.getPermissionHandler(),
                         entity.getName().getString(),
                         entity.getDisplayName(),
                         entity.level().getServer(),

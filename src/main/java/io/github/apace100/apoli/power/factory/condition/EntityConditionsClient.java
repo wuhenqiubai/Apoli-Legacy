@@ -60,7 +60,7 @@ public final class EntityConditionsClient {
             .add("advancement", SerializableDataTypes.IDENTIFIER), (data, entity) -> {
             Identifier id = data.getId("advancement");
             if(entity instanceof ServerPlayer) {
-                AdvancementHolder advancement = entity.getServer().getAdvancements().get(id);
+                AdvancementHolder advancement = entity.level().getServer().getAdvancements().get(id);
                 if(advancement == null) {
                     Apoli.LOGGER.warn("Advancement \"" + id + "\" did not exist, but was referenced in an \"origins:advancement\" condition.");
                 } else {

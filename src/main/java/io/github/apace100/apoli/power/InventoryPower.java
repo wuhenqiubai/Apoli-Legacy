@@ -84,7 +84,7 @@ public class InventoryPower extends Power implements Active, Container {
         if(!isActive()) {
             return;
         }
-        if(!entity.level().isClientSide && entity instanceof Player playerEntity) {
+        if(!entity.level().isClientSide() && entity instanceof Player playerEntity) {
             playerEntity.openMenu(new SimpleMenuProvider(containerScreen, containerTitle));
         }
     }

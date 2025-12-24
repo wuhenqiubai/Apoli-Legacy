@@ -19,8 +19,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.projectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.hurtingprojectile.AbstractHurtingProjectile;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -117,7 +117,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
                     if(soundEvent != null) {
                         entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
                     }
-                    if(!entity.level().isClientSide) {
+                    if(!entity.level().isClientSide()) {
                         fireProjectile();
                     }
                 }
@@ -131,7 +131,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
                 if(soundEvent != null) {
                     entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
                 }
-                if(!entity.level().isClientSide) {
+                if(!entity.level().isClientSide()) {
                     for(; shotProjectiles < projectileCount; shotProjectiles++) {
                         fireProjectile();
                     }
@@ -146,7 +146,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
                     if(soundEvent != null) {
                         entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(), soundEvent, SoundSource.NEUTRAL, 0.5F, 0.4F / (entity.getRandom().nextFloat() * 0.4F + 0.8F));
                     }
-                    if(!entity.level().isClientSide) {
+                    if(!entity.level().isClientSide()) {
                         fireProjectile();
                     }
                 }
@@ -161,7 +161,7 @@ public class FireProjectilePower extends ActiveCooldownPower {
 
     private void fireProjectile() {
 
-        if (entityType == null || entity.level().isClientSide) return;
+        if (entityType == null || entity.level().isClientSide()) return;
 
         ServerLevel serverWorld = (ServerLevel) entity.level();
         float yaw = entity.getYRot();

@@ -30,7 +30,7 @@ import java.util.function.Predicate;
 public class ExplodeAction {
 
     public static void action(SerializableData.Instance data, Triple<Level, BlockPos, Direction> block) {
-        if(block.getLeft().isClientSide) {
+        if(block.getLeft().isClientSide()) {
             return;
         }
 
@@ -61,14 +61,14 @@ public class ExplodeAction {
     private static void explode(Level world, Entity entity, DamageSource damageSource, ExplosionDamageCalculator behavior, double x, double y, double z, float power, boolean createFire, Explosion.BlockInteraction destructionType) {
         Vec3 pos = new Vec3(x, y, z);
         ServerExplosion explosion = new ServerExplosion((ServerLevel) world, entity, damageSource, behavior, pos, power, createFire, destructionType);
-        explosion.explode();
+        int blockCount = explosion.explode();
 
         ParticleOptions particleOptions = explosion.isSmall() ? ParticleTypes.EXPLOSION : ParticleTypes.EXPLOSION_EMITTER;
 
         for (ServerPlayer serverPlayer : ((ServerLevel) world).players()) {
             if (serverPlayer.distanceToSqr(pos) < 4096.0) {
                 Optional<Vec3> optional = Optional.ofNullable(explosion.getHitPlayers().get(serverPlayer));
-                serverPlayer.connection.send(new ClientboundExplodePacket(pos, optional, particleOptions, SoundEvents.GENERIC_EXPLODE));
+                serverPlayer.connection.send(new ClientboundExplodePacket(pos, power, blockCount, optional, particleOptions, SoundEvents.GENERIC_EXPLODE, Level.DEFAULT_EXPLOSION_BLOCK_PARTICLES));
             }
         }
     }

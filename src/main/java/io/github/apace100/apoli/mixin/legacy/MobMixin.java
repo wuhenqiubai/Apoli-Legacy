@@ -39,7 +39,7 @@ public abstract class MobMixin extends LivingEntity {
     private void origins_legacy$addCustomAttackableGoal(EntityType<?> entityType, Level level, CallbackInfo ci) {
         Mob self = (Mob) (Object) this;
 
-        this.targetSelector.addGoal(0, new NearestAttackableTargetGoal<>(self, LivingEntity.class, true, entity -> {
+        this.targetSelector.addGoal(0, new NearestAttackableTargetGoal<>(self, LivingEntity.class, true, (entity, serverLevel) -> {
             List<ModifyBehaviorPower> powers = PowerHolderComponent.getPowers(entity, ModifyBehaviorPower.class);
             powers.removeIf(power -> !power.doesApply(self));
 

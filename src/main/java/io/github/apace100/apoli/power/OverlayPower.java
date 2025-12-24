@@ -13,7 +13,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
@@ -117,10 +116,12 @@ public class OverlayPower extends Power {
             var indexBufferStorage = RenderSystem.getSequentialBuffer(meshData.drawState().mode());
             var indexBuffer = indexBufferStorage.getBuffer(meshData.drawState().indexCount());
             var indexType = indexBufferStorage.type();
-            var gpuTextureView = client.getTextureManager().getTexture(texture).getTextureView();
+            var clientTexture = client.getTextureManager().getTexture(texture);
+            var gpuTextureView = clientTexture.getTextureView();
+            var gpuSampler = clientTexture.getSampler();
 
             try (RenderPass pass = encoder.createRenderPass(() -> "Immediate draw for Overlay Power", renderTarget.getColorTextureView(), OptionalInt.empty())) {
-                pass.bindSampler("Sampler0", gpuTextureView);
+                pass.bindTexture("Sampler0", gpuTextureView, gpuSampler);
                 pass.setVertexBuffer(0, vertexBuffer);
                 pass.setIndexBuffer(indexBuffer, indexType);
 

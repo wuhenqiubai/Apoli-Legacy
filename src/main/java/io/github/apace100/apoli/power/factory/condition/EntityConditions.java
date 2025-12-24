@@ -32,6 +32,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.server.permissions.PermissionSetUnion;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.Tuple;
@@ -44,7 +47,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
@@ -300,7 +303,7 @@ public class EntityConditions {
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
-                        Apoli.config.executeCommand.permissionLevel,
+                        Apoli.config.executeCommand.getPermissionHandler(),
                         entity.getName().getString(),
                         entity.getDisplayName(),
                         server,
@@ -537,7 +540,7 @@ public class EntityConditions {
         register(new ConditionFactory<>(Apoli.identifier("ability"), new SerializableData()
             .add("ability", ApoliDataTypes.PLAYER_ABILITY),
             (data, entity) -> {
-                if(entity instanceof Player && !entity.level().isClientSide) {
+                if(entity instanceof Player && !entity.level().isClientSide()) {
                     return ((PlayerAbility) data.get("ability")).isEnabledFor((Player) entity);
                 }
                 return false;

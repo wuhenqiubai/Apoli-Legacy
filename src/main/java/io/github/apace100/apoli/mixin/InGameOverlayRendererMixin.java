@@ -21,8 +21,8 @@ public class InGameOverlayRendererMixin {
     @Inject(method = "renderTex", at = @At("HEAD"), cancellable = true)
     private static void preventInWallOverlayRendering(TextureAtlasSprite texture, PoseStack poseStack, MultiBufferSource bufferSource, CallbackInfo ci) {
         Minecraft minecraftClient = Minecraft.getInstance();
-        if(minecraftClient.cameraEntity != null) {
-            if(PowerHolderComponent.getPowers(minecraftClient.cameraEntity, PhasingPower.class).size() > 0) {
+        if(minecraftClient.getCameraEntity() != null) {
+            if(PowerHolderComponent.getPowers(minecraftClient.getCameraEntity(), PhasingPower.class).size() > 0) {
                 ci.cancel();
             }
         }

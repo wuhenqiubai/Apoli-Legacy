@@ -106,7 +106,7 @@ public class DamageSourceDescription {
             int bestMatchTagCount = getTagMatches(bestMatch);
             if(bestMatchTagCount < TAG_COUNT) {
                 Apoli.LOGGER.warn("Could not find a perfect damage type for legacy damage source field, best match: {} out of {} tags with damage type \"{}\". Consider creating your own custom damage type.",
-                        bestMatchTagCount, TAG_COUNT, bestMatch.unwrapKey().map(ResourceKey::location).map(Identifier::toString).orElse("<unknown>"));
+                        bestMatchTagCount, TAG_COUNT, bestMatch.unwrapKey().map(ResourceKey::identifier).map(Identifier::toString).orElse("<unknown>"));
             }
             damageType = bestMatch.unwrapKey().orElseThrow();
         } else {

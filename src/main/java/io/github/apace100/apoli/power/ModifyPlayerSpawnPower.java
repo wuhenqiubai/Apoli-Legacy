@@ -24,6 +24,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
+import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.function.TriFunction;
 
@@ -80,18 +81,18 @@ public class ModifyPlayerSpawnPower extends Power {
     @Override
     public void onRemoved() {
 
-        if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return;
+        if (entity.level().isClientSide() || !(entity instanceof Player playerEntity)) return;
 
         ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
         if (serverPlayerEntity.hasDisconnected() || serverPlayerEntity.getRespawnConfig() == null || !serverPlayerEntity.getRespawnConfig().forced()) return;
 
-        serverPlayerEntity.setRespawnPosition(new ServerPlayer.RespawnConfig(Level.OVERWORLD, null, 0f, false), false);
+        serverPlayerEntity.setRespawnPosition(new ServerPlayer.RespawnConfig(new LevelData.RespawnData(GlobalPos.of(Level.OVERWORLD, BlockPos.ZERO), 0f, 0f), false), false);
 
     }
 
     public void teleportToModifiedSpawn() {
 
-        if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return;
+        if (entity.level().isClientSide() || !(entity instanceof Player playerEntity)) return;
 
         ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
         Tuple<ServerLevel, BlockPos> newSpawn = getSpawn(false);
@@ -112,10 +113,10 @@ public class ModifyPlayerSpawnPower extends Power {
 
     public Tuple<ServerLevel, BlockPos> getSpawn(boolean isSpawnObstructed) {
 
-        if (entity.level().isClientSide || !(entity instanceof Player playerEntity)) return null;
+        if (entity.level().isClientSide() || !(entity instanceof Player playerEntity)) return null;
 
         ServerPlayer serverPlayerEntity = (ServerPlayer) playerEntity;
-        MinecraftServer server = serverPlayerEntity.getServer();
+        MinecraftServer server = serverPlayerEntity.level().getServer();
         if (server == null) return null;
 
         ServerLevel overworldDimension = server.getLevel(Level.OVERWORLD);
@@ -132,7 +133,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         AtomicReference<Vec3> modifiedSpawnPos = new AtomicReference<>();
 
-        BlockPos regularSpawnBlockPos = overworldDimension.getSharedSpawnPos();
+        BlockPos regularSpawnBlockPos = overworldDimension.getRespawnData().pos();
         BlockPos.MutableBlockPos modifiedSpawnBlockPos = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos dimensionSpawnPos = spawnStrategy.apply(regularSpawnBlockPos, center, dimensionDistanceMultiplier).mutable();
 
@@ -143,7 +144,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         Vec3 msp = modifiedSpawnPos.get();
         modifiedSpawnBlockPos.set(msp.x, msp.y, msp.z);
-        targetDimension.getChunkSource().addTicketWithRadius(TicketType.START, new ChunkPos(modifiedSpawnBlockPos), 11);
+        targetDimension.getChunkSource().addTicketWithRadius(TicketType.PLAYER_SPAWN, new ChunkPos(modifiedSpawnBlockPos), 11);
 
         return new Tuple<>(targetDimension, modifiedSpawnBlockPos);
 
@@ -195,11 +196,11 @@ public class ModifyPlayerSpawnPower extends Power {
             var entryList = structureRegistry.get(structureTag);
             if (entryList.isPresent()) structureRegistryEntryList = entryList.get();
 
-            structureTagOrName = "#" + structureTag.identifier().toString();
+            structureTagOrName = "#" + structureTag.location().toString();
 
         }
 
-        MinecraftServer server = entity.getServer();
+        MinecraftServer server = entity.level().getServer();
         if (server == null) return Optional.empty();
 
         ServerLevel serverWorld = server.getLevel(dimension);

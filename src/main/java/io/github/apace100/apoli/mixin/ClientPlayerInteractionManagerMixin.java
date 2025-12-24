@@ -3,6 +3,7 @@ package io.github.apace100.apoli.mixin;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ActionOnBlockUsePower;
 import io.github.apace100.apoli.power.PreventBlockUsePower;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.multiplayer.prediction.PredictiveAction;
@@ -44,7 +45,7 @@ public abstract class ClientPlayerInteractionManagerMixin {
             }
         }
         if(result.consumesAction()) {
-            startPrediction(player.clientLevel, id -> new ServerboundUseItemOnPacket(hand, hitResult, id));
+            startPrediction(Minecraft.getInstance().level, id -> new ServerboundUseItemOnPacket(hand, hitResult, id));
             cir.setReturnValue(result);
         }
     }

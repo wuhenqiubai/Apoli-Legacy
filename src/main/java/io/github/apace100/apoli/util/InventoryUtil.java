@@ -68,7 +68,7 @@ public class InventoryUtil {
             for (int slot : slots) {
 
                 SlotAccess stackReference = entity.getSlot(slot);
-                if (stackReference == SlotAccess.NULL) {
+                if (stackReference == null) {
                     continue;
                 }
 
@@ -118,7 +118,7 @@ public class InventoryUtil {
             for(int slot : slots) {
 
                 SlotAccess stackReference = entity.getSlot(slot);
-                if (stackReference == SlotAccess.NULL) continue;
+                if (stackReference == null) continue;
 
                 ItemStack itemStack = stackReference.get();
                 if (itemStack.isEmpty()) continue;
@@ -190,7 +190,7 @@ public class InventoryUtil {
             slot -> {
 
                 SlotAccess stackReference = entity.getSlot(slot);
-                if (stackReference == SlotAccess.NULL) return;
+                if (stackReference == null) return;
 
                 ItemStack itemStack = stackReference.get();
                 if (!(itemCondition == null || itemCondition.test(itemStack))) return;
@@ -251,7 +251,7 @@ public class InventoryUtil {
             slot -> {
 
                 SlotAccess stackReference = entity.getSlot(slot);
-                if (stackReference == SlotAccess.NULL) return;
+                if (stackReference == null) return;
 
                 ItemStack itemStack = stackReference.get();
                 if (itemStack.isEmpty()) return;
@@ -318,7 +318,7 @@ public class InventoryUtil {
     public static void throwItem(Entity thrower, ItemStack itemStack, boolean throwRandomly, boolean retainOwnership) {
 
         if (itemStack.isEmpty()) return;
-        if (thrower instanceof Player playerEntity && playerEntity.level().isClientSide) playerEntity.swing(InteractionHand.MAIN_HAND);
+        if (thrower instanceof Player playerEntity && playerEntity.level().isClientSide()) playerEntity.swing(InteractionHand.MAIN_HAND);
 
         double yOffset = thrower.getEyeY() - 0.30000001192092896D;
         ItemEntity itemEntity = new ItemEntity(thrower.level(), thrower.getX(), yOffset, thrower.getZ(), itemStack);
@@ -360,7 +360,7 @@ public class InventoryUtil {
 
         for(int slot : slots) {
             SlotAccess stackReference = entity.getSlot(slot);
-            if (stackReference == SlotAccess.NULL) continue;
+            if (stackReference == null) continue;
 
             ItemStack itemStack = stackReference.get();
             if (itemStack.isEmpty()) continue;

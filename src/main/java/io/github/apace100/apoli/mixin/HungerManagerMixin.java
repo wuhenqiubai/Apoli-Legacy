@@ -57,7 +57,7 @@ public class HungerManagerMixin {
     @Inject(method = "eat(IF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;add(IF)V", shift = At.Shift.AFTER))
     private void executeAdditionalEatAction(int foodLevelModifier, float saturationLevelModifier, CallbackInfo ci) {
 
-        if (player == null || player.level().isClientSide) return;
+        if (player == null || player.level().isClientSide()) return;
         var stack = ApoliSharedMixinValues.CURRENT_STACK.get();
         if (stack == null) return;
 

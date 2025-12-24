@@ -25,17 +25,17 @@ public class PlayerEntityRendererMixin {
 
     @Environment(EnvType.CLIENT)
     @WrapOperation(method = "renderHand", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SubmitNodeCollector;submitModelPart(Lnet/minecraft/client/model/geom/ModelPart;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;IILnet/minecraft/client/renderer/texture/TextureAtlasSprite;)V"))
-    private void makeArmAndSleeveTranslucent(SubmitNodeCollector instance, ModelPart modelPart, PoseStack poseStack, RenderType renderType, int i, int i, TextureAtlasSprite textureAtlasSprite, Operation<Void> original) {
+    private void makeArmAndSleeveTranslucent(SubmitNodeCollector instance, ModelPart modelPart, PoseStack matrices, RenderType renderType, int light, int overlay, TextureAtlasSprite textureAtlasSprite, Operation<Void> original) {
         List<ModelColorPower> modelColorPowers = PowerHolderComponent.KEY.get(Minecraft.getInstance().player).getPowers(ModelColorPower.class);
         if (modelColorPowers.size() > 0) {
             float red = modelColorPowers.stream().map(ModelColorPower::getRed).reduce((a, b) -> a * b).get();
             float green = modelColorPowers.stream().map(ModelColorPower::getGreen).reduce((a, b) -> a * b).get();
             float blue = modelColorPowers.stream().map(ModelColorPower::getBlue).reduce((a, b) -> a * b).get();
             float alpha = modelColorPowers.stream().map(ModelColorPower::getAlpha).min(Float::compare).get();
-            modelPart.render(matrices, vertices, light, overlay, ARGB.colorFromFloat(alpha, red, green, blue));
+            instance.submitModelPart(modelPart, matrices, renderType, light, overlay, textureAtlasSprite, ARGB.colorFromFloat(alpha, red, green, blue), null);
             return;
         }
 
-        original.call(modelPart, matrices, vertices, light, overlay);
+        original.call(instance, modelPart, matrices, renderType, light, overlay, textureAtlasSprite);
     }
 }

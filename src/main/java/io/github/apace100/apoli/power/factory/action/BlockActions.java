@@ -77,7 +77,7 @@ public class BlockActions {
                         new Vec3(block.getMiddle().getX() + 0.5, block.getMiddle().getY() + 0.5, block.getMiddle().getZ() + 0.5),
                         new Vec2(0, 0),
                         (ServerLevel)block.getLeft(),
-                        Apoli.config.executeCommand.permissionLevel,
+                        Apoli.config.executeCommand.getPermissionHandler(),
                         blockName,
                         Component.translatable(blockName),
                         server,

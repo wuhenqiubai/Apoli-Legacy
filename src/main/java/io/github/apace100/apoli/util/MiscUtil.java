@@ -24,7 +24,7 @@ public final class MiscUtil {
 
     public static Optional<Entity> getEntityWithPassengers(Level world, EntityType<?> entityType, @Nullable CompoundTag entityNbt, Vec3 pos, float yaw, float pitch) {
 
-        if (world.isClientSide) return Optional.empty();
+        if (world.isClientSide()) return Optional.empty();
         ServerLevel serverWorld = (ServerLevel) world;
 
         CompoundTag entityToSpawnNbt = new CompoundTag();

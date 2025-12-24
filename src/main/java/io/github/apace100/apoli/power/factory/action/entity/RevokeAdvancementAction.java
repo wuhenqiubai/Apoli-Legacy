@@ -15,8 +15,8 @@ public class RevokeAdvancementAction {
     public static void action(SerializableData.Instance data, Entity entity) {
         if (entity instanceof ServerPlayer player) {
             Identifier id = data.getId("advancement");
-            if (player.getServer() != null) {
-                AdvancementHolder adv = player.getServer().getAdvancements().get(id);
+            if (player.level().getServer() != null) {
+                AdvancementHolder adv = player.level().getServer().getAdvancements().get(id);
                 revoke(player, adv);
             }
         }

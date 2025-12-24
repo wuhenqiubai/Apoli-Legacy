@@ -66,7 +66,7 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
     }
 
     static void syncPower(Entity entity, PowerType<?> powerType) {
-        if(entity == null || entity.level().isClientSide) {
+        if(entity == null || entity.level().isClientSide()) {
             return;
         }
         if(powerType instanceof PowerTypeReference) {

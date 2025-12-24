@@ -20,6 +20,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -129,8 +130,8 @@ public abstract class GameRendererMixin {
     @WrapOperation(method = "getFov", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;getFluidInCamera()Lnet/minecraft/world/level/material/FogType;"))
     private FogType modifySubmersionType(Camera camera, Operation<FogType> original) {
         FogType fogType = original.call(camera);
-        if(camera.getEntity() instanceof LivingEntity) {
-            for(ModifyCameraSubmersionTypePower p : PowerHolderComponent.getPowers(camera.getEntity(), ModifyCameraSubmersionTypePower.class)) {
+        if(camera.entity() instanceof LivingEntity) {
+            for(ModifyCameraSubmersionTypePower p : PowerHolderComponent.getPowers(camera.entity(), ModifyCameraSubmersionTypePower.class)) {
                 if(p.doesModify(fogType)) {
                     return p.getNewType();
                 }
@@ -144,7 +145,7 @@ public abstract class GameRendererMixin {
     // PHASING: remove_blocks
     @Inject(at = @At(value = "HEAD"), method = "render")
     private void beforeRender(DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
-        List<PhasingPower> phasings = PowerHolderComponent.getPowers(mainCamera.getEntity(), PhasingPower.class);
+        List<PhasingPower> phasings = PowerHolderComponent.getPowers(mainCamera.entity(), PhasingPower.class);
         if (phasings.stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
             float view = phasings.stream().filter(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS).map(PhasingPower::getViewDistance).min(Float::compareTo).get();
             Set<BlockPos> eyePositions = getEyePos(0.25F, 0.05F, 0.25F);
@@ -177,17 +178,17 @@ public abstract class GameRendererMixin {
     }
 
     // PHASING
-    @WrapOperation(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setup(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/entity/Entity;ZZF)V"), method = "renderLevel")
-    private void preventThirdPerson(Camera camera, BlockGetter area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, Operation<Float> original) {
-        if (PowerHolderComponent.getPowers(camera.getEntity(), PhasingPower.class).stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
-            camera.setup(area, focusedEntity, false, false, tickDelta);
+    @WrapOperation(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;setup(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;ZZF)V"), method = "updateCamera")
+    private void preventThirdPerson(Camera camera, Level level, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, Operation<Void> original) {
+        if (PowerHolderComponent.getPowers(camera.entity(), PhasingPower.class).stream().anyMatch(pp -> pp.getRenderType() == PhasingPower.RenderType.REMOVE_BLOCKS)) {
+            camera.setup(level, focusedEntity, false, false, tickDelta);
         } else {
-            original.call(camera, area, focusedEntity, thirdPerson, inverseView, tickDelta);
+            original.call(camera, level, focusedEntity, thirdPerson, inverseView, tickDelta);
         }
     }
 
     private Set<BlockPos> getEyePos(float rangeX, float rangeY, float rangeZ) {
-        Vec3 pos = mainCamera.getEntity().position().add(0, mainCamera.getEntity().getEyeHeight(mainCamera.getEntity().getPose()), 0);
+        Vec3 pos = mainCamera.entity().position().add(0, mainCamera.entity().getEyeHeight(mainCamera.entity().getPose()), 0);
         AABB cameraBox = new AABB(pos, pos);
         cameraBox = cameraBox.inflate(rangeX, rangeY, rangeZ);
         HashSet<BlockPos> set = new HashSet<>();

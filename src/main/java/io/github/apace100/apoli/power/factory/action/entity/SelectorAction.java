@@ -11,6 +11,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.permissions.LevelBasedPermissionSet;
+import net.minecraft.server.permissions.PermissionSetUnion;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.entity.Entity;
 import java.util.function.Consumer;
@@ -32,7 +34,7 @@ public class SelectorAction {
             entity.position(),
             entity.getRotationVector(),
             (ServerLevel) entity.level(),
-            2,
+            LevelBasedPermissionSet.GAMEMASTER,
             entity.getScoreboardName(),
             entity.getName(),
             server,

@@ -131,13 +131,7 @@ public class DistanceFromCoordinatesConditionRegistry {
             case "world_spawn":
                 if (setResultOnWrongDimension && world.dimension() != Level.OVERWORLD)
                     return resultOnWrongDimension;
-                BlockPos spawnPos;
-                if (world instanceof ClientLevel)
-                    spawnPos = ((ClientLevel)world).getSharedSpawnPos();
-                else if (world instanceof ServerLevel)
-                    spawnPos = ((ServerLevel)world).getSharedSpawnPos();
-                else
-                    return warnCouldNotGetObject("world with spawn position", block != null ? "block" : "entity", compareOutOfBounds(data.get("comparison")));
+                BlockPos spawnPos = world.getRespawnData().pos();
                 x = spawnPos.getX();
                 y = spawnPos.getY();
                 z = spawnPos.getZ();
