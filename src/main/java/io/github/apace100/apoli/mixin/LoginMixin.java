@@ -9,6 +9,7 @@ import io.github.apace100.apoli.power.ModifyPlayerSpawnPower;
 import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
@@ -65,9 +66,9 @@ public abstract class LoginMixin {
 	@WrapOperation(method = "respawn", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;findRespawnPositionAndUseSpawnBlock(ZLnet/minecraft/world/level/portal/DimensionTransition$PostDimensionTransition;)Lnet/minecraft/world/level/portal/DimensionTransition;"))
 	private DimensionTransition retryObstructedSpawnpointIfFailed(ServerPlayer instance, boolean keepInventory, DimensionTransition.PostDimensionTransition postDimensionTransition, Operation<DimensionTransition> operation) {
 		DimensionTransition original = operation.call(instance, keepInventory, postDimensionTransition);
-		if(!original.missingRespawnBlock()) {
+		if(original.missingRespawnBlock()) {
 			if(PowerHolderComponent.hasPower(instance, ModifyPlayerSpawnPower.class)) {
-				return new DimensionTransition(instance.serverLevel(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, instance.level(), instance.blockPosition(), keepInventory), Vec3.ZERO, 0f, 0f, postDimensionTransition);
+				return new DimensionTransition(instance.serverLevel(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, original.newLevel(), BlockPos.containing(original.pos()), keepInventory), Vec3.ZERO, original.yRot(), original.xRot(), postDimensionTransition);
 			}
 		}
 		return original;
