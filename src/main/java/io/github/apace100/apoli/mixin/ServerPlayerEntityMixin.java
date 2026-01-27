@@ -10,7 +10,6 @@ import io.github.apace100.apoli.power.ModifyPlayerSpawnPower;
 import io.github.apace100.apoli.power.PreventSleepPower;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -23,7 +22,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerListener;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.portal.TeleportTransition;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -35,6 +33,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
+
+import java.util.Optional;
 
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerEntityMixin extends Player implements ContainerListener, EndRespawningEntity {
@@ -55,7 +55,10 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
 
     @Shadow @Nullable private ServerPlayer.@Nullable RespawnConfig respawnConfig;
 
-    @Shadow public abstract TeleportTransition findRespawnPositionAndUseSpawnBlock(boolean useCharge, TeleportTransition.PostTeleportTransition postTeleportTransition);
+    @Shadow
+    protected static Optional findRespawnAndUseSpawnBlock(ServerLevel level, ServerPlayer.RespawnConfig respawnConfig, boolean useCharge) {
+        throw new AssertionError();
+    }
 
     // FRESH_AIR
     @Inject(method = "startSleepInBed", at = @At(value = "INVOKE",target = "Lnet/minecraft/server/level/ServerPlayer;setRespawnPosition(Lnet/minecraft/server/level/ServerPlayer$RespawnConfig;Z)V"), cancellable = true)
@@ -72,16 +75,16 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
         );
     }
 
-    @Inject(at = @At("HEAD"), method = "getRespawnConfig", cancellable = true)
-    private void modifySpawnPointDimension(CallbackInfoReturnable<ServerPlayer.RespawnConfig> info) {
+    @Inject(at = @At("RETURN"), method = "getRespawnConfig", cancellable = true)
+    private void modifySpawnPointConfig(CallbackInfoReturnable<ServerPlayer.RespawnConfig> info) {
         if (!this.origins_isEndRespawning && PowerHolderComponent.getPowers(this, ModifyPlayerSpawnPower.class).size() > 0) {
             ModifyPlayerSpawnPower power = PowerHolderComponent.getPowers(this, ModifyPlayerSpawnPower.class).get(0);
 
             if (respawnConfig == null) {
                 info.setReturnValue(new ServerPlayer.RespawnConfig(power.dimension, findPlayerSpawn(), 0f, true));
             } else if (hasObstructedSpawn(power.dimension)) {
-                connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.NO_RESPAWN_BLOCK_AVAILABLE, 0.0F));
-                info.setReturnValue(new ServerPlayer.RespawnConfig(power.dimension, findPlayerSpawn(), 0f, true));
+//                connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.NO_RESPAWN_BLOCK_AVAILABLE, 0.0F));
+                info.setReturnValue(new ServerPlayer.RespawnConfig(power.dimension, spawnPos, 0f, true));
             }
         }
     }
@@ -96,7 +99,7 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
     private boolean hasObstructedSpawn(ResourceKey<Level> dimension) {
         ServerLevel world = server.getLevel(dimension);
         if(respawnConfig != null && world != null) {
-            return findRespawnPositionAndUseSpawnBlock(false, TeleportTransition.DO_NOTHING).missingRespawnBlock();
+            return findRespawnAndUseSpawnBlock(world, respawnConfig, false).isEmpty();
         }
         return false;
     }
