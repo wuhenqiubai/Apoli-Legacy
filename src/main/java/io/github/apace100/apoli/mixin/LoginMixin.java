@@ -9,6 +9,7 @@ import io.github.apace100.apoli.power.ModifyPlayerSpawnPower;
 import io.github.apace100.apoli.power.Power;
 import io.github.apace100.apoli.power.PowerTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
@@ -67,7 +68,7 @@ public abstract class LoginMixin {
 		TeleportTransition original = operation.call(instance, useCharge, postTeleportTransition);
 		if(!original.missingRespawnBlock()) {
 			if(PowerHolderComponent.hasPower(instance, ModifyPlayerSpawnPower.class)) {
-				return new TeleportTransition(instance.level(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, instance.level(), instance.blockPosition(), useCharge), Vec3.ZERO, 0f, 0f, postTeleportTransition);
+				return new TeleportTransition(instance.level(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, original.newLevel(), BlockPos.containing(original.pos()), useCharge), Vec3.ZERO, original.yRot(), original.xRot(), postTeleportTransition);
 			}
 		}
 		return original;
