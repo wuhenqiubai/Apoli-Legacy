@@ -68,7 +68,12 @@ public abstract class LoginMixin {
 		TeleportTransition original = operation.call(instance, useCharge, postTeleportTransition);
 		if(!original.missingRespawnBlock()) {
 			if(PowerHolderComponent.hasPower(instance, ModifyPlayerSpawnPower.class)) {
-				return new TeleportTransition(instance.level(), DismountHelper.findSafeDismountLocation(EntityType.PLAYER, original.newLevel(), BlockPos.containing(original.pos()), useCharge), Vec3.ZERO, original.yRot(), original.xRot(), postTeleportTransition);
+				Vec3 pos = DismountHelper.findSafeDismountLocation(EntityType.PLAYER, original.newLevel(), BlockPos.containing(original.position()), useCharge);
+				if (pos == null) {
+					pos = original.position();
+				}
+
+				return new TeleportTransition(instance.level(), pos, Vec3.ZERO, original.yRot(), original.xRot(), postTeleportTransition);
 			}
 		}
 		return original;
