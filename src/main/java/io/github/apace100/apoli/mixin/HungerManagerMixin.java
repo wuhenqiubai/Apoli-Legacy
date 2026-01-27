@@ -29,7 +29,7 @@ public class HungerManagerMixin {
     @Unique
     private boolean apoli$ShouldUpdateManually = false;
 
-    @Inject(method = "eat(IF)V", at = @At("HEAD"))
+    @Inject(method = "add", at = @At("HEAD"))
     private void modifyHunger(int foodLevelModifier, float saturationLevelModifier, CallbackInfo ci, @Local(argsOnly = true) LocalIntRef foodLevel, @Local(argsOnly = true) LocalFloatRef saturationLevel) {
         apoli$ShouldUpdateManually = false;
 
@@ -39,22 +39,22 @@ public class HungerManagerMixin {
 
         var modifiers = ((ModifiableFoodEntity) player).getCurrentModifyFoodPowers()
             .stream()
-            .filter(p -> p.doesApply(stack));
+            .filter(p -> p.doesApply(stack)).toList();
 
-        var foodModifiers = modifiers.flatMap(p -> p.getFoodModifiers().stream()).toList();
-        var saturationModifiers = modifiers.flatMap(p -> p.getSaturationModifiers().stream()).toList();
+        var foodModifiers = modifiers.stream().flatMap(p -> p.getFoodModifiers().stream()).toList();
+        var saturationModifiers = modifiers.stream().flatMap(p -> p.getSaturationModifiers().stream()).toList();
 
         int newFood = (int) ModifierUtil.applyModifiers(player, foodModifiers, foodLevelModifier);
-        if (newFood != foodLevelModifier && newFood == 0) apoli$ShouldUpdateManually = true;
+        if (newFood != foodLevelModifier) apoli$ShouldUpdateManually = true;
 
         float newSat = (float) ModifierUtil.applyModifiers(player, saturationModifiers, saturationLevelModifier);
-        if (newSat != saturationLevelModifier && newSat == 0) apoli$ShouldUpdateManually = true;
+        if (newSat != saturationLevelModifier) apoli$ShouldUpdateManually = true;
 
         foodLevel.set(newFood);
         saturationLevel.set(newSat);
     }
 
-    @Inject(method = "eat(IF)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/food/FoodData;add(IF)V", shift = At.Shift.AFTER))
+    @Inject(method = "add", at = @At("TAIL"))
     private void executeAdditionalEatAction(int foodLevelModifier, float saturationLevelModifier, CallbackInfo ci) {
 
         if (player == null || player.level().isClientSide()) return;
