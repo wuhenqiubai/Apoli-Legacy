@@ -10,11 +10,14 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.SlotRange;
 import net.minecraft.world.inventory.SlotRanges;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.slot.SlotCollection;
 import net.minecraft.world.level.Level;
 
 import java.util.*;
@@ -355,17 +358,15 @@ public class InventoryUtil {
     }
 
     public static void forEachStack(Entity entity, Consumer<ItemStack> itemStackConsumer) {
-        Set<Integer> slots = Sets.newHashSet(SlotRanges.allNames().flatMapToInt(s -> SlotRanges.nameToIds(s).slots().intStream()).boxed().toList());
-        deduplicateSlots(entity, slots);
-
-        for(int slot : slots) {
+        SlotRanges.allNames().flatMapToInt(s -> SlotRanges.nameToIds(s).slots().intStream()).distinct().forEach(slot -> {
             SlotAccess stackReference = entity.getSlot(slot);
-            if (stackReference == null) continue;
-
-            ItemStack itemStack = stackReference.get();
-            if (itemStack.isEmpty()) continue;
-            itemStackConsumer.accept(itemStack);
-        }
+            if (stackReference != null) {
+                ItemStack itemStack = stackReference.get();
+                if (!itemStack.isEmpty()) {
+                    itemStackConsumer.accept(itemStack);
+                }
+            }
+        });
 
         Optional<PowerHolderComponent> optionalPowerHolderComponent = PowerHolderComponent.KEY.maybeGet(entity);
         if(optionalPowerHolderComponent.isPresent()) {
