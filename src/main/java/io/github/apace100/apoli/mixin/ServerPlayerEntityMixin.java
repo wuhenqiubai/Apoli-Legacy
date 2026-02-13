@@ -88,7 +88,7 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
 
             if (respawnConfig == null) {
                 info.setReturnValue(new ServerPlayer.RespawnConfig(new LevelData.RespawnData(GlobalPos.of(power.dimension, spawnPos), 0f, 0f), true));
-            } else if (hasObstructedSpawn(power.dimension)) {
+            } else if (hasObstructedSpawn(respawnConfig.respawnData().dimension())) {
 //                connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.NO_RESPAWN_BLOCK_AVAILABLE, 0.0F));
                 info.setReturnValue(new ServerPlayer.RespawnConfig(new LevelData.RespawnData(GlobalPos.of(power.dimension, spawnPos), 0f, 0f), true));
             }

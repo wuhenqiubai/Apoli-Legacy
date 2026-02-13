@@ -273,8 +273,8 @@ public class ModifyPlayerSpawnPower extends Power {
         int downOffset = 0;
 
         //  The min and max Y values of the target dimension
-        int maxY = targetDimension.getLogicalHeight();
         int minY = targetDimension.dimensionTypeRegistration().value().minY();
+        int maxY = minY + targetDimension.getLogicalHeight();
 
         while (upOffset < maxY || downOffset > minY) {
 
@@ -315,8 +315,8 @@ public class ModifyPlayerSpawnPower extends Power {
             }
 
             //  Increment/decrement the up/down offsets until it's no longer less/greater than the max/min Y
-            if (upOffset < maxY) upOffset++;
-            if (downOffset > minY) downOffset--;
+            if (center + upOffset < maxY) upOffset++;
+            if (center + downOffset > minY) downOffset--;
 
         }
 
