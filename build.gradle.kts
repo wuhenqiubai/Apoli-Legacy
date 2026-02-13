@@ -1,4 +1,6 @@
 import net.fabricmc.loom.task.RemapJarTask
+import java.net.HttpURLConnection
+import java.net.URI
 
 plugins {
 	id("fabric-loom") version "1.14-SNAPSHOT"
@@ -151,6 +153,24 @@ publishing {
 				username = System.getenv()["MAVEN_USER"]
 				password = System.getenv()["MAVEN_PASS"]
 			}
+		}
+	}
+}
+
+tasks.named("publishMavenJavaPublicationToDevOSRepository") {
+	onlyIf {
+		val group = project.property("maven_group") as String
+		val artifactId = project.property("archives_base_name") as String
+		val version = project.version.toString()
+
+		try {
+			val connection = URI.create("https://mvn.devos.one/releases/${group.replace(".", "/")}/${artifactId}/${version}/${artifactId}-${version}.jar").toURL().openConnection() as HttpURLConnection
+			connection.requestMethod = "GET"
+			connection.connect()
+
+			connection.responseCode != 200
+		} catch (_: Exception) {
+			false
 		}
 	}
 }
