@@ -59,7 +59,7 @@ public class ConsumableMixin {
 
     @WrapOperation(method = "method_62849", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/consume_effects/ConsumeEffect;apply(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Z"))
     private static boolean preventApplyingFoodEffects(ConsumeEffect instance, Level level, ItemStack itemStack, LivingEntity entity, Operation<Boolean> original) {
-        if (!((ModifiableFoodEntity) entity).getCurrentModifyFoodPowers().stream().anyMatch(ModifyFoodPower::doesPreventEffects)) {
+        if (((ModifiableFoodEntity) entity).getCurrentModifyFoodPowers().stream().anyMatch(ModifyFoodPower::doesPreventEffects)) {
             return false;
         }
 
