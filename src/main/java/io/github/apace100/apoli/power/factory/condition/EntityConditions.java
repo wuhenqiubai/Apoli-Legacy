@@ -296,9 +296,9 @@ public class EntityConditions {
                         entity);
                     int output = 0;
                     try {
-                        output = server.getCommands().getDispatcher().execute(data.getString("command"), source);
+                        output = server.getCommands().getDispatcher().execute(data.getString("command").replaceFirst("/", ""), source);
                     } catch (CommandSyntaxException e) {
-                        throw new RuntimeException(e);
+                        //throw new RuntimeException(e);
                     }
                     return ((Comparison)data.get("comparison")).compare(output, data.getInt("compare_to"));
                 }
