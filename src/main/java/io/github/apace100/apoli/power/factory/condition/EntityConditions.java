@@ -323,7 +323,7 @@ public class EntityConditions {
             (data, entity) -> {
                 MinecraftServer server = entity.level().getServer();
                 if (server != null) {
-                    LootItemCondition lootCondition = server.registryAccess().lookupOrThrow(Registries.PREDICATE).getValue((Identifier) data.get("predicate"));
+                    LootItemCondition lootCondition = server.reloadableRegistries().lookup().lookupOrThrow(Registries.PREDICATE).getOrThrow(ResourceKey.create(Registries.PREDICATE, (Identifier) data.get("predicate"))).value();
                     if (lootCondition != null) {
                         LootParams lootContextParameterSet = new LootParams.Builder((ServerLevel) entity.level())
                                 .withParameter(LootContextParams.ORIGIN, entity.position())
