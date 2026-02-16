@@ -65,7 +65,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
 
     @ModifyArg(method = "submit(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;getRenderType(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;ZZZ)Lnet/minecraft/client/renderer/rendertype/RenderType;"), index = 1)
     private boolean changeRenderLayerWhenTranslucent(boolean original, @Local(argsOnly = true) S renderState) {
-        if(PowerHolderComponent.getPowers(renderState, ModelColorPower.class).stream().anyMatch(ModelColorPower::isTranslucent)) {
+        if(!renderState.isInvisibleToPlayer && !renderState.isInvisible && PowerHolderComponent.getPowers(renderState, ModelColorPower.class).stream().anyMatch(ModelColorPower::isTranslucent)) {
             return true;
         }
 
