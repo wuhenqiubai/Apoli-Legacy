@@ -26,6 +26,16 @@ repositories {
 	}
 	maven("https://maven.shedaniel.me/")
 	maven("https://maven.terraformersmc.com/")
+	exclusiveContent {
+		forRepository {
+			maven("https://api.modrinth.com/maven") {
+				name = "Modrinth"
+			}
+		}
+		filter {
+			includeGroup("maven.modrinth")
+		}
+	}
 	mavenLocal()
 }
 
@@ -84,7 +94,7 @@ dependencies {
 
 	modImplementation("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
 
-	include(modApi("de.dafuqs:additionalentityattributes:${project.property("aea_version")}")!!)
+	include(modApi("maven.modrinth:additionalentityattributes:${project.property("aea_version")}")!!)
 	// modImplementation "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 	// include "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 }
