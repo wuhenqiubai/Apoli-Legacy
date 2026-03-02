@@ -296,22 +296,6 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
         }
     }
 
-    // SetEntityGroupPower
-    // FIXME O-L: Need to make sure that we return the entity type when it's needed
-    /*@Inject(at = @At("HEAD"), method = "getMobType", cancellable = true)
-    public void getGroup(CallbackInfoReturnable<MobType> info) {
-        if((Object)this instanceof LivingEntity) {
-            PowerHolderComponent component = PowerHolderComponent.KEY.get(this);
-            List<SetEntityGroupPower> groups = component.getPowers(SetEntityGroupPower.class);
-            if(groups.size() > 0) {
-                if(groups.size() > 1) {
-                    Apoli.LOGGER.warn("Entity " + this.getDisplayName().toString() + " has two instances of SetEntityGroupPower.");
-                }
-                info.setReturnValue(groups.get(0).group);
-            }
-        }
-    }*/
-
     // SPRINT_JUMP
     @ModifyExpressionValue(method = "jumpFromGround", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;getJumpPower()F"))
     private float modifyJumpVelocity(float original) {
