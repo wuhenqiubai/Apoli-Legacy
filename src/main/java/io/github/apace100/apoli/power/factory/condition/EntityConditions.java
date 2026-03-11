@@ -25,16 +25,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.PermissionSet;
-import net.minecraft.server.permissions.PermissionSetUnion;
-import net.minecraft.server.permissions.Permissions;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.util.Tuple;
@@ -377,7 +373,7 @@ public class EntityConditions {
                 return comparison.compare(count, compareTo);}));
         register(new ConditionFactory<>(Apoli.identifier("entity_group"), new SerializableData()
             .add("group", SerializableDataTypes.ENTITY_GROUP),
-            (data, entity) -> entity instanceof LivingEntity && entity.getType().is((TagKey<EntityType<?>>) data.get("group"))));
+            (data, entity) -> entity instanceof LivingEntity && ((List<TagKey<EntityType<?>>>) data.get("group")).stream().allMatch(tag -> entity.getType().is(tag))));
         register(new ConditionFactory<>(Apoli.identifier("in_tag"), new SerializableData()
             .add("tag", SerializableDataTypes.ENTITY_TAG),
             (data, entity) -> entity.getType().builtInRegistryHolder().is((TagKey<EntityType<?>>) data.get("tag"))));
