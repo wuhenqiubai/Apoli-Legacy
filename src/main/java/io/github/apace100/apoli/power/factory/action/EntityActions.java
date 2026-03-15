@@ -11,6 +11,7 @@ import io.github.apace100.apoli.util.MiscUtil;
 import io.github.apace100.apoli.util.ResourceOperation;
 import io.github.apace100.apoli.util.Space;
 import io.github.apace100.calio.data.SerializableData;
+import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
@@ -19,6 +20,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -113,7 +115,7 @@ public class EntityActions {
                 }
             }));
         register(new ActionFactory<>(Apoli.identifier("clear_effect"), new SerializableData()
-            .add("effect", SerializableDataTypes.STATUS_EFFECT, null),
+            .add("effect", SerializableDataType.holder(BuiltInRegistries.MOB_EFFECT), null),
             (data, entity) -> {
                 if(entity instanceof LivingEntity le) {
                     if(data.isPresent("effect")) {
