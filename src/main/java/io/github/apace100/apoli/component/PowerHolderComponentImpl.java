@@ -1,10 +1,11 @@
 package io.github.apace100.apoli.component;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.*;
 import io.github.apace100.apoli.util.GainedPowerCriterion;
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,10 +50,16 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
 
     @Override
     public List<Power> getPowers() {
+        if (powers.isEmpty())
+            return ImmutableList.of();
+
         return new LinkedList<>(powers.values());
     }
 
     public Set<PowerType<?>> getPowerTypes(boolean getSubPowerTypes) {
+        if (powers.isEmpty())
+            return ImmutableSet.of();
+
         HashSet<PowerType<?>> powerTypes = new HashSet<>(powers.keySet());
         for (PowerType<?> type : powers.keySet()) {
             if(!getSubPowerTypes && type instanceof MultiplePowerType<?>) {
@@ -70,6 +77,9 @@ public class PowerHolderComponentImpl implements PowerHolderComponent {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Power> List<T> getPowers(Class<T> powerClass, boolean includeInactive) {
+        if (powers.isEmpty())
+            return ImmutableList.of();
+
         List<T> list = new LinkedList<>();
         for(Power power : powers.values()) {
             if(powerClass.isAssignableFrom(power.getClass()) && (includeInactive || power.isActive())) {

@@ -1,6 +1,6 @@
 package io.github.apace100.apoli.component;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.integration.ModifyValueCallback;
 import io.github.apace100.apoli.networking.SyncPowerPacket;
@@ -109,13 +109,13 @@ public interface PowerHolderComponent extends AutoSyncedComponent, ServerTicking
         if(entity instanceof LivingEntity) {
             return KEY.get(entity).getPowers(powerClass);
         }
-        return Lists.newArrayList();
+        return ImmutableList.of();
     }
 
     @Environment(EnvType.CLIENT)
     static <T extends Power> List<T> getPowers(LivingEntityRenderState state, Class<T> powerClass) {
         if (((ApoliLivingEntityRenderState) state).apoli$getPowerHolder() == null)
-            return Lists.newArrayList();
+            return ImmutableList.of();
 
         return ((ApoliLivingEntityRenderState) state).apoli$getPowerHolder().getPowers(powerClass);
     }
