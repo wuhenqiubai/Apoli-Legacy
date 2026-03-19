@@ -1,6 +1,5 @@
 package io.github.apace100.apoli.mixin.legacy;
 
-import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.legacy.ModifyBehaviorPower;
 import net.minecraft.world.entity.LivingEntity;
@@ -31,6 +30,8 @@ public abstract class NearestAttackableTargetGoalMixin extends TargetGoal {
         if (this.target != null) {
             Mob self = this.mob;
             List<ModifyBehaviorPower> powers = PowerHolderComponent.getPowers(this.target, ModifyBehaviorPower.class);
+            if (powers.isEmpty()) return;
+
             powers.removeIf(power -> !power.doesApply(self));
 
             if (!powers.isEmpty()) {

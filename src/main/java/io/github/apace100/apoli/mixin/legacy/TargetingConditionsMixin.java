@@ -24,6 +24,8 @@ public abstract class TargetingConditionsMixin {
     private void origins_legacy$avoidCombatTargetingIfPassive(ServerLevel level, LivingEntity attacker, LivingEntity target, CallbackInfoReturnable<Boolean> cir) {
         if (this.isCombat && attacker != null && target != null && attacker != target) {
             List<ModifyBehaviorPower> powers = PowerHolderComponent.getPowers(target, ModifyBehaviorPower.class);
+            if (powers.isEmpty()) return;
+
             powers.removeIf(power -> !power.doesApply(attacker));
 
             if (!powers.isEmpty()) {
