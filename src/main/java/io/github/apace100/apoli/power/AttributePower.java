@@ -47,7 +47,7 @@ public class AttributePower extends Power {
             float previousHealthPercent = entity.getHealth() / previousMaxHealth;
             modifiers.forEach(mod -> {
                 if(entity.getAttributes().hasAttribute(mod.getAttributeHolder())) {
-                    entity.getAttribute(mod.getAttributeHolder()).addTransientModifier(mod.getModifier());
+                    entity.getAttribute(mod.getAttributeHolder()).addOrUpdateTransientModifier(mod.getModifier());
                 }
             });
             float afterMaxHealth = entity.getMaxHealth();
