@@ -51,7 +51,7 @@ public class ModifyCraftingPower extends ValueModifyingPower {
             }
         }
         if(itemCondition != null) {
-            if(!itemCondition.test(recipe.value().assemble(inventory, entity.level().registryAccess()))) {
+            if(!itemCondition.test(recipe.value().assemble(inventory))) {
                 return false;
             }
         }
@@ -70,7 +70,7 @@ public class ModifyCraftingPower extends ValueModifyingPower {
         if(newStack != null) {
             stack = newStack.copy();
         } else {
-            stack = recipe.assemble(input, entity.level().registryAccess());
+            stack = recipe.assemble(input);
         }
         if(itemAction != null) {
             itemAction.accept(new Tuple<>(entity.level(), stack));

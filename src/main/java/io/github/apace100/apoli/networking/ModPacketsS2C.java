@@ -12,7 +12,7 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.networking.v1.ClientLoginNetworking;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.FriendlyByteBufs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.nbt.CompoundTag;
@@ -93,7 +93,7 @@ public class ModPacketsS2C {
 
     @Environment(EnvType.CLIENT)
     private static CompletableFuture<FriendlyByteBuf> handleHandshake(Minecraft client, ClientHandshakePacketListenerImpl handler, FriendlyByteBuf receivedBuf, Consumer<ChannelFutureListener> callbacksConsumer) {
-        FriendlyByteBuf buf = PacketByteBufs.create();
+        FriendlyByteBuf buf = FriendlyByteBufs.create();
         buf.writeInt(Apoli.SEMVER.length);
         for(int i = 0; i < Apoli.SEMVER.length; i++) {
             buf.writeInt(Apoli.SEMVER[i]);

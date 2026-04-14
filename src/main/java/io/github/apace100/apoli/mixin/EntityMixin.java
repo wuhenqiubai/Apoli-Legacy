@@ -6,15 +6,13 @@ import io.github.apace100.apoli.access.SubmergableEntity;
 import io.github.apace100.apoli.access.WaterMovingEntity;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.*;
-import io.github.apace100.calio.Calio;
-import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityFluidInteraction;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.BlockGetter;
@@ -24,7 +22,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +33,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
-import java.util.Set;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
@@ -59,11 +56,11 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
     @Shadow
     protected boolean onGround;
 
-    @Shadow @Nullable protected Set<TagKey<Fluid>> fluidOnEyes;
-
-    @Shadow protected Object2DoubleMap<TagKey<Fluid>> fluidHeight;
-
     @Shadow public abstract boolean isSwimming();
+
+    @Shadow
+    @Final
+    private EntityFluidInteraction fluidInteraction;
 
     @Inject(method = "isInWater", at = @At("HEAD"), cancellable = true)
     private void makeEntitiesIgnoreWater(CallbackInfoReturnable<Boolean> cir) {
@@ -121,7 +118,7 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
         }
     }
 
-    @Redirect(method = "method_30022", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"))
+    @Redirect(method = "lambda$isInWall$0", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"))
     private VoxelShape preventPhasingSuffocation(BlockState state, BlockGetter world, BlockPos pos) {
         return state.getCollisionShape(world, pos, CollisionContext.of((Entity)(Object)this));
     }
@@ -164,30 +161,19 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
 
     @Override
     public boolean isSubmergedInLoosely(TagKey<Fluid> tag) {
-        if(tag == null || fluidOnEyes == null) {
+        if(tag == null || fluidInteraction == null) {
             return false;
         }
-        if(fluidOnEyes.contains(tag)) {
-            return true;
-        }
-        return false;
+        return fluidInteraction.isEyeInFluid(tag);
         //return Calio.areTagsEqual(Registry.FLUID_KEY, tag, submergedFluidTag);
     }
 
     @Override
     public double getFluidHeightLoosely(TagKey<Fluid> tag) {
-        if(tag == null) {
+        if(tag == null || fluidInteraction == null) {
             return 0;
         }
-        if(fluidHeight.containsKey(tag)) {
-            return fluidHeight.getDouble(tag);
-        }
-        for(TagKey<Fluid> ft : fluidHeight.keySet()) {
-            if(Calio.areTagsEqual(Registries.FLUID, ft, tag)) {
-                return fluidHeight.getDouble(ft);
-            }
-        }
-        return 0;
+        return fluidInteraction.getFluidHeight(tag);
     }
 
     @Override

@@ -11,7 +11,6 @@ import io.github.apace100.apoli.power.PreventSleepPower;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -24,7 +23,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerListener;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.level.storage.LevelData;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
@@ -54,15 +52,15 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
         super(level, gameProfile);
     }
 
-    @Shadow
-    public abstract void displayClientMessage(Component message, boolean actionBar);
-
     @Shadow @Nullable private ServerPlayer.@Nullable RespawnConfig respawnConfig;
 
     @Shadow
     protected static Optional findRespawnAndUseSpawnBlock(ServerLevel level, ServerPlayer.RespawnConfig respawnConfig, boolean useCharge) {
         throw new AssertionError();
     }
+
+    @Shadow
+    public abstract void sendSystemMessage(Component message, boolean overlay);
 
     // FRESH_AIR
     @Inject(method = "startSleepInBed", at = @At(value = "INVOKE",target = "Lnet/minecraft/server/level/ServerPlayer;setRespawnPosition(Lnet/minecraft/server/level/ServerPlayer$RespawnConfig;Z)V"), cancellable = true)
@@ -73,7 +71,7 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
                         ((ServerPlayer)(Object)this).setRespawnPosition(new ServerPlayer.RespawnConfig(new LevelData.RespawnData(GlobalPos.of(this.level().dimension(), pos), this.getYRot(), this.getXRot()), false), true);
                     }
                     info.setReturnValue(Either.left(null));
-                    this.displayClientMessage(Component.translatable(p.getMessage()), true);
+                    this.sendSystemMessage(Component.translatable(p.getMessage()), true);
                 }
             }
         );

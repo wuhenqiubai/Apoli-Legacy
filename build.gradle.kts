@@ -1,9 +1,8 @@
-import net.fabricmc.loom.task.RemapJarTask
 import java.net.HttpURLConnection
 import java.net.URI
 
 plugins {
-	id("fabric-loom") version "1.14-SNAPSHOT"
+	id("net.fabricmc.fabric-loom") version "1.16-SNAPSHOT"
 	`maven-publish`
 }
 
@@ -69,39 +68,36 @@ dependencies {
 
 	// To change the versions see the gradle.properties file
 	minecraft("com.mojang:minecraft:${project.property("minecraft_version")}")
-	mappings(loom.layered {
-		officialMojangMappings()
-		parchment("org.parchmentmc.data:parchment-${project.property("parchment_version")}:${project.property("parchment_snapshot")}@zip")
-	})
-	modImplementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
+
+	implementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+	implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
 
-	include(modApi("org.ladysnake.cardinal-components-api:cardinal-components-base:${project.property("cca_version")}") {
+	include(api("org.ladysnake.cardinal-components-api:cardinal-components-base:${project.property("cca_version")}") {
 		exclude(group = "net.fabricmc.fabric-api")
 	})
 
-	include(modApi("org.ladysnake.cardinal-components-api:cardinal-components-entity:${project.property("cca_version")}") {
+	include(api("org.ladysnake.cardinal-components-api:cardinal-components-entity:${project.property("cca_version")}") {
 		exclude(group = "net.fabricmc.fabric-api")
 	})
 
-	include(modApi("io.github.ladysnake:PlayerAbilityLib:${property("pal_version")}")!!)
+	include(api("io.github.ladysnake:PlayerAbilityLib:${property("pal_version")}")!!)
 
-	implementation(project(":calio", "namedElements"))
+	implementation(project(":calio"))
 
-	include(modApi("me.shedaniel.cloth:cloth-config-fabric:${project.property("clothconfig_version")}") {
+	include(api("me.shedaniel.cloth:cloth-config-fabric:${project.property("clothconfig_version")}") {
 		exclude(group = "net.fabricmc.fabric-api")
 	})
 
-	modImplementation("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
+	implementation("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
 
-	include(modApi("maven.modrinth:additionalentityattributes:${project.property("aea_version")}")!!)
+	include(api("maven.modrinth:additionalentityattributes:${project.property("aea_version")}")!!)
 	// modImplementation "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 	// include "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 }
 
-project.tasks.getByName<RemapJarTask>("remapJar").nestedJars.from(project(":calio").tasks.getByName("remapJar"))
+//project.tasks.getByName<Jar>("remapJar").nestedJars.from(project(":calio").tasks.getByName("remapJar")) // TODO O-L: fix
 
 tasks.withType<JavaCompile>().configureEach {
 	// ensure that the encoding is set to UTF-8, no matter what the system default is
@@ -110,10 +106,10 @@ tasks.withType<JavaCompile>().configureEach {
 	// If Javadoc is generated, this must be specified in that task too.
 	options.encoding = "UTF-8"
 
-	options.release = 17
+	options.release = 25
 }
 
-val targetJavaVersion = "17"
+val targetJavaVersion = "25"
 
 java {
 	val javaVersion = JavaVersion.toVersion(targetJavaVersion)

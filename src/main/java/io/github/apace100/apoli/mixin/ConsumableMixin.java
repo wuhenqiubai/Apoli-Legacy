@@ -1,6 +1,5 @@
 package io.github.apace100.apoli.mixin;
 
-import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -57,7 +56,7 @@ public class ConsumableMixin {
         ((ModifiableFoodEntity) entity).setCurrentModifyFoodPowers(new LinkedList<>());
     }
 
-    @WrapOperation(method = "method_62849", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/consume_effects/ConsumeEffect;apply(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Z"))
+    @WrapOperation(method = "lambda$onConsume$1", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/consume_effects/ConsumeEffect;apply(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)Z"))
     private static boolean preventApplyingFoodEffects(ConsumeEffect instance, Level level, ItemStack itemStack, LivingEntity entity, Operation<Boolean> original) {
         if (((ModifiableFoodEntity) entity).getCurrentModifyFoodPowers().stream().anyMatch(ModifyFoodPower::doesPreventEffects)) {
             return false;

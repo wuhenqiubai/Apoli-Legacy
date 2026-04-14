@@ -7,8 +7,8 @@ import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.core.*;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -144,7 +144,7 @@ public class ModifyPlayerSpawnPower extends Power {
 
         Vec3 msp = modifiedSpawnPos.get();
         modifiedSpawnBlockPos.set(msp.x, msp.y, msp.z);
-        targetDimension.getChunkSource().addTicketWithRadius(TicketType.PLAYER_SPAWN, new ChunkPos(modifiedSpawnBlockPos), 11);
+        targetDimension.getChunkSource().addTicketWithRadius(TicketType.PLAYER_SPAWN, ChunkPos.containing(modifiedSpawnBlockPos), 11);
 
         return new Tuple<>(targetDimension, modifiedSpawnBlockPos);
 

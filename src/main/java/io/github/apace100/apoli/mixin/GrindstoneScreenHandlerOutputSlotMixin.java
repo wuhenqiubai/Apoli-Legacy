@@ -24,11 +24,11 @@ public class GrindstoneScreenHandlerOutputSlotMixin {
 
     @Final
     @Shadow
-    GrindstoneMenu field_16780;
+    GrindstoneMenu this$0;
 
     @Inject(method = "onTake", at = @At(value = "INVOKE",target = "Lnet/minecraft/world/Container;setItem(ILnet/minecraft/world/item/ItemStack;)V", ordinal = 0))
     private void executeGrindstoneActions(Player player, ItemStack stack, CallbackInfo ci) {
-        PowerModifiedGrindstone pmg = (PowerModifiedGrindstone) field_16780;
+        PowerModifiedGrindstone pmg = (PowerModifiedGrindstone) this$0;
         List<ModifyGrindstonePower> applyingPowers = pmg.getAppliedPowers();
         applyingPowers.forEach(mgp -> {
             mgp.applyAfterGrindingItemAction(stack);
@@ -38,7 +38,7 @@ public class GrindstoneScreenHandlerOutputSlotMixin {
 
     @ModifyReturnValue(method = "getExperienceAmount", at = @At("RETURN"))
     private int modifyExperience(int original, Level world) {
-        PowerModifiedGrindstone pmg = (PowerModifiedGrindstone) field_16780;
+        PowerModifiedGrindstone pmg = (PowerModifiedGrindstone) this$0;
         if(pmg.getAppliedPowers().size() == 0) {
             return original;
         }

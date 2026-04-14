@@ -58,6 +58,7 @@
   ],
   "client": [
     "BackgroundRendererMixin",
+    "CameraMixin",
     "CapeFeatureRendererMixin",
     "ChunkRendererRegionMixin",
     "ClientAdvancementManagerAccessor",
@@ -75,7 +76,6 @@
     "InGameOverlayRendererMixin",
     "ItemStackMixinClient",
     "JumpableVehicleBarRendererMixin",
-    "LightmapTextureManagerMixin",
     "LivingEntityRendererMixin",
     "LivingEntityRenderStateInject",
     "LocatorBarRendererMixin",
@@ -85,5 +85,8 @@
   ],
   "injectors": {
     "defaultRequire": 1
+  },
+  "mixinextras": {
+    "minVersion": "0.5.3"
   }
 }

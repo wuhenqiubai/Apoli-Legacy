@@ -93,11 +93,11 @@ public class EntityConditions {
             .add("comparison", ApoliDataTypes.COMPARISON)
             .add("compare_to", SerializableDataTypes.FLOAT),
             (data, entity) -> ((Comparison)data.get("comparison")).compare(entity.getLightLevelDependentMagicValue(), data.getFloat("compare_to"))));
-        register(new ConditionFactory<>(Apoli.identifier("daytime"), new SerializableData(), (data, entity) -> entity.level().getDayTime() % 24000L < 13000L));
+        register(new ConditionFactory<>(Apoli.identifier("daytime"), new SerializableData(), (data, entity) -> entity.level().getOverworldClockTime() % 24000L < 13000L));
         register(new ConditionFactory<>(Apoli.identifier("time_of_day"), new SerializableData()
             .add("comparison", ApoliDataTypes.COMPARISON)
             .add("compare_to", SerializableDataTypes.INT), (data, entity) ->
-            ((Comparison)data.get("comparison")).compare(entity.level().getDayTime() % 24000L, data.getInt("compare_to"))));
+            ((Comparison)data.get("comparison")).compare(entity.level().getOverworldClockTime() % 24000L, data.getInt("compare_to"))));
         register(new ConditionFactory<>(Apoli.identifier("fall_flying"), new SerializableData(), (data, entity) -> entity instanceof LivingEntity && ((LivingEntity) entity).isFallFlying()));
         register(new ConditionFactory<>(Apoli.identifier("exposed_to_sun"), new SerializableData(), (data, entity) -> {
             if (entity.level().isBrightOutside() && !((EntityAccessor) entity).callIsInRain()) {
@@ -373,7 +373,7 @@ public class EntityConditions {
                 return comparison.compare(count, compareTo);}));
         register(new ConditionFactory<>(Apoli.identifier("entity_group"), new SerializableData()
             .add("group", SerializableDataTypes.ENTITY_GROUP),
-            (data, entity) -> entity instanceof LivingEntity && ((List<TagKey<EntityType<?>>>) data.get("group")).stream().allMatch(tag -> entity.getType().is(tag))));
+            (data, entity) -> entity instanceof LivingEntity && ((List<TagKey<EntityType<?>>>) data.get("group")).stream().allMatch(tag -> entity.getType().builtInRegistryHolder().is(tag))));
         register(new ConditionFactory<>(Apoli.identifier("in_tag"), new SerializableData()
             .add("tag", SerializableDataTypes.ENTITY_TAG),
             (data, entity) -> entity.getType().builtInRegistryHolder().is((TagKey<EntityType<?>>) data.get("tag"))));

@@ -79,7 +79,7 @@ public abstract class BackgroundRendererMixin {
         return original;
     }
 
-    @Inject(method = "setupFog", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/GpuDevice;createCommandEncoder()Lcom/mojang/blaze3d/systems/CommandEncoder;", shift = At.Shift.BEFORE))
+    @Inject(method = "setupFog", at = @At("TAIL"))
     private static void modifyFogData(Camera camera, int i, DeltaTracker deltaTracker, float f, ClientLevel clientLevel, CallbackInfoReturnable<Vector4f> cir, @Local FogData fogData, @Local FogType fogType) {
         if(camera.entity() instanceof LivingEntity) {
             List<PhasingPower> phasings = PowerHolderComponent.getPowers(camera.entity(), PhasingPower.class);
