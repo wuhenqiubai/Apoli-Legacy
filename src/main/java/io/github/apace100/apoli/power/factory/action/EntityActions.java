@@ -13,6 +13,7 @@ import io.github.apace100.apoli.util.Space;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataType;
 import io.github.apace100.calio.data.SerializableDataTypes;
+import io.github.apace100.calio.util.LazyItemStack;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -274,11 +275,11 @@ public class EntityActions {
             .add("preferred_slot", SerializableDataTypes.EQUIPMENT_SLOT, null),
             (data, entity) -> {
                 if(!entity.level().isClientSide()) {
-                    ItemStack stack = data.get("stack");
-                    if(stack.isEmpty()) {
+                    LazyItemStack lazyStack = data.get("stack");
+                    if(lazyStack.getStack().isEmpty()) {
                         return;
                     }
-                    stack = stack.copy();
+                    ItemStack stack = lazyStack.getStack();
                     if(data.isPresent("item_action")) {
                         ActionFactory<Tuple<Level, ItemStack>>.Instance action = data.get("item_action");
                         action.accept(new Tuple<>(entity.level(), stack));
