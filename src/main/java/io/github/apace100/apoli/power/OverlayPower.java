@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.power;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -113,9 +114,13 @@ public class OverlayPower extends Power {
 
         try (MeshData meshData = bufferBuilder.buildOrThrow()) {
             var vertexBuffer = DefaultVertexFormat.POSITION_TEX.uploadImmediateVertexBuffer(meshData.vertexBuffer());
-            var indexBufferStorage = RenderSystem.getSequentialBuffer(meshData.drawState().mode());
-            var indexBuffer = indexBufferStorage.getBuffer(meshData.drawState().indexCount());
-            var indexType = indexBufferStorage.type();
+            GpuBuffer indexBuffer = null;
+            VertexFormat.IndexType indexType = null;
+            if (meshData.indexBuffer() != null) {
+                indexBuffer = DefaultVertexFormat.POSITION_TEX.uploadImmediateIndexBuffer(meshData.indexBuffer());
+                indexType = meshData.drawState().indexType();
+            }
+
             var clientTexture = client.getTextureManager().getTexture(texture);
             var gpuTextureView = clientTexture.getTextureView();
             var gpuSampler = clientTexture.getSampler();
@@ -123,7 +128,9 @@ public class OverlayPower extends Power {
             try (RenderPass pass = encoder.createRenderPass(() -> "Immediate draw for Overlay Power", renderTarget.getColorTextureView(), OptionalInt.empty())) {
                 pass.bindTexture("Sampler0", gpuTextureView, gpuSampler);
                 pass.setVertexBuffer(0, vertexBuffer);
-                pass.setIndexBuffer(indexBuffer, indexType);
+
+                if (indexBuffer != null)
+                    pass.setIndexBuffer(indexBuffer, indexType);
 
                 if (drawMode == DrawMode.NAUSEA) {
                     pass.setPipeline(NAUSEA_PIPELINE);
@@ -131,7 +138,7 @@ public class OverlayPower extends Power {
                     pass.setPipeline(OVERLAY_PIPELINE);
                 }
 
-                pass.draw(0, meshData.drawState().indexCount());
+                pass.draw(0, meshData.drawState().vertexCount());
             }
         }
     }
