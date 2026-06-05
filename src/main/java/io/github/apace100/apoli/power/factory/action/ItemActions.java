@@ -20,8 +20,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Tuple;
@@ -68,7 +68,7 @@ public class ItemActions {
                 MinecraftServer server = worldAndStack.getA().getServer();
                 if(server != null) {
                     Identifier id = data.getId("modifier");
-                    LootItemFunction lootFunction = server.registryAccess().get(Registries.ITEM_MODIFIER).orElseThrow().value().getValue(id);
+                    LootItemFunction lootFunction = server.registryAccess().lookupOrThrow(Registries.ITEM_MODIFIER).getValue(id);
                     if (lootFunction == null) {
                         Apoli.LOGGER.info("Unknown item modifier used in `modify` action: " + id);
                         return;
