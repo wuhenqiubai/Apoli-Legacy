@@ -17,6 +17,10 @@ public class HudRender {
     private final boolean inverted;
     private final int order;
 
+    public HudRender(boolean shouldRender, int barIndex, ResourceLocation spriteLocation, ConditionFactory<LivingEntity>.Instance condition, boolean inverted) {
+        this(shouldRender, barIndex, spriteLocation, condition, inverted, 0);
+    }
+
     public HudRender(boolean shouldRender, int barIndex, ResourceLocation spriteLocation, ConditionFactory<LivingEntity>.Instance condition, boolean inverted, int order) {
         this.shouldRender = shouldRender;
         this.barIndex = barIndex;
