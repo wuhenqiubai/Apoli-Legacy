@@ -68,7 +68,7 @@ public class ItemActions {
                 MinecraftServer server = worldAndStack.getA().getServer();
                 if(server != null) {
                     ResourceLocation id = data.getId("modifier");
-                    LootItemFunction lootFunction = server.registryAccess().get(Registries.ITEM_MODIFIER).orElseThrow().value().getValue(id);
+                    LootItemFunction lootFunction = server.registryAccess().lookupOrThrow(Registries.ITEM_MODIFIER).getValue(id);
                     if (lootFunction == null) {
                         Apoli.LOGGER.info("Unknown item modifier used in `modify` action: " + id);
                         return;
