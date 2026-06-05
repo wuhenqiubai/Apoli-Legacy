@@ -15,13 +15,15 @@ public class HudRender {
     private final Identifier spriteLocation;
     private final ConditionFactory<LivingEntity>.Instance playerCondition;
     private final boolean inverted;
+    private final int order;
 
-    public HudRender(boolean shouldRender, int barIndex, Identifier spriteLocation, ConditionFactory<LivingEntity>.Instance condition, boolean inverted) {
+    public HudRender(boolean shouldRender, int barIndex, Identifier spriteLocation, ConditionFactory<LivingEntity>.Instance condition, boolean inverted, int order) {
         this.shouldRender = shouldRender;
         this.barIndex = barIndex;
         this.spriteLocation = spriteLocation;
         this.playerCondition = condition;
         this.inverted = inverted;
+        this.order = order;
     }
 
     public Identifier getSpriteLocation() {
@@ -34,6 +36,10 @@ public class HudRender {
 
     public boolean isInverted() {
         return inverted;
+    }
+
+    public int getOrder() {
+        return order;
     }
 
     public boolean shouldRender() {

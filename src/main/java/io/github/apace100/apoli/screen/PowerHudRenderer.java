@@ -38,9 +38,10 @@ public class PowerHudRenderer implements GameHudRender {
         int barWidth = 71;
         int barHeight = 8;
         int iconSize = 8;
-        List<HudRendered> hudPowers = component.getPowers().stream().filter(p -> p instanceof HudRendered).map(p -> (HudRendered)p).sorted(
-            Comparator.comparing(hudRenderedA -> hudRenderedA.getRenderSettings().getSpriteLocation())
-        ).collect(Collectors.toList());
+        List<HudRendered> hudPowers = component.getPowers().stream().filter(p -> p instanceof HudRendered).map(p -> (HudRendered)p)
+            .sorted(Comparator.comparingInt(rendered -> rendered.getRenderSettings().getOrder()))
+            .sorted(Comparator.comparing(hudRenderedA -> hudRenderedA.getRenderSettings().getSpriteLocation()))
+            .collect(Collectors.toList());
         //Identifier lastLocation = null;
         //RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
         for (HudRendered hudPower : hudPowers) {
