@@ -80,8 +80,10 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
         if (!this.origins_isEndRespawning && PowerHolderComponent.getPowers(this, ModifyPlayerSpawnPower.class).size() > 0) {
             ModifyPlayerSpawnPower power = PowerHolderComponent.getPowers(this, ModifyPlayerSpawnPower.class).get(0);
 
+            BlockPos spawnPos = findPlayerSpawn();
+
             if (respawnConfig == null) {
-                info.setReturnValue(new ServerPlayer.RespawnConfig(power.dimension, findPlayerSpawn(), 0f, true));
+                info.setReturnValue(new ServerPlayer.RespawnConfig(power.dimension, spawnPos, 0f, true));
             } else if (hasObstructedSpawn(power.dimension)) {
 //                connection.send(new ClientboundGameEventPacket(ClientboundGameEventPacket.NO_RESPAWN_BLOCK_AVAILABLE, 0.0F));
                 info.setReturnValue(new ServerPlayer.RespawnConfig(power.dimension, spawnPos, 0f, true));

@@ -5,8 +5,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.SetEntityGroupPower;
-import net.minecraft.advancements.criterion.EntityPredicate;
-import net.minecraft.advancements.criterion.EntityTypePredicate;
+import net.minecraft.advancements.critereon.EntityPredicate;
+import net.minecraft.advancements.critereon.EntityTypePredicate;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -19,7 +19,7 @@ import java.util.List;
 @Mixin(EntityPredicate.class)
 public abstract class EntityPredicateMixin {
     // SetEntityGroupPower
-    @WrapOperation(method = "matches(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/Entity;)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/criterion/EntityTypePredicate;matches(Lnet/minecraft/world/entity/EntityType;)Z"))
+    @WrapOperation(method = "matches(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/Entity;)Z", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/critereon/EntityTypePredicate;matches(Lnet/minecraft/world/entity/EntityType;)Z"))
     private boolean checkMatchesEntityGroup(EntityTypePredicate instance, EntityType<?> entityType, Operation<Boolean> original, @Local(argsOnly = true) Entity entity) {
         var value = original.call(instance, entityType);
         var entityTypeTag = instance.types().unwrapKey().orElse(null);

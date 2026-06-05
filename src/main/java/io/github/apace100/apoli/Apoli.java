@@ -150,12 +150,12 @@ public class Apoli implements ModInitializer, EntityComponentInitializer, Ordere
 		);
 
 		for (Holder<Attribute> attribute : genericAttributes) {
-			var id = attribute.unwrapKey().orElseThrow().identifier();
+			var id = attribute.unwrapKey().orElseThrow().location();
 			BuiltInRegistries.ATTRIBUTE.addAlias(id.withPrefix("generic."), id);
 		}
 
 		for (Holder<Attribute> attribute : playerAttributes) {
-			var id = attribute.unwrapKey().orElseThrow().identifier();
+			var id = attribute.unwrapKey().orElseThrow().location();
 			BuiltInRegistries.ATTRIBUTE.addAlias(id.withPrefix("player."), id);
 		}
 	}
