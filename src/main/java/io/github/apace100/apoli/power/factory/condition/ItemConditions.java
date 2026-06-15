@@ -11,6 +11,8 @@ import io.github.apace100.calio.data.SerializableDataTypes;
 import io.github.apace100.calio.util.UpgradeUtils;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -29,6 +31,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class ItemConditions {
 
@@ -105,6 +109,9 @@ public class ItemConditions {
             (data, stack) -> stack.has(DataComponents.FOOD) && stack.is(ItemTags.MEAT)));
         register(new ConditionFactory<>(Apoli.identifier("nbt"), new SerializableData()
             .add("nbt", SerializableDataTypes.NBT), (data, stack) -> {
+            if (stack.isEmpty())
+                return false;
+
             CompoundTag oldTag = data.get("nbt");
             CompoundTag recreatedTag = new CompoundTag();
             recreatedTag.putString("id", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
@@ -176,6 +183,34 @@ public class ItemConditions {
                     return false;
                 return equipable.getEquipmentSlot() == data.get("equipment_slot");
             }));
+
+        // Apoli: Legacy implementations
+        register(new ConditionFactory<>(Apoli.legacy("components"), new SerializableData()
+            .add("components", SerializableDataTypes.DATA_COMPONENTS),
+            (data, stack) -> {
+                if (stack.isEmpty())
+                    return false;
+
+                DataComponentPatch components = data.get("components");
+
+                for (Map.Entry<DataComponentType<?>, Optional<?>> entry : components.entrySet()) {
+                    var type = entry.getKey();
+                    var value = entry.getValue();
+
+                    var stackValue = stack.get(type);
+                    if (stackValue != null && value.isPresent() && stackValue != value.orElseThrow())
+                        return false;
+
+                    if (stackValue == null && value.isPresent())
+                        return false;
+
+                    if (stackValue != null && value.isEmpty())
+                        return false;
+                }
+
+                return true;
+            }
+        ));
     }
 
     private static void register(ConditionFactory<ItemStack> conditionFactory) {
