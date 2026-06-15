@@ -458,4 +458,13 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
             }
         }
     }
+
+    // Restrict Armor
+    @Inject(method = "isEquippableInSlot", at = @At("HEAD"), cancellable = true)
+    private void apoli_legacy$checkCanEquipInSlot(ItemStack stack, EquipmentSlot slot, CallbackInfoReturnable<Boolean> cir) {
+        PowerHolderComponent component = PowerHolderComponent.KEY.get(this);
+        if(component.getPowers(RestrictArmorPower.class).stream().anyMatch(rap -> !rap.canEquip(stack, slot))) {
+            cir.setReturnValue(false);
+        }
+    }
 }
