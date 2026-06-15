@@ -25,7 +25,7 @@ public class PhantomSpawnerMixin {
         apoli$CachedPlayer = serverPlayerEntity;
     }
 
-    @ModifyVariable(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/RandomSource;nextInt(I)I", ordinal = 1), ordinal = 1)
+    @ModifyVariable(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/RandomSource;nextInt(I)I", ordinal = 1), ordinal = 0)
     private int modifyTicks(int original) {
         return (int)PowerHolderComponent.modify(apoli$CachedPlayer, ModifyInsomniaTicksPower.class, original);
     }
