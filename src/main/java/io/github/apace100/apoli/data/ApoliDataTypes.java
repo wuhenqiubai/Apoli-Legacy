@@ -2,6 +2,7 @@ package io.github.apace100.apoli.data;
 
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.mojang.serialization.Codec;
 import io.github.apace100.apoli.power.Active;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeReference;
@@ -12,13 +13,6 @@ import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
 import io.github.apace100.apoli.power.factory.condition.ConditionType;
 import io.github.apace100.apoli.power.factory.condition.ConditionTypes;
 import io.github.apace100.apoli.util.*;
-import io.github.apace100.calio.ClassUtil;
-import io.github.apace100.calio.SerializationHelper;
-import io.github.apace100.calio.data.SerializableData;
-import io.github.apace100.calio.data.SerializableDataType;
-import io.github.apace100.calio.data.SerializableDataTypes;
-import io.github.apace100.calio.util.ArgumentWrapper;
-import io.github.apace100.calio.util.UpgradeUtils;
 import io.github.ladysnake.pal.Pal;
 import io.github.ladysnake.pal.PlayerAbility;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -50,9 +44,7 @@ import java.util.List;
 
 public class ApoliDataTypes {
 
-    public static final SerializableDataType<PowerTypeReference> POWER_TYPE = SerializableDataType.wrap(
-        PowerTypeReference.class, SerializableDataTypes.IDENTIFIER,
-        PowerType::getIdentifier, PowerTypeReference::new);
+    public static final Codec<PowerTypeReference> POWER_TYPE = Identifier.CODEC.xmap(PowerTypeReference::new, PowerType::getIdentifier);
 
     public static final SerializableDataType<ConditionFactory<Entity>.Instance> ENTITY_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.ENTITY);
@@ -269,10 +261,7 @@ public class ApoliDataTypes {
     public static final SerializableDataType<DamageSourceDescription> DAMAGE_SOURCE_DESCRIPTION = SerializableDataType.compound(DamageSourceDescription.class,
             DamageSourceDescription.DATA, DamageSourceDescription::fromData, DamageSourceDescription::toData);
 
-    public static final SerializableDataType<LegacyMaterial> LEGACY_MATERIAL = SerializableDataType.wrap(
-            LegacyMaterial.class, SerializableDataTypes.STRING,
-            LegacyMaterial::getMaterial, LegacyMaterial::new
-    );
+    public static final Codec<LegacyMaterial> LEGACY_MATERIAL = Codec.STRING.xmap(LegacyMaterial::new, LegacyMaterial::material);
 
     public static final SerializableDataType<List<LegacyMaterial>> LEGACY_MATERIALS = SerializableDataType.list(LEGACY_MATERIAL);
 

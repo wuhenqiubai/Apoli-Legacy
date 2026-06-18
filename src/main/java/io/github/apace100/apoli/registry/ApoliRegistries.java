@@ -1,51 +1,53 @@
 package io.github.apace100.apoli.registry;
 
+import com.mojang.serialization.MapCodec;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.apoli.power.factory.action.ActionFactory;
-import io.github.apace100.apoli.power.factory.condition.ConditionFactory;
+import io.github.apace100.apoli.power.factory.condition.bientity.BiEntityCondition;
+import io.github.apace100.apoli.power.factory.condition.biome.BiomeCondition;
+import io.github.apace100.apoli.power.factory.condition.block.BlockCondition;
+import io.github.apace100.apoli.power.factory.condition.damage.DamageCondition;
+import io.github.apace100.apoli.power.factory.condition.entity.EntityCondition;
+import io.github.apace100.apoli.power.factory.condition.fluid.FluidCondition;
+import io.github.apace100.apoli.power.factory.condition.item.ItemCondition;
 import io.github.apace100.apoli.util.modifier.IModifierOperation;
-import io.github.apace100.calio.ClassUtil;
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder;
+import net.fabricmc.fabric.api.event.registry.RegistryAttribute;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Tuple;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.state.pattern.BlockInWorld;
-import net.minecraft.world.level.material.FluidState;
 import org.apache.commons.lang3.tuple.Triple;
 
 public class ApoliRegistries {
 
     public static final Registry<PowerFactory> POWER_FACTORY;
-    public static final Registry<ConditionFactory<Entity>> ENTITY_CONDITION;
-    public static final Registry<ConditionFactory<Tuple<Entity, Entity>>> BIENTITY_CONDITION;
-    public static final Registry<ConditionFactory<ItemStack>> ITEM_CONDITION;
-    public static final Registry<ConditionFactory<BlockInWorld>> BLOCK_CONDITION;
-    public static final Registry<ConditionFactory<Tuple<DamageSource, Float>>> DAMAGE_CONDITION;
-    public static final Registry<ConditionFactory<FluidState>> FLUID_CONDITION;
-    public static final Registry<ConditionFactory<Holder<Biome>>> BIOME_CONDITION;
+    public static final Registry<MapCodec<? extends EntityCondition>> ENTITY_CONDITION = create(ApoliRegistryKeys.ENTITY_CONDITION);
+    public static final Registry<MapCodec<? extends BiEntityCondition>> BIENTITY_CONDITION = create(ApoliRegistryKeys.BIENTITY_CONDITION);
+    public static final Registry<MapCodec<? extends ItemCondition>> ITEM_CONDITION = create(ApoliRegistryKeys.ITEM_CONDITION);
+    public static final Registry<MapCodec<? extends BlockCondition>> BLOCK_CONDITION = create(ApoliRegistryKeys.BLOCK_CONDITION);
+    public static final Registry<MapCodec<? extends DamageCondition>> DAMAGE_CONDITION = create(ApoliRegistryKeys.DAMAGE_CONDITION);
+    public static final Registry<MapCodec<? extends FluidCondition>> FLUID_CONDITION = create(ApoliRegistryKeys.FLUID_CONDITION);
+    public static final Registry<MapCodec<? extends BiomeCondition>> BIOME_CONDITION = create(ApoliRegistryKeys.BIOME_CONDITION);
     public static final Registry<ActionFactory<Entity>> ENTITY_ACTION;
     public static final Registry<ActionFactory<Tuple<Level, ItemStack>>> ITEM_ACTION;
     public static final Registry<ActionFactory<Triple<Level, BlockPos, Direction>>> BLOCK_ACTION;
     public static final Registry<ActionFactory<Tuple<Entity, Entity>>> BIENTITY_ACTION;
     public static final Registry<IModifierOperation> MODIFIER_OPERATION;
 
+    private static <T> Registry<T> create(ResourceKey<Registry<T>> key) {
+        return FabricRegistryBuilder.create(key)
+            .attribute(RegistryAttribute.SYNCED)
+            .buildAndRegister();
+    }
+
     static {
         POWER_FACTORY = FabricRegistryBuilder.create(PowerFactory.class, Apoli.identifier("power_factory")).buildAndRegister();
-        ENTITY_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<Entity>>castClass(ConditionFactory.class), Apoli.identifier("entity_condition")).buildAndRegister();
-        BIENTITY_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<Tuple<Entity, Entity>>>castClass(ConditionFactory.class), Apoli.identifier("bientity_condition")).buildAndRegister();
-        ITEM_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<ItemStack>>castClass(ConditionFactory.class), Apoli.identifier("item_condition")).buildAndRegister();
-        BLOCK_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<BlockInWorld>>castClass(ConditionFactory.class), Apoli.identifier("block_condition")).buildAndRegister();
-        DAMAGE_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<Tuple<DamageSource, Float>>>castClass(ConditionFactory.class), Apoli.identifier("damage_condition")).buildAndRegister();
-        FLUID_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<FluidState>>castClass(ConditionFactory.class), Apoli.identifier("fluid_condition")).buildAndRegister();
-        BIOME_CONDITION = FabricRegistryBuilder.create(ClassUtil.<ConditionFactory<Holder<Biome>>>castClass(ConditionFactory.class), Apoli.identifier("biome_condition")).buildAndRegister();
         ENTITY_ACTION = FabricRegistryBuilder.create(ClassUtil.<ActionFactory<Entity>>castClass(ActionFactory.class), Apoli.identifier("entity_action")).buildAndRegister();
         ITEM_ACTION = FabricRegistryBuilder.create(ClassUtil.<ActionFactory<Tuple<Level, ItemStack>>>castClass(ActionFactory.class), Apoli.identifier("item_action")).buildAndRegister();
         BLOCK_ACTION = FabricRegistryBuilder.create(ClassUtil.<ActionFactory<Triple<Level, BlockPos, Direction>>>castClass(ActionFactory.class), Apoli.identifier("block_action")).buildAndRegister();

@@ -1,14 +1,30 @@
 package io.github.apace100.apoli.util;
 
+import com.mojang.serialization.Codec;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.StringRepresentable;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import net.minecraft.core.BlockPos;
 
-public enum Shape {
-    CUBE, CHEBYSHEV,
-    STAR, MANHATTAN,
-    SPHERE, EUCLIDEAN;
+public enum Shape implements StringRepresentable {
+    CUBE("cube"), CHEBYSHEV("chebyshev"),
+    STAR("star"), MANHATTAN("manhattan"),
+    SPHERE("sphere"), EUCLIDEAN("euclidean");
+
+    private final String serializedName;
+
+    Shape(String serializedName) {
+        this.serializedName = serializedName;
+    }
+
+    @Override
+    public String getSerializedName() {
+        return this.serializedName;
+    }
+
+    public static final Codec<Shape> CODEC = StringRepresentable.fromValues(Shape::values);
 
     public static Collection<BlockPos> getPositions(BlockPos center, Shape shape, int radius) {
         Set<BlockPos> positions = new HashSet<>();

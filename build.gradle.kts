@@ -74,24 +74,8 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
 
-	include(api("org.ladysnake.cardinal-components-api:cardinal-components-base:${project.property("cca_version")}") {
-		exclude(group = "net.fabricmc.fabric-api")
-	})
-
-	include(api("org.ladysnake.cardinal-components-api:cardinal-components-entity:${project.property("cca_version")}") {
-		exclude(group = "net.fabricmc.fabric-api")
-	})
-
 	include(api("io.github.ladysnake:PlayerAbilityLib:${property("pal_version")}")!!)
-
-	implementation(project(":calio"))
-
-	include(api("me.shedaniel.cloth:cloth-config-fabric:${project.property("clothconfig_version")}") {
-		exclude(group = "net.fabricmc.fabric-api")
-	})
-
 	implementation("com.terraformersmc:modmenu:${project.property("modmenu_version")}")
-
 	include(api("maven.modrinth:additionalentityattributes:${project.property("aea_version")}")!!)
 	// modImplementation "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"
 	// include "de.dafuqs:AdditionalEntityAttributes:${project.aea_version}"

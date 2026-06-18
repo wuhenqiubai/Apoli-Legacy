@@ -1,5 +1,7 @@
 package io.github.apace100.apoli.util;
 
+import com.mojang.serialization.Codec;
+
 import java.util.function.BiFunction;
 
 public enum Comparison {
@@ -11,6 +13,8 @@ public enum Comparison {
     LESS_THAN_OR_EQUAL("<=", (a, b) -> a <= b),
     GREATER_THAN_OR_EQUAL(">=", (a, b) -> a >= b),
     NOT_EQUAL("!=", (a, b) -> !a.equals(b));
+
+    public static final Codec<Comparison> CODEC = Codec.STRING.xmap(Comparison::getFromString, Comparison::getComparisonString);
 
     private final String comparisonString;
     private final BiFunction<Double, Double, Boolean> comparison;
@@ -29,20 +33,14 @@ public enum Comparison {
     }
 
     public static Comparison getFromString(String comparisonString) {
-        switch(comparisonString) {
-            case "==":
-                return EQUAL;
-            case "<":
-                return LESS_THAN;
-            case ">":
-                return GREATER_THAN;
-            case "<=":
-                return LESS_THAN_OR_EQUAL;
-            case ">=":
-                return GREATER_THAN_OR_EQUAL;
-            case "!=":
-                return NOT_EQUAL;
-        }
-        return NONE;
+        return switch (comparisonString) {
+            case "==" -> EQUAL;
+            case "<" -> LESS_THAN;
+            case ">" -> GREATER_THAN;
+            case "<=" -> LESS_THAN_OR_EQUAL;
+            case ">=" -> GREATER_THAN_OR_EQUAL;
+            case "!=" -> NOT_EQUAL;
+            default -> NONE;
+        };
     }
 }

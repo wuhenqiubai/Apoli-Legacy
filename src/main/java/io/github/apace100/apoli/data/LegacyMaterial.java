@@ -6,16 +6,12 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class LegacyMaterial {
-    private final TagKey<Block> materialTagKey;
-    private final String material;
-
+public record LegacyMaterial(
+    TagKey<Block> materialTagKey,
+    String material
+) {
     public LegacyMaterial(String material) {
-        materialTagKey = TagKey.create(Registries.BLOCK, Apoli.identifier("material/" + material));
-        this.material = material;
-    }
-    public String getMaterial() {
-        return this.material;
+        this(TagKey.create(Registries.BLOCK, Apoli.identifier("material/" + material)), material);
     }
 
     public boolean blockStateIsOfMaterial(BlockState blockState) {
