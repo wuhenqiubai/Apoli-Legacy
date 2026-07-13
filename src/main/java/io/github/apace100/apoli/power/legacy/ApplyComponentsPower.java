@@ -51,6 +51,10 @@ public class ApplyComponentsPower extends Power {
         return components;
     }
 
+    public boolean shouldReplaceExisting() {
+        return replaceExisting;
+    }
+
     public static PowerFactory createFactory() {
         return new PowerFactory<>(Apoli.legacy("apply_components"),
             new SerializableData()
