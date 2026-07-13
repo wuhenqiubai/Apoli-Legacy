@@ -42,7 +42,7 @@ public abstract class ItemStackMixin {
                             var slots = MiscUtil.getKeysForValue(stacks, stack);
                             for (EquipmentSlot slot : slots) {
                                 if (livingEntity.getItemBySlot(slot) == stack) { // not doing an equals check here, we want the same reference.
-                                    this.apoli_legacy$overlayableComponents.addOverlay(power.getComponents());
+                                    this.apoli_legacy$overlayableComponents.addOverlay(power.getComponents(), power.shouldReplaceExisting());
                                 }
                             }
                         }
