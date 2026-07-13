@@ -8,7 +8,6 @@ import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
 import net.minecraft.core.component.DataComponentPatch;
-import net.minecraft.core.component.DataComponentType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -16,7 +15,6 @@ import net.minecraft.world.item.ItemStack;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 public class ApplyComponentsPower extends Power {
@@ -42,20 +40,15 @@ public class ApplyComponentsPower extends Power {
         for (EquipmentSlot slot : this.slots) {
             var stack = entity.getItemBySlot(slot);
             if (!stack.isEmpty() && this.itemCondition.test(stack)) {
-                var modified = stack.copy();
-                if (this.replaceExisting) {
-                    for (Map.Entry<DataComponentType<?>, Optional<?>> entry : this.components.entrySet()) {
-                        modified.remove(entry.getKey());
-                    }
-                }
-
-                modified.applyComponents(this.components);
-
-                stacks.put(slot, modified);
+                stacks.put(slot, stack);
             }
         }
 
         return stacks;
+    }
+
+    public DataComponentPatch getComponents() {
+        return components;
     }
 
     public static PowerFactory createFactory() {
