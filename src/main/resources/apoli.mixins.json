@@ -54,7 +54,8 @@
     "WeightedListEntryAccessor",
     "legacy.MobMixin",
     "legacy.NearestAttackableTargetGoalMixin",
-    "legacy.TargetingConditionsMixin"
+    "legacy.TargetingConditionsMixin",
+    "legacy.apply_components.ItemStackMixin"
   ],
   "client": [
     "BackgroundRendererMixin",
