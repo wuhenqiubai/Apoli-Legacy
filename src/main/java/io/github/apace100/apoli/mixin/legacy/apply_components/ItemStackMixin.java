@@ -29,7 +29,7 @@ public abstract class ItemStackMixin {
         }
 
         if (this instanceof EntityLinkedItemStack linkedItemStack) {
-            var entity = linkedItemStack.apoli$getEntity();
+            var entity = linkedItemStack.getEntity();
             if (entity instanceof LivingEntity livingEntity) {
                 PowerHolderComponent.getPowers(entity, ApplyComponentsPower.class)
                     .forEach(power -> {

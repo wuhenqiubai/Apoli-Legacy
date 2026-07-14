@@ -61,16 +61,16 @@ public class OverlayableDataComponentMap implements DataComponentMap {
     @Override
     public @Nullable <T> T get(DataComponentType<? extends T> type) {
         for (DataComponentPatch overlay : this.replacements) {
-            var component = overlay.get(this.original, type);
-            if (component != null)
-                return component;
+            var component = overlay.get(type);
+            if (component != null && component.isPresent())
+                return component.orElseThrow();
         }
 
         if (!this.original.has(type)) {
             for (DataComponentPatch overlay : this.overlays) {
-                var component = overlay.get(this.original, type);
-                if (component != null)
-                    return component;
+                var component = overlay.get(type);
+                if (component != null && component.isPresent())
+                    return component.orElseThrow();
             }
         }
 
