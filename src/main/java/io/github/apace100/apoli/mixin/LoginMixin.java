@@ -12,14 +12,12 @@ import io.github.apace100.apoli.power.PowerTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.vehicle.DismountHelper;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 import org.ladysnake.cca.api.v3.component.ComponentProvider;
@@ -71,7 +69,7 @@ public abstract class LoginMixin {
 		TeleportTransition original = operation.call(instance, useCharge, postTeleportTransition);
 		if(original.missingRespawnBlock()) {
 			if(PowerHolderComponent.hasPower(instance, ModifyPlayerSpawnPower.class)) {
-				Vec3 pos = DismountHelper.findSafeDismountLocation(EntityType.PLAYER, original.newLevel(), BlockPos.containing(original.position()), useCharge);
+				Vec3 pos = DismountHelper.findSafeDismountLocation(EntityTypes.PLAYER, original.newLevel(), BlockPos.containing(original.position()), useCharge);
 				if (pos == null) {
 					pos = original.position();
 				}

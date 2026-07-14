@@ -2,6 +2,7 @@ package io.github.apace100.apoli.data;
 
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
+import com.mojang.datafixers.util.Pair;
 import io.github.apace100.apoli.power.Active;
 import io.github.apace100.apoli.power.PowerType;
 import io.github.apace100.apoli.power.PowerTypeReference;
@@ -32,7 +33,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -60,10 +60,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ConditionFactory<Entity>.Instance>> ENTITY_CONDITIONS =
         SerializableDataType.list(ENTITY_CONDITION);
 
-    public static final SerializableDataType<ConditionFactory<Tuple<Entity, Entity>>.Instance> BIENTITY_CONDITION =
+    public static final SerializableDataType<ConditionFactory<Pair<Entity, Entity>>.Instance> BIENTITY_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.BIENTITY);
 
-    public static final SerializableDataType<List<ConditionFactory<Tuple<Entity, Entity>>.Instance>> BIENTITY_CONDITIONS =
+    public static final SerializableDataType<List<ConditionFactory<Pair<Entity, Entity>>.Instance>> BIENTITY_CONDITIONS =
         SerializableDataType.list(BIENTITY_CONDITION);
 
     public static final SerializableDataType<ConditionFactory<ItemStack>.Instance> ITEM_CONDITION =
@@ -84,10 +84,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ConditionFactory<FluidState>.Instance>> FLUID_CONDITIONS =
         SerializableDataType.list(FLUID_CONDITION);
 
-    public static final SerializableDataType<ConditionFactory<Tuple<DamageSource, Float>>.Instance> DAMAGE_CONDITION =
+    public static final SerializableDataType<ConditionFactory<Pair<DamageSource, Float>>.Instance> DAMAGE_CONDITION =
         condition(ClassUtil.castClass(ConditionFactory.Instance.class), ConditionTypes.DAMAGE);
 
-    public static final SerializableDataType<List<ConditionFactory<Tuple<DamageSource, Float>>.Instance>> DAMAGE_CONDITIONS =
+    public static final SerializableDataType<List<ConditionFactory<Pair<DamageSource, Float>>.Instance>> DAMAGE_CONDITIONS =
         SerializableDataType.list(DAMAGE_CONDITION);
 
     public static final SerializableDataType<ConditionFactory<Holder<Biome>>.Instance> BIOME_CONDITION =
@@ -102,10 +102,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ActionFactory<Entity>.Instance>> ENTITY_ACTIONS =
         SerializableDataType.list(ENTITY_ACTION);
 
-    public static final SerializableDataType<ActionFactory<Tuple<Entity, Entity>>.Instance> BIENTITY_ACTION =
+    public static final SerializableDataType<ActionFactory<Pair<Entity, Entity>>.Instance> BIENTITY_ACTION =
         action(ClassUtil.castClass(ActionFactory.Instance.class), ActionTypes.BIENTITY);
 
-    public static final SerializableDataType<List<ActionFactory<Tuple<Entity, Entity>>.Instance>> BIENTITY_ACTIONS =
+    public static final SerializableDataType<List<ActionFactory<Pair<Entity, Entity>>.Instance>> BIENTITY_ACTIONS =
         SerializableDataType.list(BIENTITY_ACTION);
 
     public static final SerializableDataType<ActionFactory<Triple<Level, BlockPos, Direction>>.Instance> BLOCK_ACTION =
@@ -114,10 +114,10 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<ActionFactory<Triple<Level, BlockPos, Direction>>.Instance>> BLOCK_ACTIONS =
         SerializableDataType.list(BLOCK_ACTION);
 
-    public static final SerializableDataType<ActionFactory<Tuple<Level, ItemStack>>.Instance> ITEM_ACTION =
+    public static final SerializableDataType<ActionFactory<Pair<Level, ItemStack>>.Instance> ITEM_ACTION =
         action(ClassUtil.castClass(ActionFactory.Instance.class), ActionTypes.ITEM);
 
-    public static final SerializableDataType<List<ActionFactory<Tuple<Level, ItemStack>>.Instance>> ITEM_ACTIONS =
+    public static final SerializableDataType<List<ActionFactory<Pair<Level, ItemStack>>.Instance>> ITEM_ACTIONS =
         SerializableDataType.list(ITEM_ACTION);
 
     public static final SerializableDataType<Space> SPACE = SerializableDataType.enumValue(Space.class);
@@ -154,7 +154,7 @@ public class ApoliDataTypes {
     public static final SerializableDataType<List<AttributedEntityAttributeModifier>> ATTRIBUTED_ATTRIBUTE_MODIFIERS =
         SerializableDataType.list(ATTRIBUTED_ATTRIBUTE_MODIFIER);
 
-    public static final SerializableDataType<Tuple<Integer, ItemStack>> POSITIONED_ITEM_STACK = SerializableDataType.compound(ClassUtil.castClass(Tuple.class),
+    public static final SerializableDataType<Pair<Integer, ItemStack>> POSITIONED_ITEM_STACK = SerializableDataType.compound(ClassUtil.castClass(Pair.class),
         new SerializableData()
             .add("item", SerializableDataTypes.ITEM)
             .add("amount", SerializableDataTypes.INT, 1)
@@ -177,19 +177,19 @@ public class ApoliDataTypes {
             if (data.isPresent("components")) {
                 stack.applyComponents((DataComponentPatch) data.get("components"));
             }
-            return new Tuple<>(data.getInt("slot"), stack);
+            return new Pair<>(data.getInt("slot"), stack);
         },
         ((serializableData, positionedStack) -> {
             SerializableData.Instance data = serializableData.new Instance();
-            data.set("item", positionedStack.getB().getItem());
-            data.set("amount", positionedStack.getB().getCount());
+            data.set("item", positionedStack.getSecond().getItem());
+            data.set("amount", positionedStack.getSecond().getCount());
             //data.set("tag", positionedStack.getB().hasTag() ? positionedStack.getB().getTag() : null);
-            data.set("components", !positionedStack.getB().getComponentsPatch().isEmpty() ? positionedStack.getB().getComponentsPatch() : null);
-            data.set("slot", positionedStack.getA());
+            data.set("components", !positionedStack.getSecond().getComponentsPatch().isEmpty() ? positionedStack.getSecond().getComponentsPatch() : null);
+            data.set("slot", positionedStack.getFirst());
             return data;
         }));
 
-    public static final SerializableDataType<List<Tuple<Integer, ItemStack>>> POSITIONED_ITEM_STACKS = SerializableDataType.list(POSITIONED_ITEM_STACK);
+    public static final SerializableDataType<List<Pair<Integer, ItemStack>>> POSITIONED_ITEM_STACKS = SerializableDataType.list(POSITIONED_ITEM_STACK);
 
     public static final SerializableDataType<Active.Key> KEY = SerializableDataType.compound(Active.Key.class,
         new SerializableData()

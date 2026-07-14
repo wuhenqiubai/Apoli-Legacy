@@ -82,7 +82,9 @@
     "LocatorBarRendererMixin",
     "MinecraftClientMixin",
     "PlayerEntityRendererMixin",
-    "WorldRendererMixin"
+    "WorldRendererMixin",
+    "legacy.core.level_render.LevelExtractorMixin",
+    "legacy.hud_power.HudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

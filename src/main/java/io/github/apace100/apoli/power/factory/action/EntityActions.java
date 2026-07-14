@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.power.factory.action;
 
+import com.mojang.datafixers.util.Pair;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.data.ApoliDataTypes;
@@ -28,7 +29,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ARGB;
-import net.minecraft.util.Tuple;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AreaEffectCloud;
@@ -281,8 +281,8 @@ public class EntityActions {
                     }
                     ItemStack stack = lazyStack.getStack();
                     if(data.isPresent("item_action")) {
-                        ActionFactory<Tuple<Level, ItemStack>>.Instance action = data.get("item_action");
-                        action.accept(new Tuple<>(entity.level(), stack));
+                        ActionFactory<Pair<Level, ItemStack>>.Instance action = data.get("item_action");
+                        action.accept(new Pair<>(entity.level(), stack));
                     }
                     if(data.isPresent("preferred_slot") && entity instanceof LivingEntity living) {
                         EquipmentSlot slot = data.get("preferred_slot");
@@ -313,8 +313,8 @@ public class EntityActions {
             (data, entity) -> {
                 if(entity instanceof LivingEntity) {
                     ItemStack stack = ((LivingEntity)entity).getItemBySlot(data.get("equipment_slot"));
-                    ActionFactory<Tuple<Level, ItemStack>>.Instance action = data.get("action");
-                    action.accept(new Tuple<>(entity.level(), stack));
+                    ActionFactory<Pair<Level, ItemStack>>.Instance action = data.get("action");
+                    action.accept(new Pair<>(entity.level(), stack));
                 }
             }));
         register(new ActionFactory<>(Apoli.identifier("trigger_cooldown"), new SerializableData()
@@ -384,19 +384,19 @@ public class EntityActions {
             .add("recursive", SerializableDataTypes.BOOLEAN, false),
             (data, entity) -> {
                 Consumer<Entity> entityAction = data.get("action");
-                Consumer<Tuple<Entity, Entity>> bientityAction = data.get("bientity_action");
-                Predicate<Tuple<Entity, Entity>> cond = data.get("bientity_condition");
+                Consumer<Pair<Entity, Entity>> bientityAction = data.get("bientity_action");
+                Predicate<Pair<Entity, Entity>> cond = data.get("bientity_condition");
                 if(!entity.isVehicle() || (entityAction == null && bientityAction == null)) {
                     return;
                 }
                 Iterable<Entity> passengers = data.getBoolean("recursive") ? entity.getIndirectPassengers() : entity.getPassengers();
                 for(Entity passenger : passengers) {
-                    if(cond == null || cond.test(new Tuple<>(passenger, entity))) {
+                    if(cond == null || cond.test(new Pair<>(passenger, entity))) {
                         if (entityAction != null) {
                             entityAction.accept(passenger);
                         }
                         if (bientityAction != null) {
-                            bientityAction.accept(new Tuple<>(passenger, entity));
+                            bientityAction.accept(new Pair<>(passenger, entity));
                         }
                     }
                 }
@@ -408,32 +408,32 @@ public class EntityActions {
             .add("recursive", SerializableDataTypes.BOOLEAN, false),
             (data, entity) -> {
                 Consumer<Entity> entityAction = data.get("action");
-                Consumer<Tuple<Entity, Entity>> bientityAction = data.get("bientity_action");
-                Predicate<Tuple<Entity, Entity>> cond = data.get("bientity_condition");
+                Consumer<Pair<Entity, Entity>> bientityAction = data.get("bientity_action");
+                Predicate<Pair<Entity, Entity>> cond = data.get("bientity_condition");
                 if(!entity.isPassenger() || (entityAction == null && bientityAction == null)) {
                     return;
                 }
                 if(data.getBoolean("recursive")) {
                     Entity vehicle = entity.getVehicle();
                     while(vehicle != null) {
-                        if(cond == null || cond.test(new Tuple<>(entity, vehicle))) {
+                        if(cond == null || cond.test(new Pair<>(entity, vehicle))) {
                             if(entityAction != null) {
                                 entityAction.accept(vehicle);
                             }
                             if(bientityAction != null) {
-                                bientityAction.accept(new Tuple<>(entity, vehicle));
+                                bientityAction.accept(new Pair<>(entity, vehicle));
                             }
                         }
                         vehicle = vehicle.getVehicle();
                     }
                 } else {
                     Entity vehicle = entity.getVehicle();
-                    if(cond == null || cond.test(new Tuple<>(entity, vehicle))) {
+                    if(cond == null || cond.test(new Pair<>(entity, vehicle))) {
                         if(entityAction != null) {
                             entityAction.accept(vehicle);
                         }
                         if(bientityAction != null) {
-                            bientityAction.accept(new Tuple<>(entity, vehicle));
+                            bientityAction.accept(new Pair<>(entity, vehicle));
                         }
                     }
                 }

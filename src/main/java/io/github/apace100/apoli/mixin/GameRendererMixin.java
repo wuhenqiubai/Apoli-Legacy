@@ -5,13 +5,15 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import io.github.apace100.apoli.component.PowerHolderComponent;
-import io.github.apace100.apoli.power.*;
+import io.github.apace100.apoli.power.ModifyCameraSubmersionTypePower;
+import io.github.apace100.apoli.power.NightVisionPower;
+import io.github.apace100.apoli.power.PhasingPower;
+import io.github.apace100.apoli.power.ShaderPower;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
@@ -87,24 +89,6 @@ public abstract class GameRendererMixin {
         }
     }
 
-    @Inject(method = "extractGui", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V", shift = At.Shift.AFTER))
-    private void renderOverlayPowers(DeltaTracker deltaTracker, boolean shouldRenderLevel, boolean resourcesLoaded, CallbackInfo ci, @Local(name = "graphics") GuiGraphicsExtractor graphics) {
-        boolean hudHidden = this.minecraft.options.hideGui;
-        boolean thirdPerson = !minecraft.options.getCameraType().isFirstPerson();
-        PowerHolderComponent.withPower(minecraft.getCameraEntity(), OverlayPower.class, p -> {
-            if(p.getDrawPhase() != OverlayPower.DrawPhase.ABOVE_HUD) {
-                return false;
-            }
-            if(hudHidden && p.doesHideWithHud()) {
-                return false;
-            }
-            if(thirdPerson && !p.shouldBeVisibleInThirdPerson()) {
-                return false;
-            }
-            return true;
-        }, p -> p.render(graphics));
-    }
-
     @Inject(at = @At("HEAD"), method = "togglePostEffect", cancellable = true)
     private void disableShaderToggle(CallbackInfo ci) {
         PowerHolderComponent.withPower(minecraft.getCameraEntity(), ShaderPower.class, null, shaderPower -> {
@@ -116,7 +100,7 @@ public abstract class GameRendererMixin {
     }
 
     // NightVisionPower
-    @Inject(at = @At("HEAD"), method = "getNightVisionScale", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "nightVisionScale", cancellable = true)
     private static void getNightVisionStrength(LivingEntity livingEntity, float f, CallbackInfoReturnable<Float> info) {
         if (livingEntity instanceof Player && !livingEntity.hasEffect(MobEffects.NIGHT_VISION)) {
             List<NightVisionPower> nvs = PowerHolderComponent.KEY.get(livingEntity).getPowers(NightVisionPower.class);
@@ -186,7 +170,7 @@ public abstract class GameRendererMixin {
     }
 
     // NIGHT VISION
-    @ModifyReturnValue(method = "getNightVisionScale", at = @At("RETURN"))
+    @ModifyReturnValue(method = "nightVisionScale", at = @At("RETURN"))
     private static float adjustNightVisionScale(float value, @Local(argsOnly = true, name = "camera") LivingEntity camera) {
         Optional<Float> nightVisionStrength = PowerHolderComponent.KEY.get(camera).getPowers(NightVisionPower.class).stream().filter(NightVisionPower::isActive).map(NightVisionPower::getStrength).max(Float::compareTo);
         return nightVisionStrength.map(aFloat -> Math.max(aFloat, value)).orElse(value);

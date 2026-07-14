@@ -2,6 +2,7 @@ package io.github.apace100.apoli.mixin;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
+import com.mojang.datafixers.util.Pair;
 import io.github.apace100.apoli.access.EndRespawningEntity;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.power.ActionOnItemUsePower;
@@ -16,7 +17,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.util.Tuple;
 import net.minecraft.util.Unit;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -112,9 +112,9 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
     @Unique
     private BlockPos findPlayerSpawn() {
         ModifyPlayerSpawnPower power = PowerHolderComponent.getPowers(this, ModifyPlayerSpawnPower.class).get(0);
-        Tuple<ServerLevel, BlockPos> spawn = power.getSpawn(true);
+        Pair<ServerLevel, BlockPos> spawn = power.getSpawn(true);
         if(spawn != null) {
-            return spawn.getB();
+            return spawn.getSecond();
         }
         return BlockPos.ZERO;
     }
