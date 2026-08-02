@@ -38,6 +38,10 @@ public class OverlayableDataComponentMap implements DataComponentMap {
         return this.overlays.contains(patch) || this.replacements.contains(patch);
     }
 
+    public boolean hasOverlays() {
+        return !this.overlays.isEmpty() || !this.replacements.isEmpty();
+    }
+
     public void clearOverlays() {
         this.overlays.clear();
     }

@@ -33,7 +33,8 @@ public abstract class ItemStackMixin implements OverlayableComponentsItemStack {
             var entity = linkedItemStack.apoli$getEntity();
             if (entity instanceof LivingEntity livingEntity) {
                 this.apoli_legacy$updateOverlayableComponents(livingEntity);
-                return this.apoli_legacy$overlayableComponents;
+                if (this.apoli_legacy$overlayableComponents.hasOverlays())
+                    return this.apoli_legacy$overlayableComponents;
             } else {
                 this.apoli_legacy$overlayableComponents.clearOverlays();
             }
