@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.mixin;
 
+import com.bawnorton.mixinsquared.TargetHandler;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import io.github.apace100.apoli.access.MovingEntity;
 import io.github.apace100.apoli.access.SubmergableEntity;
@@ -34,7 +35,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(Entity.class)
+@Mixin(value = Entity.class, priority = 1050)
 public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
 
     @Inject(method = "fireImmune", at = @At("HEAD"), cancellable = true)
@@ -120,6 +121,12 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
 
     @Redirect(method = "lambda$isInWall$0", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"))
     private VoxelShape preventPhasingSuffocation(BlockState state, BlockGetter world, BlockPos pos) {
+        return state.getCollisionShape(world, pos, CollisionContext.of((Entity)(Object)this));
+    }
+
+    @TargetHandler(mixin = "net.caffeinemc.mods.lithium.mixin.experimental.entity.block_caching.suffocation.EntityMixin", name = "isInsideWall", prefix = "handler")
+    @Redirect(method = "@MixinSquared:Handler", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"), require = 0, expect = 0)
+    private VoxelShape preventPhasingSuffocation$lithium(BlockState state, BlockGetter world, BlockPos pos) {
         return state.getCollisionShape(world, pos, CollisionContext.of((Entity)(Object)this));
     }
 
