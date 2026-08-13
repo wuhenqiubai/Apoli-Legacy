@@ -35,12 +35,13 @@ import java.util.List;
 @Environment(EnvType.CLIENT)
 public abstract class BackgroundRendererMixin {
 
-    @WrapOperation(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;hasEffect(Lnet/minecraft/core/Holder;)Z", ordinal = 0), method = "computeFogColor")
+    @WrapOperation(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/LivingEntity;hasEffect(Lnet/minecraft/core/Holder;)Z"), method = "computeFogColor")
     private static boolean hasStatusEffectProxy(LivingEntity instance, Holder<MobEffect> effect, Operation<Boolean> original) {
-        if(instance instanceof Player player && effect == MobEffects.NIGHT_VISION && !player.hasEffect(MobEffects.NIGHT_VISION)) {
+        var value = original.call(instance, effect);
+        if(!value && instance instanceof Player player && effect.is(MobEffects.NIGHT_VISION) && !player.hasEffect(MobEffects.NIGHT_VISION)) {
             return PowerHolderComponent.KEY.get(player).getPowers(NightVisionPower.class).stream().anyMatch(NightVisionPower::isActive);
         }
-        return original.call(instance, effect);
+        return value;
     }
 
     @ModifyExpressionValue(method = "getFogType", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;getFluidInCamera()Lnet/minecraft/world/level/material/FogType;", ordinal = 0))

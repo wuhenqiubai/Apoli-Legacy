@@ -84,7 +84,8 @@
     "PlayerEntityRendererMixin",
     "WorldRendererMixin",
     "legacy.core.level_render.LevelExtractorMixin",
-    "legacy.hud_power.HudMixin"
+    "legacy.hud_power.HudMixin",
+    "powers.night_vision.LightmapRenderStateExtractorMixin"
   ],
   "injectors": {
     "defaultRequire": 1
