@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class ItemStackMixin implements OverlayableComponentsItemStack {
     @Shadow @Final private PatchedDataComponentMap components;
     @Unique private final OverlayableDataComponentMap apoli_legacy$overlayableComponents = new OverlayableDataComponentMap(this.components);
+    @Unique private int apoli_legacy$searchDepth = 0;
 
     @ModifyReturnValue(method = "getComponents", at = @At("RETURN"))
     private DataComponentMap apoli_legacy$wrapComponentsInOverlay(DataComponentMap original) {
@@ -32,7 +33,14 @@ public abstract class ItemStackMixin implements OverlayableComponentsItemStack {
         if (this instanceof EntityLinkedItemStack linkedItemStack) {
             var entity = linkedItemStack.apoli$getEntity();
             if (entity instanceof LivingEntity livingEntity) {
-                this.apoli_legacy$updateOverlayableComponents(livingEntity);
+                try {
+                    if (this.apoli_legacy$searchDepth++ < 1) {
+                        this.apoli_legacy$updateOverlayableComponents(livingEntity);
+                    }
+                } finally {
+                    this.apoli_legacy$searchDepth--;
+                }
+
                 if (this.apoli_legacy$overlayableComponents.hasOverlays())
                     return this.apoli_legacy$overlayableComponents;
             } else {
