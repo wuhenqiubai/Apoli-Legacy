@@ -43,7 +43,7 @@ public abstract class BackgroundRendererMixin {
         return original.call(instance, effect);
     }
 
-    @ModifyExpressionValue(method = "computeFogColor", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/fog/FogRenderer;getFogType(Lnet/minecraft/client/Camera;)Lnet/minecraft/world/level/material/FogType;", ordinal = 0))
+    @ModifyExpressionValue(method = "getFogType", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;getFluidInCamera()Lnet/minecraft/world/level/material/FogType;", ordinal = 0))
     private static FogType modifyCameraSubmersionTypeRender(FogType original, @Local(argsOnly = true) Camera camera) {
         if(camera.entity() instanceof LivingEntity) {
             for(ModifyCameraSubmersionTypePower p : PowerHolderComponent.getPowers(camera.entity(), ModifyCameraSubmersionTypePower.class)) {
