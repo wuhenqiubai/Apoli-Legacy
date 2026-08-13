@@ -49,13 +49,13 @@
     "ServerPlayerInteractionManagerAccessor",
     "ServerPlayerInteractionManagerMixin",
     "ServerPlayNetworkHandlerMixin",
-    "ServerWorldMixin",
     "StatusEffectInstanceMixin",
     "WeightedListEntryAccessor",
     "legacy.MobMixin",
     "legacy.NearestAttackableTargetGoalMixin",
     "legacy.TargetingConditionsMixin",
-    "legacy.apply_components.ItemStackMixin"
+    "legacy.apply_components.ItemStackMixin",
+    "powers.prevent_game_event.GameEventDispatcherMixin"
   ],
   "client": [
     "BackgroundRendererMixin",
