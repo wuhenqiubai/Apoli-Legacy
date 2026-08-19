@@ -162,10 +162,19 @@ public class ApoliDataTypes {
     private static final AtomicInteger UNNAMED_MODIFIER_COUNTER = new AtomicInteger();
 
     private static ResourceLocation toUniqueModifierId(String name) {
+        int idx = UNNAMED_MODIFIER_COUNTER.getAndIncrement();
         if ("apoli:unnamed".equals(name)) {
-            return ResourceLocation.fromNamespaceAndPath("apoli", "unnamed_" + UNNAMED_MODIFIER_COUNTER.getAndIncrement());
+            return ResourceLocation.fromNamespaceAndPath("apoli", "unnamed_" + idx);
         }
-        return SerializableDataTypes.convertNameToLocation(name);
+        try {
+            ResourceLocation base = SerializableDataTypes.convertNameToLocation(name);
+            if (base != null) {
+                return ResourceLocation.fromNamespaceAndPath("apoli", base.getPath() + "_" + idx);
+            }
+        } catch (Exception e) {
+            // 非法 name（convertNameToLocation 失败），退回纯 counter id
+        }
+        return ResourceLocation.fromNamespaceAndPath("apoli", "modifier_" + idx);
     }
 
     public static final SerializableDataType<Tuple<Integer, ItemStack>> POSITIONED_ITEM_STACK = SerializableDataType.compound(ClassUtil.castClass(Tuple.class),
