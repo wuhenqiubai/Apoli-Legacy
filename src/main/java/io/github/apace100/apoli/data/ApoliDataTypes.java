@@ -47,6 +47,7 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApoliDataTypes {
 
@@ -139,7 +140,7 @@ public class ApoliDataTypes {
             .add("name", SerializableDataTypes.STRING, "apoli:unnamed"),
         dataInst -> new AttributedEntityAttributeModifier(dataInst.get("attribute"),
             new AttributeModifier(
-                SerializableDataTypes.convertNameToLocation(dataInst.getString("name")),
+                toUniqueModifierId(dataInst.getString("name")),
                 dataInst.getDouble("value"),
                 dataInst.get("operation"))),
         (data, inst) -> {
@@ -153,6 +154,19 @@ public class ApoliDataTypes {
 
     public static final SerializableDataType<List<AttributedEntityAttributeModifier>> ATTRIBUTED_ATTRIBUTE_MODIFIERS =
         SerializableDataType.list(ATTRIBUTED_ATTRIBUTE_MODIFIER);
+
+    // 1.21.1+ 的 AttributeModifier 用 ResourceLocation id，AttributeInstance.modifierById 按 id 去重。
+    // 未命名 modifier 共享默认 id "apoli:unnamed"，会导致多个 power 的 modifier 互相 add/remove 冲突
+    // （典型：axolotl_3 的 sprinting_speed +0.65 被 ground_speed_down 的 removeMods 误移除 → 疾跑速度失效）。
+    // 对未命名 modifier 分配唯一 id，保证每个实例独立；显式 name 仍用 convertNameToLocation。
+    private static final AtomicInteger UNNAMED_MODIFIER_COUNTER = new AtomicInteger();
+
+    private static ResourceLocation toUniqueModifierId(String name) {
+        if ("apoli:unnamed".equals(name)) {
+            return ResourceLocation.fromNamespaceAndPath("apoli", "unnamed_" + UNNAMED_MODIFIER_COUNTER.getAndIncrement());
+        }
+        return SerializableDataTypes.convertNameToLocation(name);
+    }
 
     public static final SerializableDataType<Tuple<Integer, ItemStack>> POSITIONED_ITEM_STACK = SerializableDataType.compound(ClassUtil.castClass(Tuple.class),
         new SerializableData()
