@@ -348,8 +348,15 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                         //origins_lastClimbingPos = getPos();
                         return true;
                     } else if(isSuppressingSlidingDownLadder()) {
+                        // 回归修复：canHold 分支原只查 isSuppressingSlidingDownLadder()（1.21.11 == isShiftKeyDown，
+                        // 潜行时恒 true）+ canHold（ClimbingEXPower.canHold 默认也 isShiftKeyDown），导致潜行时
+                        // 任意场景 onClimbable 恒 true → 原版攀爬（空格上升/悬停）误触发。
+                        // 爬墙悬停是合法能力（爬墙中按住潜行不滑下），不能用 horizontalCollision 区分
+                        // （爬墙竖直移动时它为 false，会误伤悬停）。改用「ClimbingPower.isActive()」（真正贴墙爬墙中，
+                        // start 需 collided_horizontally / continue 需不在地面+旁边方块）+ canHold：
+                        // 开阔地（isActive false）不触发，贴墙爬墙（isActive true）悬停正常。
                         //if(origins_lastClimbingPos != null && isHoldingOntoLadder()) {
-                            if(climbingPowers.stream().anyMatch(ClimbingPower::canHold)) {
+                            if(climbingPowers.stream().anyMatch(p -> p.isActive() && p.canHold())) {
                                 return true;
                             }
                         //}

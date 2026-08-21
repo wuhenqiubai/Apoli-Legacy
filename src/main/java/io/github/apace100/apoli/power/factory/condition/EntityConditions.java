@@ -114,6 +114,9 @@ public class EntityConditions {
             BlockPos blockPos = entity.getVehicle() instanceof Boat ? (BlockPos.containing(entity.getX(), (double) Math.round(entity.getY()), entity.getZ())).above() : BlockPos.containing(entity.getX(), (double) Math.round(entity.getY()), entity.getZ());
             return entity.level().canSeeSky(blockPos);
         }));
+        // isShiftKeyDown() 是 shared flag（getSharedFlag(1)），服务端通过 PRESS/RELEASE_SHIFT_KEY 包同步，空中也保持，
+        // 是稳定的「玩家按住潜行键」判断。不要用 isCrouching()（hasPose(CROUCHING)）：姿态在跳跃/空中会变化，
+        // 导致依赖 apoli:sneaking 的 modifier（潜行加速等）频繁 add/remove，出现松开潜行突进、悬停等机制 bug。
         register(new ConditionFactory<>(Apoli.identifier("sneaking"), new SerializableData(), (data, entity) -> entity.isShiftKeyDown()));
         register(new ConditionFactory<>(Apoli.identifier("sprinting"), new SerializableData(), (data, entity) -> entity.isSprinting()));
         register(new ConditionFactory<>(Apoli.identifier("power_active"), new SerializableData().add("power", ApoliDataTypes.POWER_TYPE),
