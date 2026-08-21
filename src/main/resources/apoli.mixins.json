@@ -2,6 +2,7 @@
     "required": true,
     "minVersion": "0.8",
     "package": "io.github.apace100.apoli.mixin",
+    "plugin": "io.github.apace100.apoli.ApoliMixinPlugin",
     "compatibilityLevel": "JAVA_16",
     "mixins": [
         "AbstractBlockMixin",
@@ -55,7 +56,12 @@
         "WeightedListEntryAccessor",
         "legacy.MobMixin",
         "legacy.NearestAttackableTargetGoalMixin",
-        "legacy.TargetingConditionsMixin"
+        "legacy.TargetingConditionsMixin",
+        "integration.connector.EntityMixin",
+        "integration.connector.ServerPlayerEntityMixin",
+        "integration.connector.ServerPlayerInteractionManagerMixin",
+        "integration.connector.PhantomSpawnerMixin",
+        "integration.connector.PlayerEntityMixin"
     ],
     "client": [
         "BackgroundRendererMixin",
@@ -67,6 +73,7 @@
         "ClientPlayerInteractionManagerMixin",
         "ConfigScreenProviderMixin",
         "ElytraFeatureRendererMixin",
+        "integration.connector.ElytraFeatureRendererMixin",
         "EntityParticleMixin",
         "EntityRenderDispatcherMixin",
         "GameRendererMixin",

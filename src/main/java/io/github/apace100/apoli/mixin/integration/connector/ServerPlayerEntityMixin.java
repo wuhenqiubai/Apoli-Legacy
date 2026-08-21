@@ -1,4 +1,4 @@
-package io.github.apace100.apoli.mixin;
+package io.github.apace100.apoli.mixin.integration.connector;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
@@ -36,6 +36,12 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.Optional;
 
+/**
+ * NeoForge/Connector 兼容：主 ServerPlayerEntityMixin 的 preventAvianSleep 用
+ * {@code @Inject(method = "startSleepInBed", at = @At(value = "INVOKE", target = "...setRespawnPosition(...)V"))}
+ * 依赖 NeoForge 重编译后可能变化的字节码，此版本改为 startSleepInBed HEAD（方法名/描述符两版一致，最稳）。
+ * 其余逻辑与主版完全一致。由 ApoliMixinPlugin 在 NeoForge 下启用、Fabric 下跳过。
+ */
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerEntityMixin extends Player implements ContainerListener, EndRespawningEntity {
 
@@ -67,7 +73,8 @@ public abstract class ServerPlayerEntityMixin extends Player implements Containe
     };
 
     // FRESH_AIR
-    // NeoForge/Connector 兼容：主版注入点也改用 HEAD（setRespawnPosition 在 NeoForge 下被包进 supplier lambda 而失效）
+    // NeoForge 安全注入点：原主版 @Inject(value = "INVOKE", target = "...setRespawnPosition(...)V") 依赖 NeoForge 重编译后可能变化的调用点。
+    // 改 startSleepInBed HEAD——PreventSleepPower 激活时直接取消入睡并设置重生点，两版方法名/描述符一致。
     @Inject(method = "startSleepInBed", at = @At("HEAD"), cancellable = true)
     public void preventAvianSleep(BlockPos pos, CallbackInfoReturnable<Either<BedSleepingProblem, Unit>> info) {
         PowerHolderComponent.getPowers(this, PreventSleepPower.class).forEach(p -> {

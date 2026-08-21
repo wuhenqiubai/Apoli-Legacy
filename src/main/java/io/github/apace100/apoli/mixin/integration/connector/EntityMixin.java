@@ -1,4 +1,4 @@
-package io.github.apace100.apoli.mixin;
+package io.github.apace100.apoli.mixin.integration.connector;
 
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import io.github.apace100.apoli.access.MovingEntity;
@@ -32,6 +32,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * NeoForge/Connector 兼容：主 EntityMixin 的 phasing 防窒息用 @Redirect(method_30022) 依赖 isInWall 的 lambda，
+ * NeoForge 重编译使 lambda 编号变化而失效。此版本是主 EntityMixin 的完整替代，仅把 phasing 注入点改为
+ * isInWall HEAD（方法名/描述符两版一致，最稳）。由 ApoliMixinPlugin 在 NeoForge 下启用、Fabric 下跳过。
+ */
 @Mixin(Entity.class)
 public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
 
@@ -116,7 +121,8 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
         }
     }
 
-    // NeoForge/Connector 兼容：主版注入点也改用 isInWall HEAD（@Redirect(method_30022) 依赖 isInWall 的 lambda，NeoForge 重编译编号变化失效）
+    // NeoForge 安全注入点：原主版 @Redirect(method_30022, getCollisionShape) 依赖 isInWall 的 lambda（编号不稳定）。
+    // 改 isInWall HEAD——PhasingPower 激活时直接返回 false（阻止窒息判定），两版方法名/描述符一致。
     @Inject(method = "isInWall", at = @At("HEAD"), cancellable = true)
     private void preventPhasingSuffocation(CallbackInfoReturnable<Boolean> cir) {
         PowerHolderComponent component = PowerHolderComponent.KEY.get(this);
@@ -170,7 +176,6 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
             return true;
         }
         return false;
-        //return Calio.areTagsEqual(Registry.FLUID_KEY, tag, submergedFluidTag);
     }
 
     @Override
