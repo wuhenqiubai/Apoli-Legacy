@@ -5,7 +5,8 @@ import io.github.apace100.apoli.data.ApoliDataTypes;
 import io.github.apace100.apoli.power.factory.PowerFactory;
 import io.github.apace100.calio.data.SerializableData;
 import io.github.apace100.calio.data.SerializableDataTypes;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,10 +19,10 @@ import java.util.function.Consumer;
 public class PreventGameEventPower extends Power {
 
     private final TagKey<GameEvent> tag;
-    private final List<GameEvent> list;
+    private final HolderSet<GameEvent> list;
     private final Consumer<Entity> entityAction;
 
-    public PreventGameEventPower(PowerType<?> type, LivingEntity entity, TagKey<GameEvent> tag, List<GameEvent> list, Consumer<Entity> entityAction) {
+    public PreventGameEventPower(PowerType<?> type, LivingEntity entity, TagKey<GameEvent> tag, HolderSet<GameEvent> list, Consumer<Entity> entityAction) {
         super(type, entity);
         this.tag = tag;
         this.list = list;
@@ -34,8 +35,8 @@ public class PreventGameEventPower extends Power {
         }
     }
 
-    public boolean doesPrevent(GameEvent event) {
-        if(tag != null && BuiltInRegistries.GAME_EVENT.wrapAsHolder(event).is(tag)) {
+    public boolean doesPrevent(Holder<GameEvent> event) {
+        if(tag != null && event.is(tag)) {
             return true;
         }
         if(list != null && list.contains(event)) {
@@ -53,15 +54,16 @@ public class PreventGameEventPower extends Power {
                 .add("entity_action", ApoliDataTypes.ENTITY_ACTION, null),
             data ->
                 (type, player) -> {
-                    List<GameEvent> eventList = data.isPresent("events") ? (List<GameEvent>)data.get("events") : null;
+                    List<Holder<GameEvent>> eventList = data.isPresent("events") ? (List<Holder<GameEvent>>)data.get("events") : null;
+                    if(eventList == null) {
+                        eventList = new LinkedList<>();
+                    }
+
                     if(data.isPresent("event")) {
-                        if(eventList == null) {
-                            eventList = new LinkedList<>();
-                        }
                         eventList.add(data.get("event"));
                     }
                     return new PreventGameEventPower(type, player,
-                        data.get("tag"), eventList,
+                        data.get("tag"), HolderSet.direct(eventList),
                         data.get("entity_action"));
                 })
             .allowCondition();
