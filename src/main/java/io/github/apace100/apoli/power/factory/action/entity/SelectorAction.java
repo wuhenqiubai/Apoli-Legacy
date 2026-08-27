@@ -28,7 +28,7 @@ public class SelectorAction {
         Consumer<Tuple<Entity, Entity>> biEntityAction = data.get("bientity_action");
 
         CommandSourceStack source = new CommandSourceStack(
-            CommandSource.NULL,
+            entity,
             entity.position(),
             entity.getRotationVector(),
             (ServerLevel) entity.level(),

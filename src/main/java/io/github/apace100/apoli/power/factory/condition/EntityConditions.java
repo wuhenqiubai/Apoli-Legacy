@@ -297,7 +297,7 @@ public class EntityConditions {
                 if(server != null) {
                     boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ? entity : CommandSource.NULL,
+                        entity,
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,

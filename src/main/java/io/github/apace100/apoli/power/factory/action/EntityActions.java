@@ -193,22 +193,49 @@ public class EntityActions {
         register(new ActionFactory<>(Apoli.identifier("execute_command"), new SerializableData()
             .add("command", SerializableDataTypes.STRING),
             (data, entity) -> {
+                // 只有实体位于服务端维度（ServerLevel）才执行：particle 等命令需要 source.getLevel()，
+                // 客户端/非服务端租 level 非 ServerLevel → source.getLevel()=null → NPE。
+                // 服务端线程那条（level=ServerLevel）负责执行；craft 已改用 item_on_item 的 result 字段，不经过 execute_command。
+                if(!(entity.level() instanceof ServerLevel)) {
+                    return;
+                }
                 MinecraftServer server = entity.level().getServer();
+                // 无条件 CALLED 日志(warn 级)：进入 lambda 即打印，用于确认 execute_command 是否真的被调用、是否拿到了 server。
+                Apoli.LOGGER.warn("[ShapeShifterCurse] execute_command CALLED: cmd={} | entity={} | server={}",
+                        data.getString("command"), entity.getName().getString(), server != null);
                 if(server != null) {
-                    boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
+                    // 修复：source 总是用实体，避免 CommandSource.NULL 抑制 /say 输出及使 /give @s 等命令失效。
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ?
-                            entity
-                        : CommandSource.NULL,
+                        entity,
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
                         Apoli.config.executeCommand.permissionLevel,
                         entity.getName().getString(),
                         entity.getDisplayName(),
-                        entity.level().getServer(),
+                        server,
                         entity);
-                    server.getCommands().performPrefixedCommand(source, data.getString("command"));
+                    // showOutput=false（默认）时抑制命令反馈广播（/give 聊天提示等），但保留命令执行效果。
+                    // 用 withSuppressedOutput 仅静默输出，而非 CommandSource.NULL（那会连命令效果一起杀掉）。
+                    if(!Apoli.config.executeCommand.showOutput) {
+                        source = source.withSuppressedOutput();
+                    }
+                    try {
+                        // dispatcher.execute 不剥前导 /（聊天栏的 / 由 MC 剥离后才传入），带 / 会在 position 0 报"未知命令"，
+                        // 这里手动剥掉前导空白与 /。
+                        String execCommand = data.getString("command").trim();
+                        if(execCommand.startsWith("/")) {
+                            execCommand = execCommand.substring(1);
+                        }
+                        // 用 dispatcher.execute（返回 int + 抛 CommandSyntaxException），可判断结果并非静默记录失败
+                        int result = server.getCommands().getDispatcher().execute(execCommand, source);
+                        // 无条件日志：确认 execute_command 是否走到、命令原文、返回结果（warn 级避免被日志配置过滤）
+                        Apoli.LOGGER.warn("[ShapeShifterCurse] execute_command EXEC: cmd={} | result={} | entity={}",
+                                data.getString("command"), result, entity.getName().getString());
+                    } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                        Apoli.LOGGER.warn("[ShapeShifterCurse] execute_command ERROR: cmd={} | entity={} | {}",
+                                data.getString("command"), entity.getName().getString(), e.getMessage());
+                    }
                 }
             }));
         register(new ActionFactory<>(Apoli.identifier("change_resource"), new SerializableData()
