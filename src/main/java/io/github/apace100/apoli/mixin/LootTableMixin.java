@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.mixin;
 
+import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.access.IdentifiedLootTable;
 import io.github.apace100.apoli.access.ReplacingLootContext;
 import io.github.apace100.apoli.component.PowerHolderComponent;
@@ -38,13 +39,13 @@ public class LootTableMixin implements IdentifiedLootTable {
     private HolderGetter.Provider apoli$lootManager;
 
     @Override
-    public void setId(ResourceLocation id, HolderGetter.Provider lootManager) {
+    public void apoli$setId(ResourceLocation id, HolderGetter.Provider lootManager) {
         apoli$id = id;
         apoli$lootManager = lootManager;
     }
 
     @Override
-    public ResourceLocation getId() {
+    public ResourceLocation apoli$getId() {
         return apoli$id;
     }
 
@@ -53,6 +54,15 @@ public class LootTableMixin implements IdentifiedLootTable {
         if(((ReplacingLootContext)context).isReplaced((LootTable)(Object)this)) {
             return;
         }
+
+        if (apoli$id == null)
+            return;
+
+        HolderGetter.Provider provider = apoli$lootManager;
+
+        if (provider == null)
+            provider = Apoli.server.registryAccess().asGetterLookup();
+
         if(context.hasParam(LootContextParams.THIS_ENTITY)) {
             var type = ((ReplacingLootContext)context).getType();
             Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
@@ -84,7 +94,7 @@ public class LootTableMixin implements IdentifiedLootTable {
             LootTable replacement = null;
             for (ReplaceLootTablePower power : powers) {
                 ResourceLocation id = power.getReplacement(apoli$id);
-                replacement = apoli$lootManager.lookupOrThrow(Registries.LOOT_TABLE).getOrThrow(ResourceKey.create(Registries.LOOT_TABLE, id)).value();
+                replacement = provider.lookupOrThrow(Registries.LOOT_TABLE).getOrThrow(ResourceKey.create(Registries.LOOT_TABLE, id)).value();
                 ReplaceLootTablePower.addToStack(replacement);
             }
             ((ReplacingLootContext)context).setReplaced((LootTable)(Object)this);
