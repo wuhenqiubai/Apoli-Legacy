@@ -50,7 +50,6 @@
         "ServerPlayerInteractionManagerAccessor",
         "ServerPlayerInteractionManagerMixin",
         "ServerPlayNetworkHandlerMixin",
-        "ServerWorldMixin",
         "SlotRangesAccessor",
         "StatusEffectInstanceMixin",
         "WeightedListEntryAccessor",
