@@ -331,7 +331,11 @@ public abstract class LivingEntityMixin extends Entity implements ModifiableFood
                         return true;
                     } else if(isSuppressingSlidingDownLadder()) {
                         //if(origins_lastClimbingPos != null && isHoldingOntoLadder()) {
-                            if(climbingPowers.stream().anyMatch(ClimbingPower::canHold)) {
+                            // [移植 f3bd124] 回归修复：canHold 分支原只查 isSuppressingSlidingDownLadder()（潜行时恒 true）
+                            // + canHold，导致潜行时任意场景 onClimbable 恒 true → 原版攀爬（空格上升/悬停）误触发。
+                            // 改用「ClimbingPower.isActive()（真正贴墙爬墙中）+ canHold」：开阔地（isActive false）不触发，
+                            // 贴墙爬墙（isActive true）悬停正常。
+                            if(climbingPowers.stream().anyMatch(p -> p.isActive() && p.canHold())) {
                                 return true;
                             }
                         //}

@@ -293,9 +293,9 @@ public class EntityConditions {
             (data, entity) -> {
                 MinecraftServer server = entity.level().getServer();
                 if(server != null) {
-                    boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
+                    // [移植 b7a79a9] source 恒用实体（ServerPlayer.commandSource()），避免 CommandSource.NULL 使 /say 等命令失效。
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ? entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL : CommandSource.NULL,
+                        entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL,
                         entity.position(),
                         entity.getRotationVector(),
                         entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
@@ -304,6 +304,9 @@ public class EntityConditions {
                         entity.getDisplayName(),
                         server,
                         entity);
+                    if(!Apoli.config.executeCommand.showOutput) {
+                        source = source.withSuppressedOutput();
+                    }
                     int output = 0;
                     try {
                         output = server.getCommands().getDispatcher().execute(data.getString("command").replaceFirst("/", ""), source);

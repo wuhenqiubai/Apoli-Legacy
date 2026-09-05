@@ -11,6 +11,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionSetUnion;
 import net.minecraft.util.Tuple;
@@ -29,8 +30,9 @@ public class SelectorAction {
         Predicate<Tuple<Entity, Entity>> biEntityCondition = data.get("bientity_condition");
         Consumer<Tuple<Entity, Entity>> biEntityAction = data.get("bientity_action");
 
+        // [移植 b7a79a9] source 用实体（ServerPlayer.commandSource()）而非 CommandSource.NULL，让 EntitySelector 正确解析 @s/位置。
         CommandSourceStack source = new CommandSourceStack(
-            CommandSource.NULL,
+            entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL,
             entity.position(),
             entity.getRotationVector(),
             (ServerLevel) entity.level(),

@@ -47,7 +47,14 @@ public class HungerManagerMixin {
         int newFood = (int) ModifierUtil.applyModifiers(player, foodModifiers, foodLevelModifier);
         if (newFood != foodLevelModifier) apoli$ShouldUpdateManually = true;
 
-        float newSat = (float) ModifierUtil.applyModifiers(player, saturationModifiers, saturationLevelModifier);
+        // [移植 5d428c4] 1.21.1 的 FoodData.add 第二参是最终饱和度绝对值；saturation_modifier 语义回归 1.20 的
+        // 「每单位饥饿的 satMod」。先把最终饱和度反推出 satMod，应用 modifier 后还原成最终饱和度。
+        float origSatMod = 0.0F;
+        if (foodLevelModifier != 0) {
+            origSatMod = saturationLevelModifier / (foodLevelModifier * 2.0F);
+        }
+        float newSatMod = (float) ModifierUtil.applyModifiers(player, saturationModifiers, origSatMod);
+        float newSat = newFood * 2.0F * newSatMod;
         if (newSat != saturationLevelModifier) apoli$ShouldUpdateManually = true;
 
         foodLevel.set(newFood);

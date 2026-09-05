@@ -165,6 +165,16 @@ public class ModPacketsS2C {
             PowerType<?> powerType = PowerTypeRegistry.get(powerId);
             PowerHolderComponent.KEY.maybeGet(entity).ifPresentOrElse(phc -> {
                 Power power = phc.getPower(powerType);
+                // [移植 3a8e22a] 单机（integrated server）或客户端实体未挂载该 power 时，phc.getPower 可能返回 null。
+                // 防御：跳过而非 NPE 刷屏（等下次真实挂载后再同步）。
+                if (power == null) {
+                    Apoli.LOGGER.warn("Received sync packet for power type not held by entity: " + powerId);
+                    return;
+                }
+                if (powerNbt == null) {
+                    Apoli.LOGGER.warn("Received sync packet with null power data: " + powerId);
+                    return;
+                }
                 if (powerNbt instanceof CompoundTag)
                     power.fromValue(TagValueInput.create(ProblemReporter.DISCARDING, context.player().registryAccess(), (CompoundTag) powerNbt));
                 else
