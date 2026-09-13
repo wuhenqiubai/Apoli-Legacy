@@ -84,7 +84,8 @@ dependencies {
 
 	include(api("io.github.ladysnake:PlayerAbilityLib:${property("pal_version")}")!!)
 
-	implementation(project(":calio"))
+	api ("io.github.apace100:Calio-Legacy:${project.property("calio_version")}")
+	include ("io.github.apace100:Calio-Legacy:${project.property("calio_version")}")
 
 	include(api("me.shedaniel.cloth:cloth-config-fabric:${project.property("clothconfig_version")}") {
 		exclude(group = "net.fabricmc.fabric-api")
@@ -152,31 +153,5 @@ publishing {
 	}
 
 	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		maven("https://mvn.devos.one/releases") {
-			name = "devOS"
-			credentials {
-				username = System.getenv()["MAVEN_USER"]
-				password = System.getenv()["MAVEN_PASS"]
-			}
-		}
-	}
-}
-
-tasks.named("publishMavenJavaPublicationToDevOSRepository") {
-	onlyIf {
-		val group = project.property("maven_group") as String
-		val artifactId = project.property("archives_base_name") as String
-		val version = project.version.toString()
-
-		try {
-			val connection = URI.create("https://mvn.devos.one/releases/${group.replace(".", "/")}/${artifactId}/${version}/${artifactId}-${version}.jar").toURL().openConnection() as HttpURLConnection
-			connection.requestMethod = "GET"
-			connection.connect()
-
-			connection.responseCode != 200
-		} catch (_: Exception) {
-			false
-		}
-	}
+	repositories {}
 }
