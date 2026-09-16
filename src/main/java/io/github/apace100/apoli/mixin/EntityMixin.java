@@ -15,20 +15,15 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityFluidInteraction;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -118,9 +113,17 @@ public abstract class EntityMixin implements MovingEntity, SubmergableEntity {
         }
     }
 
-    @Redirect(method = "lambda$isInWall$0", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getCollisionShape(Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/phys/shapes/VoxelShape;"))
-    private VoxelShape preventPhasingSuffocation(BlockState state, BlockGetter world, BlockPos pos) {
-        return state.getCollisionShape(world, pos, CollisionContext.of((Entity)(Object)this));
+    // NeoForge/Connector 兼容（1.21.1 提交 ea98804）：原实现是
+    //   @Redirect(method = "lambda$isInWall$0", ... BlockState;getCollisionShape(BlockGetter, BlockPos))
+    // 它依赖 isInWall 内部的 lambda —— NeoForge 重新编译后 lambda 名/编号会变，注入点静默失效，
+    // 后果是穿墙 power 在 NeoForge 下失去「不窒息」保护。
+    // 改为在 isInWall HEAD 判定：PhasingPower 激活时直接返回「不在墙里」。方法名与描述符跨环境稳定。
+    // 注：原实现是把碰撞形状换成 entity-aware 的 CollisionContext（等价效果），此处改为直判，更稳。
+    @Inject(method = "isInWall", at = @At("HEAD"), cancellable = true)
+    private void preventPhasingSuffocation(CallbackInfoReturnable<Boolean> cir) {
+        if(PowerHolderComponent.getPowers((Entity)(Object)this, PhasingPower.class).stream().anyMatch(PhasingPower::isActive)) {
+            cir.setReturnValue(false);
+        }
     }
 
     private boolean isMoving;

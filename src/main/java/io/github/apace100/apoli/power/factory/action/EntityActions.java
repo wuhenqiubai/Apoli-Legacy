@@ -1,5 +1,6 @@
 package io.github.apace100.apoli.power.factory.action;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.apace100.apoli.Apoli;
 import io.github.apace100.apoli.component.PowerHolderComponent;
 import io.github.apace100.apoli.data.ApoliDataTypes;
@@ -196,23 +197,48 @@ public class EntityActions {
         register(new ActionFactory<>(Apoli.identifier("execute_command"), new SerializableData()
             .add("command", SerializableDataTypes.STRING),
             (data, entity) -> {
+                // 只有实体位于服务端维度（ServerLevel）才执行：particle 等命令需要 source.getLevel()，
+                // 客户端/非服务端维度的 level 不是 ServerLevel → source.getLevel() 为 null → NPE。
+                //（对应 1.21.1 提交 b7a79a9 的前置守卫）
+                if(!(entity.level() instanceof ServerLevel serverLevel)) {
+                    return;
+                }
                 MinecraftServer server = entity.level().getServer();
                 if(server != null) {
-                    boolean validOutput = !(entity instanceof ServerPlayer) || ((ServerPlayer)entity).connection != null;
+                    // ⚠ 26.1 差异：Entity 不再 implements CommandSource（1.21.1 时代是），
+                    // 且 Entity 上没有 sendSystemMessage —— 非玩家实体已收不到命令输出。
+                    // 所以 1.21.1 那条「source 恒为实体」只能对 ServerPlayer 成立，其余实体仍只能是 CommandSource.NULL。
+                    // 26.1 另一处差异：权限参数是 PermissionSet（getPermissionHandler()），不是 1.21.1 的 permissionLevel。
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput && validOutput ?
-                            entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource()
-                                : CommandSource.NULL
-                        : CommandSource.NULL,
+                        entity instanceof ServerPlayer serverPlayer ? serverPlayer.commandSource() : CommandSource.NULL,
                         entity.position(),
                         entity.getRotationVector(),
-                        entity.level() instanceof ServerLevel ? (ServerLevel)entity.level() : null,
+                        serverLevel,
                         Apoli.config.executeCommand.getPermissionHandler(),
                         entity.getName().getString(),
                         entity.getDisplayName(),
-                        entity.level().getServer(),
+                        server,
                         entity);
-                    server.getCommands().performPrefixedCommand(source, data.getString("command"));
+                    // showOutput=false（默认）时只抑制命令反馈广播（/give 的聊天提示等），保留命令执行效果。
+                    // 关键：用 withSuppressedOutput 静默输出，而不是像改动前那样把 source 整个换成 CommandSource.NULL
+                    // —— 后者会连命令效果一起杀掉（1.21.1 b7a79a9 的核心修复点）。
+                    if(!Apoli.config.executeCommand.showOutput) {
+                        source = source.withSuppressedOutput();
+                    }
+                    try {
+                        // dispatcher.execute 不剥前导 /（聊天栏的 / 由 MC 剥离后才传入），
+                        // 带 / 会在位置 0 报「未知命令」，这里手动剥掉前导空白与 /。
+                        String execCommand = data.getString("command").trim();
+                        if(execCommand.startsWith("/")) {
+                            execCommand = execCommand.substring(1);
+                        }
+                        // 用 dispatcher.execute（返回 int 并抛 CommandSyntaxException），而非 performPrefixedCommand
+                        // —— 后者把语法错误静默记进日志，无法判断命令到底有没有真的执行。
+                        server.getCommands().getDispatcher().execute(execCommand, source);
+                    } catch (CommandSyntaxException e) {
+                        Apoli.LOGGER.warn("execute_command failed: cmd={} | entity={} | {}",
+                                data.getString("command"), entity.getName().getString(), e.getMessage());
+                    }
                 }
             }));
         register(new ActionFactory<>(Apoli.identifier("change_resource"), new SerializableData()

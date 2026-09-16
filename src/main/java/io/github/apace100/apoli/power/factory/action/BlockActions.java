@@ -72,8 +72,11 @@ public class BlockActions {
                 MinecraftServer server = block.getLeft().getServer();
                 if(server != null) {
                     String blockName = block.getLeft().getBlockState(block.getMiddle()).getBlock().getDescriptionId();
+                    // 1.21.1 提交 b7a79a9：source 恒为 server，不再在 showOutput=false 时换成 CommandSource.NULL
+                    //（NULL 会把命令效果一起杀掉）。这里用 withSuppressedOutput 只静默输出。
+                    // 方块上下文没有实体，server 本身就是合法的 CommandSource（26.1 仍然如此）。
                     CommandSourceStack source = new CommandSourceStack(
-                        Apoli.config.executeCommand.showOutput ? server : CommandSource.NULL,
+                        server,
                         new Vec3(block.getMiddle().getX() + 0.5, block.getMiddle().getY() + 0.5, block.getMiddle().getZ() + 0.5),
                         new Vec2(0, 0),
                         (ServerLevel)block.getLeft(),
@@ -82,6 +85,9 @@ public class BlockActions {
                         Component.translatable(blockName),
                         server,
                         null);
+                    if(!Apoli.config.executeCommand.showOutput) {
+                        source = source.withSuppressedOutput();
+                    }
                     server.getCommands().performPrefixedCommand(source, data.getString("command"));
                 }
             }));

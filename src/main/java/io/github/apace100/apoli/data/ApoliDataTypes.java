@@ -47,8 +47,36 @@ import org.apache.commons.lang3.tuple.Triple;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ApoliDataTypes {
+
+    /**
+     * 1.21.1 提交 b16c645 + 5d428c4：AttributeModifier 的 id 在 1.21+ 用 Identifier，
+     * {@code AttributeInstance} 按 id 去重。未命名 modifier 默认共享 "apoli:unnamed"，
+     * 多个 power 的 modifier 会互相 add/remove 冲突（典型：axolotl_3 的 sprinting_speed +0.65
+     * 被 ground_speed_down 的 removeMods 误移除 → 疾跑速度失效）。
+     * 这里给每个未命名 modifier 分配唯一 id，保证实例独立；显式 name 仍按原名转换。
+     */
+    private static final AtomicInteger UNNAMED_MODIFIER_COUNTER = new AtomicInteger();
+
+    private static Identifier toUniqueModifierId(String name) {
+        int idx = UNNAMED_MODIFIER_COUNTER.getAndIncrement();
+        if ("apoli:unnamed".equals(name)) {
+            return Identifier.fromNamespaceAndPath("apoli", "unnamed_" + idx);
+        }
+        try {
+            // 5d428c4：calio 的 convertNameToLocation 走 Identifier.parse，
+            // 非法 name（含大写以外的非法字符等）会抛 ResourceLocationException，退回纯 counter id。
+            Identifier base = SerializableDataTypes.convertNameToLocation(name);
+            if (base != null) {
+                return Identifier.fromNamespaceAndPath("apoli", base.getPath() + "_" + idx);
+            }
+        } catch (Exception e) {
+            // 非法 name：退回纯 counter id，不让整个 power 读取失败
+        }
+        return Identifier.fromNamespaceAndPath("apoli", "modifier_" + idx);
+    }
 
     public static final SerializableDataType<PowerTypeReference> POWER_TYPE = SerializableDataType.wrap(
         PowerTypeReference.class, SerializableDataTypes.IDENTIFIER,
@@ -139,7 +167,7 @@ public class ApoliDataTypes {
             .add("name", SerializableDataTypes.STRING, "apoli:unnamed"),
         dataInst -> new AttributedEntityAttributeModifier(dataInst.get("attribute"),
             new AttributeModifier(
-                SerializableDataTypes.convertNameToLocation(dataInst.getString("name")),
+                toUniqueModifierId(dataInst.getString("name")),
                 dataInst.getDouble("value"),
                 dataInst.get("operation"))),
         (data, inst) -> {
